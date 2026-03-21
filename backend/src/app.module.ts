@@ -23,20 +23,24 @@ import { HealthController } from './health.controller'
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (configService: ConfigService) => ({
-        type: 'postgres' as const,
-        host: configService.get<string>('DB_HOST', 'localhost'),
-        port: configService.get<number>('DB_PORT', 5432),
-        username: configService.get<string>('DB_USERNAME', 'postgres'),
-        password: configService.get<string>('DB_PASSWORD', 'postgres'),
-        database: configService.get<string>('DB_DATABASE', 'jimusho_cms'),
-        autoLoadEntities: true,
-        migrations: [join(__dirname, 'migrations/*{.ts,.js}')],
-        synchronize: configService.get<string>('DB_SYNCHRONIZE', 'false') === 'true',
-        logging: configService.get<string>('NODE_ENV', 'development') === 'development',
-        migrationsRun: configService.get<string>('DB_MIGRATIONS_RUN', 'false') === 'true',
-        namingStrategy: new SnakeNamingStrategy(),
-      }),
+      useFactory: (configService: ConfigService) => {
+        const isProduction = configService.get<string>('NODE_ENV') === 'production'
+        return {
+          type: 'postgres' as const,
+          host: configService.get<string>('DB_HOST', 'localhost'),
+          port: configService.get<number>('DB_PORT', 5432),
+          username: configService.get<string>('DB_USERNAME', 'postgres'),
+          password: configService.get<string>('DB_PASSWORD', 'postgres'),
+          database: configService.get<string>('DB_DATABASE', 'jimusho_cms'),
+          autoLoadEntities: true,
+          migrations: [join(__dirname, 'migrations/*{.ts,.js}')],
+          synchronize: configService.get<string>('DB_SYNCHRONIZE', 'false') === 'true',
+          logging: !isProduction,
+          migrationsRun: configService.get<string>('DB_MIGRATIONS_RUN', 'false') === 'true',
+          namingStrategy: new SnakeNamingStrategy(),
+          ...(isProduction && { ssl: { rejectUnauthorized: false } }),
+        }
+      },
     }),
     AuthModule,
     CustomerModule,

@@ -5,6 +5,8 @@ import * as dotenv from 'dotenv'
 dotenv.config({ path: '.env.local' })
 dotenv.config({ path: '.env' })
 
+const isProduction = process.env.NODE_ENV === 'production'
+
 export default new DataSource({
   type: 'postgres',
   host: process.env.DB_HOST || 'localhost',
@@ -16,5 +18,6 @@ export default new DataSource({
   migrations: ['src/migrations/*.ts'],
   namingStrategy: new SnakeNamingStrategy(),
   synchronize: false,
-  logging: true,
+  logging: !isProduction,
+  ...(isProduction && { ssl: { rejectUnauthorized: false } }),
 })
