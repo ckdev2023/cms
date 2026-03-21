@@ -1,0 +1,18 @@
+事务所管理系统完整开发规格书（行政书士 + 税理士）
+本文件用于系统开发使用，包含完整模块设计、数据结构、功能逻辑及页面说明，可直接交付开发人员使用。
+一、系统总体架构
+系统采用客户中心架构：Customers 为核心表，所有业务数据通过 CustomerID 关联。模块：1. 客户管理2. 行政书士模块3. 税理士模块4. 财务模块5. 事务所管理6. 文件管理7. 日志系统
+二、数据库设计
+核心表：Customers（客户）- CustomerID（PK）- CustomerCode- CustomerType（个人/法人）- CustomerName- Phone- Email- Address- ServiceType（行政/税务/両方）CompanyInfo（法人）- CompanyID（PK）- CustomerID（FK）- CorporationNumber- FiscalMonth- RepresentativePersonInfo（个人）- PersonID（PK）- CustomerID（FK）- Nationality- ResidenceStatusAdminCases（行政案件）- AdminCaseID（PK）- CustomerID（FK）- CaseName- Status- ExpireDateInvoices（請求）- InvoiceID（PK）- CustomerID（FK）- Amount- StatusPayments（入金）- PaymentID（PK）- InvoiceID（FK）- PaymentAmountDeposits（預り金）- DepositID（PK）- CustomerID（FK）- BalanceTasks（タスク）- TaskID（PK）- CustomerID（FK）- TaskTitle- DueDateNotes（メモ）- NoteID（PK）- CustomerID（FK）- NoteTextLogs（日志）- LogID（PK）- UserID- Action- DateTime
+三、功能模块说明
+1. 客户管理- 客户注册（个人/法人）- 业务类型选择（行政/税务/両方）- 客户详情统一入口2. 行政书士模块- 行政案件管理- 在留资格管理- 面谈记录- 提交文件管理3. 税理士模块- 顾问合同- 月次资料- 月次业务- 年末调整4. 财务模块- 請求- 入金- 預り金- 預り金精算5. 事务所管理- タスク- 社内請求- 承認- 用户管理6. 文件管理- 顧客フォルダ- 行政フォルダ- 税理士フォルダ7. 日志系统- 登录日志- 操作记录- 删除记录
+四、画面设计
+1. メイン画面- 顧客検索- 行政書士 / 税理士 / 管理入口2. 顧客詳細画面- 左：共通情報- 右：法人 / 個人情報- 中：ワンクリックボタン- 下：メモ・タスク・書類3. 行政書士画面- 案件一覧- 面談記録- 書類管理4. 税理士画面- 月次管理- 請求・入金- 申告期限
+五、操作逻辑
+所有操作从客户开始：顧客 → 行政 / 税务 → 請求 → 入金 → 預り金 → タスク → メモ支持：- ワンクリック跳转- 顧客过滤- 履歴追踪
+六、权限与安全
+- 用户角色（管理员/员工）- 数据访问控制- 操作日志记录- 自动备份（Server）
+七、部署结构
+客户端（FileMaker Pro）→ Server→ 数据库→ 文件服务器（NAS）
+八、扩展功能
+- Google日历联动- 自动提醒- 报表系统- BI分析

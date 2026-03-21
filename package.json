@@ -1,0 +1,23 @@
+{
+  "name": "jimusho-cms",
+  "version": "0.1.0",
+  "private": true,
+  "description": "事務所管理システム — 行政書士 + 税理士事務所向け内部管理後台",
+  "scripts": {
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev:backend": "npm run start:dev --prefix backend",
+    "build:frontend": "npm run build --prefix frontend",
+    "build:backend": "npm run build --prefix backend",
+    "test:frontend": "npm test --prefix frontend",
+    "test:backend": "npm test --prefix backend",
+    "lint:frontend": "npm run lint --prefix frontend",
+    "lint:backend": "npm run lint --prefix backend",
+    "deploy": "bash scripts/deploy.sh",
+    "backup:db": "bash scripts/backup-db.sh",
+    "backup:files": "bash scripts/backup-files.sh",
+    "restore:db": "bash scripts/restore-db.sh"
+  },
+  "keywords": ["cms", "jimusho", "management"],
+  "author": "",
+  "license": "UNLICENSED"
+}

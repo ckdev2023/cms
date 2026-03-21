@@ -1,0 +1,145 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { CustomerTypeLabel, ServiceTypeLabel, CustomerStatusLabel, StaffRelationTypeLabel } from '@/constants/enum-labels'
+import type { CustomerType, ServiceType, CustomerStatus, StaffRelationType } from '@/constants/enums'
+import type { CustomerDetail } from '@/types/customer'
+
+defineOptions({ name: 'CustomerBasicInfoTab' })
+
+const props = defineProps<{
+  customer: CustomerDetail
+}>()
+
+const emit = defineEmits<{
+  edit: []
+}>()
+
+const { t } = useI18n({ useScope: 'global' })
+const hasCompanyInfo = computed(() => !!props.customer.companyInfo)
+const hasPersonInfo = computed(() => !!props.customer.personInfo)
+const hasStaffRelations = computed(() => props.customer.staffRelations?.length > 0)
+</script>
+
+<template>
+  <div class="basic-info-tab">
+    <div class="basic-info-tab__section-header">
+      <h4>{{ t('detailViews.customer.sharedInfo') }}</h4>
+      <el-button type="primary" size="small" @click="emit('edit')">
+        {{ t('common.edit') }}
+      </el-button>
+    </div>
+
+    <el-descriptions :column="2" border>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.customerCode')">
+        {{ customer.customerCode }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.customerType')">
+        <el-tag size="small">
+          {{ CustomerTypeLabel[customer.customerType as CustomerType] }}
+        </el-tag>
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.customerName')">
+        {{ customer.customerName }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.serviceType')">
+        <el-tag size="small" type="info">
+          {{ ServiceTypeLabel[customer.serviceType as ServiceType] }}
+        </el-tag>
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.phone')">
+        {{ customer.phone ?? '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.email')">
+        {{ customer.email ?? '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.address')" :span="2">
+        {{ customer.address ?? '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.owner')">
+        {{ customer.ownerName ?? '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.status')">
+        <el-tag
+          size="small"
+          :type="customer.status === 'ACTIVE' ? 'success' : 'danger'"
+        >
+          {{ CustomerStatusLabel[customer.status as CustomerStatus] }}
+        </el-tag>
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.createdAt')">
+        {{ customer.createdAt?.slice(0, 10) ?? '-' }}
+      </el-descriptions-item>
+      <el-descriptions-item :label="t('detailViews.customer.basicFields.updatedAt')">
+        {{ customer.updatedAt?.slice(0, 10) ?? '-' }}
+      </el-descriptions-item>
+    </el-descriptions>
+
+    <template v-if="hasCompanyInfo">
+      <h4 class="basic-info-tab__sub-title">{{ t('detailViews.customer.companyInfoTitle') }}</h4>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.corporationNumber')">
+          {{ customer.companyInfo!.corporationNumber ?? '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.fiscalMonth')">
+          {{ customer.companyInfo!.fiscalMonth ? `${customer.companyInfo!.fiscalMonth}${t('dialogs.customerForm.month')}` : '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.representativeName')">
+          {{ customer.companyInfo!.representativeName ?? '-' }}
+        </el-descriptions-item>
+      </el-descriptions>
+    </template>
+
+    <template v-if="hasPersonInfo">
+      <h4 class="basic-info-tab__sub-title">{{ t('detailViews.customer.personalInfoTitle') }}</h4>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.nationality')">
+          {{ customer.personInfo!.nationality ?? '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.residenceStatus')">
+          {{ customer.personInfo!.residenceStatus ?? '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.residenceExpireDate')">
+          {{ customer.personInfo!.residenceExpireDate ?? '-' }}
+        </el-descriptions-item>
+      </el-descriptions>
+    </template>
+
+    <template v-if="hasStaffRelations">
+      <h4 class="basic-info-tab__sub-title">{{ t('detailViews.customer.staffRelationsTitle') }}</h4>
+      <el-table :data="customer.staffRelations" border size="small" style="width: 100%">
+        <el-table-column prop="user.displayName" :label="t('detailViews.customer.staffName')" min-width="160" />
+        <el-table-column :label="t('detailViews.customer.relation')" width="120" align="center">
+          <template #default="{ row }">
+            <el-tag size="small" type="info">
+              {{ StaffRelationTypeLabel[row.relationType as StaffRelationType] ?? row.relationType }}
+            </el-tag>
+          </template>
+        </el-table-column>
+      </el-table>
+    </template>
+  </div>
+</template>
+
+<style scoped lang="scss">
+.basic-info-tab {
+  &__section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+
+    h4 {
+      margin: 0;
+      font-size: 15px;
+      color: #303133;
+    }
+  }
+
+  &__sub-title {
+    margin: 20px 0 12px;
+    font-size: 15px;
+    color: #303133;
+  }
+}
+</style>

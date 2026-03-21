@@ -1,0 +1,17 @@
+事务所管理系统详细功能说明（开发用）
+一、系统总体说明
+本系统用于行政书士与税理士事务所一体化管理，采用客户中心模式，实现业务、财务与内部管理统一。
+二、客户管理模块
+功能： - 支持个人/法人注册 - 支持行政书士/税理士/双业务选择 - 客户基础信息管理 - 客户详情统一入口 字段：CustomerID, CustomerCode, CustomerType, CustomerName, Phone, Email, Address, ServiceType
+三、行政书士模块
+功能： - 行政案件管理 - 在留资格管理 - 面谈记录 - 提交资料管理 - 行政任务 字段：AdminCaseID, CustomerID, ApplicantName, ResidenceStatus, ExpireDate, Status
+四、税理士模块
+功能： - 顾问合同管理 - 月次资料管理 - 月次业务进度 - 年末调整 - 申报期限管理 字段：MonthlyDocuments, MonthlyWork, TaxContracts
+五、财务模块
+功能： - 请款管理 - 收款管理 - 预收款管理 - 预收款结算 字段：Invoices, Payments, Deposits
+六、事务所管理模块
+功能： - 任务管理 - 内部申请与审批 - 用户管理 - 操作日志 字段：Tasks, InternalClaims, Users, Logs
+七、文件管理模块
+功能： - 客户文件夹管理 - 行政/税务文件分离 - 文件路径存储与一键打开 字段：FilePath, CustomerID
+八、系统特点
+1. 客户为中心 2. 一键跳转各模块 3. 支持双业务体系 4. 文件分类清晰 5. 操作日志完整
