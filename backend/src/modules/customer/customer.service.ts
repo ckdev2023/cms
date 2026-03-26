@@ -9,7 +9,11 @@ import { Repository, Brackets } from 'typeorm'
 import { Customer } from './entities/customer.entity'
 import { CompanyInfo } from './entities/company-info.entity'
 import { PersonInfo } from './entities/person-info.entity'
-import { CreateCustomerDto } from './dto/create-customer.dto'
+import {
+  CreateCustomerDto,
+  CompanyInfoDto,
+  PersonInfoDto,
+} from './dto/create-customer.dto'
 import { UpdateCustomerDto } from './dto/update-customer.dto'
 import { QueryCustomerDto } from './dto/query-customer.dto'
 import { CustomerType } from '../../common/constants/enums'
@@ -45,22 +49,22 @@ export class CustomerService {
 
     const saved = await this.customerRepo.save(customer)
 
-    if (dto.customerType === CustomerType.COMPANY && dto.companyInfo) {
+    if (this.hasCompanyDtoContent(dto.companyInfo)) {
       const ci = this.companyInfoRepo.create({
         customerId: saved.id,
-        corporationNumber: dto.companyInfo.corporationNumber ?? null,
-        fiscalMonth: dto.companyInfo.fiscalMonth ?? null,
-        representativeName: dto.companyInfo.representativeName ?? null,
+        corporationNumber: dto.companyInfo!.corporationNumber ?? null,
+        fiscalMonth: dto.companyInfo!.fiscalMonth ?? null,
+        representativeName: dto.companyInfo!.representativeName ?? null,
       })
       await this.companyInfoRepo.save(ci)
     }
 
-    if (dto.customerType === CustomerType.PERSONAL && dto.personInfo) {
+    if (this.hasPersonDtoContent(dto.personInfo)) {
       const pi = this.personInfoRepo.create({
         customerId: saved.id,
-        nationality: dto.personInfo.nationality ?? null,
-        residenceStatus: dto.personInfo.residenceStatus ?? null,
-        residenceExpireDate: dto.personInfo.residenceExpireDate
+        nationality: dto.personInfo!.nationality ?? null,
+        residenceStatus: dto.personInfo!.residenceStatus ?? null,
+        residenceExpireDate: dto.personInfo!.residenceExpireDate
           ? new Date(dto.personInfo.residenceExpireDate)
           : null,
       })
@@ -190,7 +194,7 @@ export class CustomerService {
         }
       }
     } else {
-      if (customer.customerType === CustomerType.COMPANY && dto.companyInfo) {
+      if (dto.companyInfo !== undefined && this.hasCompanyDtoContent(dto.companyInfo)) {
         if (customer.companyInfo) {
           Object.assign(customer.companyInfo, {
             corporationNumber: dto.companyInfo.corporationNumber ?? customer.companyInfo.corporationNumber,
@@ -201,13 +205,15 @@ export class CustomerService {
         } else {
           const ci = this.companyInfoRepo.create({
             customerId: id,
-            ...dto.companyInfo,
+            corporationNumber: dto.companyInfo.corporationNumber ?? null,
+            fiscalMonth: dto.companyInfo.fiscalMonth ?? null,
+            representativeName: dto.companyInfo.representativeName ?? null,
           })
           await this.companyInfoRepo.save(ci)
         }
       }
 
-      if (customer.customerType === CustomerType.PERSONAL && dto.personInfo) {
+      if (dto.personInfo !== undefined && this.hasPersonDtoContent(dto.personInfo)) {
         if (customer.personInfo) {
           Object.assign(customer.personInfo, {
             nationality: dto.personInfo.nationality ?? customer.personInfo.nationality,
@@ -263,6 +269,24 @@ export class CustomerService {
       where: { customerCode: code },
     })
     return count > 0
+  }
+
+  private hasCompanyDtoContent(info?: CompanyInfoDto | null): boolean {
+    if (!info) return false
+    return !!(
+      info.corporationNumber?.trim() ||
+      info.representativeName?.trim() ||
+      info.fiscalMonth != null
+    )
+  }
+
+  private hasPersonDtoContent(info?: PersonInfoDto | null): boolean {
+    if (!info) return false
+    return !!(
+      info.nationality?.trim() ||
+      info.residenceStatus?.trim() ||
+      info.residenceExpireDate
+    )
   }
 
   private async generateCustomerCode(type: CustomerType): Promise<string> {
