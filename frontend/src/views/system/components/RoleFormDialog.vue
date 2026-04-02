@@ -1,24 +1,22 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
-import type { FormInstance, FormRules } from 'element-plus'
+import type { ElTree, FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import type { ElTree } from 'element-plus'
-import { createRole, updateRole, getPermissionTree } from '@/api/system'
-import type { SystemRole, CreateRoleParams, PermissionGroup } from '@/types/system'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-defineOptions({ name: 'RoleFormDialog' })
-const { t } = useI18n()
+import { createRole, getPermissionTree, updateRole } from '@/api/system'
+import type { CreateRoleParams, PermissionGroup, SystemRole } from '@/types/system'
 
 const props = defineProps<{
   modelValue: boolean
   editData: SystemRole | null
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   saved: []
 }>()
+defineOptions({ name: 'RoleFormDialog' })
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const treeRef = ref<InstanceType<typeof ElTree>>()
@@ -89,6 +87,11 @@ const rules = computed<FormRules>(() => ({
   ],
 }))
 
+/**
+ * 拉取角色编辑器所需的权限树数据。
+ *
+ * @returns 无返回值
+ */
 async function loadPermissions() {
   try {
     const res = await getPermissionTree()
@@ -114,6 +117,12 @@ watch(
   },
 )
 
+/**
+ * 将待编辑角色的数据写入表单和权限树。
+ *
+ * @param role - 当前正在编辑的角色记录
+ * @returns 无返回值
+ */
 function populateForm(role: SystemRole) {
   form.roleName = role.roleName
   form.roleCode = role.roleCode
@@ -126,6 +135,11 @@ function populateForm(role: SystemRole) {
   })
 }
 
+/**
+ * 清空角色表单与权限树选中状态，准备创建新角色。
+ *
+ * @returns 无返回值
+ */
 function resetForm() {
   form.roleName = ''
   form.roleCode = ''
@@ -142,6 +156,11 @@ function getCheckedPermissionIds(): string[] {
   return checkedKeys.filter((key) => !key.startsWith('module:'))
 }
 
+/**
+ * 校验角色表单并提交创建或更新请求。
+ *
+ * @returns 无返回值
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
@@ -179,6 +198,12 @@ function handleClose() {
   emit('update:modelValue', false)
 }
 
+/**
+ * 根据全选状态批量勾选或清空所有角色权限。
+ *
+ * @param checked - 全选复选框当前是否选中
+ * @returns 无返回值
+ */
 function handleCheckAll(checked: boolean) {
   if (!treeRef.value) return
   if (checked) {
@@ -239,7 +264,7 @@ function handleCheckAll(checked: boolean) {
           <div style="margin-bottom: 8px">
             <el-checkbox
               :indeterminate="false"
-              @change="(val: any) => handleCheckAll(val)"
+              @change="handleCheckAll"
             >
               {{ t('dialogs.roleForm.selectAll') }}
             </el-checkbox>

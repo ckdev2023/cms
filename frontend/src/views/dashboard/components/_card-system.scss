@@ -1,0 +1,72 @@
+// ============================================================
+// Dashboard Card System — Shared Visual Patterns
+// ============================================================
+// Imported once in DashboardView.vue (unscoped) so every child
+// card component can consume these primitives directly.
+// All class names are prefixed `dc-` to avoid global collisions.
+// ============================================================
+
+:root {
+  --app-dc-metric-xl: 28px;
+  --app-dc-metric-lg: 22px;
+  --app-dc-icon-size: 36px;
+}
+
+// ---- Empty state wrapper ----
+
+.dc-empty {
+  padding: var(--app-spacing-lg) 0;
+}
+
+// ---- List row (clickable feed / timeline item) ----
+
+.dc-list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--app-spacing-md);
+  padding: var(--app-spacing-sm) var(--app-spacing-md);
+  border-radius: var(--app-radius-base);
+  transition: background-color var(--app-transition-base);
+
+  &:hover {
+    background-color: var(--app-bg-hover);
+  }
+
+  & + & {
+    border-top: 1px solid var(--app-border-color-light);
+  }
+
+  &--clickable {
+    cursor: pointer;
+  }
+}
+
+// ---- Icon badge (colored square-ish pill with icon) ----
+
+.dc-icon-badge {
+  width: var(--app-dc-icon-size);
+  height: var(--app-dc-icon-size);
+  border-radius: var(--app-radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+// ---- Metric number (hero KPI values) ----
+
+.dc-metric {
+  font-weight: var(--app-font-weight-bold);
+  color: var(--app-text-primary);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+
+  &--xl {
+    font-size: var(--app-dc-metric-xl);
+  }
+
+  &--lg {
+    font-size: var(--app-dc-metric-lg);
+  }
+}

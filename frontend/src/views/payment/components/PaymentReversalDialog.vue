@@ -6,19 +6,17 @@ import { ElMessage } from 'element-plus'
 import { reversePayment } from '@/api/payment'
 import { useSubmitLock } from '@/composables/useSubmitLock'
 
-defineOptions({ name: 'PaymentReversalDialog' })
-const { t } = useI18n()
-
 const props = defineProps<{
   modelValue: boolean
   paymentId: string
   paymentNo: string
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   reversed: []
 }>()
+defineOptions({ name: 'PaymentReversalDialog' })
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const { submitting, withLock } = useSubmitLock()

@@ -1,24 +1,26 @@
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { Plus, Refresh,Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Search, Refresh } from '@element-plus/icons-vue'
+import { computed, reactive,ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+
+import { deleteCustomer,getCustomers } from '@/api/customer'
 import PageList from '@/components/PageList.vue'
 import ProTable from '@/components/ProTable.vue'
-import CustomerFormDialog from './components/CustomerFormDialog.vue'
-import { useAppStore } from '@/stores/app'
-import { getCustomers, deleteCustomer } from '@/api/customer'
-import { useProTable } from '@/composables/useProTable'
 import { useConfirm } from '@/composables/useConfirm'
-import { CustomerType, ServiceType, CustomerStatus } from '@/constants/enums'
+import { useProTable } from '@/composables/useProTable'
 import {
+  CustomerStatusLabel,
   CustomerTypeLabel,
   ServiceTypeLabel,
-  CustomerStatusLabel,
 } from '@/constants/enum-labels'
+import { CustomerStatus,CustomerType, ServiceType } from '@/constants/enums'
+import { useAppStore } from '@/stores/app'
 import type { ProTableColumn } from '@/types/components'
 import type { CustomerItem, CustomerQueryParams } from '@/types/customer'
-import { useI18n } from 'vue-i18n'
+
+import CustomerFormDialog from './components/CustomerFormDialog.vue'
 
 defineOptions({ name: 'CustomerListView' })
 
@@ -88,13 +90,25 @@ function handleSaved() {
   fetchData()
 }
 
-function doSearch() {
-  const params: Record<string, any> = {}
+/**
+ * 根据当前客户筛选表单构造列表查询参数。
+ *
+ * 仅保留已填写的筛选项，避免把空字符串或未选择值传入列表接口。
+ *
+ * @returns 可直接传给 `handleSearch` 的客户列表查询参数
+ */
+function buildSearchParams(): Record<string, unknown> {
+  const params: Record<string, unknown> = {}
   if (searchForm.keyword) params.keyword = searchForm.keyword
   if (searchForm.customerType) params.customerType = searchForm.customerType
   if (searchForm.serviceType) params.serviceType = searchForm.serviceType
   if (searchForm.status) params.status = searchForm.status
-  handleSearch(params)
+
+  return params
+}
+
+function doSearch() {
+  handleSearch(buildSearchParams())
 }
 
 function doReset() {
@@ -106,12 +120,12 @@ function doReset() {
 }
 
 function handleSortChange(sort: { prop: string; order: string }) {
-  const params: Record<string, any> = {}
+  const params = buildSearchParams()
   if (sort.prop && sort.order) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'
   }
-  handleSearch({ ...searchForm, ...params })
+  handleSearch(params)
 }
 
 function formatDate(dateStr: string) {

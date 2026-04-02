@@ -1,31 +1,30 @@
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
+import { Delete, Download, Edit, Plus, Refresh, Search, View } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import {
-  Plus,
-  Search,
-  Refresh,
-  Download,
-  View,
-  Edit,
-  Delete,
-} from '@element-plus/icons-vue'
-import PageList from '@/components/PageList.vue'
-import ProTable from '@/components/ProTable.vue'
-import FileUploadDialog from './components/FileUploadDialog.vue'
-import FileEditDialog from './components/FileEditDialog.vue'
-import FilePreviewDialog from './components/FilePreviewDialog.vue'
-import { useAppStore } from '@/stores/app'
-import { getFiles, deleteFile, downloadFile } from '@/api/file'
-import { useProTable } from '@/composables/useProTable'
-import { useConfirm } from '@/composables/useConfirm'
-import { BusinessType } from '@/constants/enums'
-import { BusinessTypeLabel } from '@/constants/enum-labels'
-import type { ProTableColumn } from '@/types/components'
-import type { FileItem, FileQueryParams } from '@/types/file'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { deleteFile, downloadFile, getFiles } from '@/api/file'
+import PageList from '@/components/PageList.vue'
+import ProTable from '@/components/ProTable.vue'
+import { useConfirm } from '@/composables/useConfirm'
+import { useProTable } from '@/composables/useProTable'
+import { BusinessTypeLabel } from '@/constants/enum-labels'
+import { BusinessType } from '@/constants/enums'
+import { useAppStore } from '@/stores/app'
+import type { ProTableColumn } from '@/types/components'
+import type { FileItem, FileQueryParams } from '@/types/file'
+
+import FileEditDialog from './components/FileEditDialog.vue'
+import FilePreviewDialog from './components/FilePreviewDialog.vue'
+import FileUploadDialog from './components/FileUploadDialog.vue'
+
 defineOptions({ name: 'FileListView' })
+
+type FileSortChange = {
+  prop: string
+  order: string | null
+}
 
 const { confirmDelete } = useConfirm()
 const appStore = useAppStore()
@@ -65,6 +64,7 @@ const editVisible = ref(false)
 const previewVisible = ref(false)
 const editingFile = ref<FileItem | null>(null)
 const previewFile = ref<FileItem | null>(null)
+const previewableExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf'])
 
 function handleUpload() {
   uploadVisible.value = true
@@ -75,9 +75,15 @@ function handleEdit(row: FileItem) {
   editVisible.value = true
 }
 
+/**
+ * 在文件支持在线预览时打开预览弹窗。
+ *
+ * 不支持预览的扩展名会直接提示用户，避免打开空白预览窗口。
+ *
+ * @param row - 当前选中的文件记录
+ */
 function handlePreview(row: FileItem) {
-  const previewable = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf']
-  if (!row.fileExt || !previewable.includes(row.fileExt)) {
+  if (!row.fileExt || !previewableExtensions.has(row.fileExt)) {
     ElMessage.info(t('common.unsupportedPreview'))
     return
   }
@@ -85,6 +91,11 @@ function handlePreview(row: FileItem) {
   previewVisible.value = true
 }
 
+/**
+ * 下载当前文件到本地。
+ *
+ * @param row - 当前选中的文件记录
+ */
 async function handleDownload(row: FileItem) {
   try {
     await downloadFile(row.id, row.fileName)
@@ -93,6 +104,11 @@ async function handleDownload(row: FileItem) {
   }
 }
 
+/**
+ * 确认后删除指定文件并刷新列表。
+ *
+ * @param row - 当前选中的文件记录
+ */
 async function handleDelete(row: FileItem) {
   const ok = await confirmDelete(row.fileName)
   if (!ok) return
@@ -110,14 +126,29 @@ function handleSaved() {
   fetchData()
 }
 
-function doSearch() {
-  const params: Record<string, any> = {}
+/**
+ * 根据当前文件筛选表单构造列表查询参数。
+ *
+ * 仅保留已填写的筛选项，避免把空字符串或未选择值传入文件列表接口。
+ *
+ * @returns 可直接传给 `handleSearch` 的文件列表查询参数
+ */
+function buildSearchParams(): FileQueryParams {
+  const params: FileQueryParams = {}
   if (searchForm.keyword) params.keyword = searchForm.keyword
   if (searchForm.businessType) params.businessType = searchForm.businessType
   if (searchForm.fileExt) params.fileExt = searchForm.fileExt
-  handleSearch(params)
+
+  return params
 }
 
+function doSearch() {
+  handleSearch(buildSearchParams())
+}
+
+/**
+ * 清空当前文件筛选条件并恢复默认列表。
+ */
 function doReset() {
   searchForm.keyword = ''
   searchForm.businessType = undefined
@@ -125,13 +156,18 @@ function doReset() {
   handleReset()
 }
 
-function handleSortChange(sort: { prop: string; order: string }) {
-  const params: Record<string, any> = {}
+/**
+ * 按当前筛选条件和表格排序状态重新拉取文件列表。
+ *
+ * @param sort - 当前表格返回的排序字段和方向
+ */
+function handleSortChange(sort: FileSortChange) {
+  const params = buildSearchParams()
   if (sort.prop && sort.order) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'
   }
-  handleSearch({ ...searchForm, ...params })
+  handleSearch(params)
 }
 
 function formatDate(dateStr: string) {
@@ -139,6 +175,12 @@ function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString(appStore.locale === 'zh-CN' ? 'zh-CN' : 'ja-JP')
 }
 
+/**
+ * 将字节数格式化为便于列表展示的文本。
+ *
+ * @param bytes - 文件大小的字节数
+ * @returns 适合表格展示的文件大小文本
+ */
 function formatSize(bytes: number | null): string {
   if (bytes === null || bytes === undefined) return '-'
   if (bytes < 1024) return `${bytes} B`

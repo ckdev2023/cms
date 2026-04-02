@@ -1,24 +1,25 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import ProTable from '@/components/ProTable.vue'
-import AdminCaseFormDialog from '@/views/admin-case/components/AdminCaseFormDialog.vue'
-import { getAdminCases, deleteAdminCase } from '@/api/admin-case'
-import { useConfirm } from '@/composables/useConfirm'
-import { AdminCaseStatus } from '@/constants/enums'
-import { AdminCaseStatusLabel } from '@/constants/enum-labels'
-import { useLocaleFormatter } from '@/utils/locale-format'
-import type { ProTableColumn } from '@/types/components'
-import type { AdminCaseItem } from '@/types/admin-case'
+import { useRouter } from 'vue-router'
 
-defineOptions({ name: 'CustomerAdminCasesTab' })
+import { deleteAdminCase, getAdminCases } from '@/api/admin-case'
+import ProTable from '@/components/ProTable.vue'
+import { useConfirm } from '@/composables/useConfirm'
+import { AdminCaseStatusLabel } from '@/constants/enum-labels'
+import { AdminCaseStatus } from '@/constants/enums'
+import type { AdminCaseItem } from '@/types/admin-case'
+import type { ProTableColumn } from '@/types/components'
+import { useLocaleFormatter } from '@/utils/locale-format'
+import AdminCaseFormDialog from '@/views/admin-case/components/AdminCaseFormDialog.vue'
 
 const props = defineProps<{
   customerId: string
 }>()
+
+defineOptions({ name: 'CustomerAdminCasesTab' })
 
 const router = useRouter()
 const { confirmDelete } = useConfirm()
@@ -63,6 +64,11 @@ watch(
   { immediate: true },
 )
 
+/**
+ * 按当前客户和分页条件加载行政案件列表。
+ *
+ * @throws {Error} 行政案件列表接口请求失败时由请求层继续抛出
+ */
 async function fetchData() {
   loading.value = true
   try {
@@ -99,6 +105,12 @@ function handleRowClick(row: AdminCaseItem) {
   router.push(`/admin-cases/${row.id}`)
 }
 
+/**
+ * 删除指定行政案件，并在成功后刷新当前客户下的案件列表。
+ *
+ * @param row - 当前准备删除的行政案件记录
+ * @throws {Error} 删除行政案件请求失败时由请求层统一提示并继续抛出
+ */
 async function handleDelete(row: AdminCaseItem) {
   const ok = await confirmDelete(row.caseName)
   if (!ok) return
@@ -121,6 +133,12 @@ function isExpired(dateStr: string | null): boolean {
   return new Date(dateStr).getTime() < Date.now()
 }
 
+/**
+ * 判断行政案件是否进入到期前 30 天内的提醒窗口。
+ *
+ * @param dateStr - 行政案件的到期日期字符串，为空时视为无需提醒
+ * @returns 命中临近到期区间时返回 true
+ */
 function isExpiringSoon(dateStr: string | null): boolean {
   if (!dateStr) return false
   const diff = new Date(dateStr).getTime() - Date.now()
@@ -198,18 +216,8 @@ function isExpiringSoon(dateStr: string | null): boolean {
   }
 
   &__count {
-    font-size: 13px;
-    color: #909399;
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
   }
-}
-
-.expire-warning {
-  color: #e6a23c;
-  font-weight: 600;
-}
-
-.expire-danger {
-  color: #f56c6c;
-  font-weight: 600;
 }
 </style>

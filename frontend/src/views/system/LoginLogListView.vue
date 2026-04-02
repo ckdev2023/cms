@@ -1,16 +1,17 @@
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
-import { Search, Refresh } from '@element-plus/icons-vue'
+import { Refresh, Search } from '@element-plus/icons-vue'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { getLoginLogs } from '@/api/log'
 import PageList from '@/components/PageList.vue'
 import ProTable from '@/components/ProTable.vue'
-import { getLoginLogs } from '@/api/log'
 import { useProTable } from '@/composables/useProTable'
-import { LoginType, OperationResult } from '@/constants/enums'
 import { LoginTypeLabel, OperationResultLabel } from '@/constants/enum-labels'
-import { useLocaleFormatter } from '@/utils/locale-format'
+import { LoginType, OperationResult } from '@/constants/enums'
 import type { ProTableColumn } from '@/types/components'
 import type { LoginLogItem, LoginLogQueryParams } from '@/types/log'
+import { useLocaleFormatter } from '@/utils/locale-format'
 
 defineOptions({ name: 'LoginLogListView' })
 
@@ -50,8 +51,13 @@ const {
   handleReset,
 } = useProTable<LoginLogItem>(getLoginLogs)
 
+/**
+ * 汇总筛选表单与时间范围，触发登录日志检索。
+ *
+ * @returns 无返回值
+ */
 function doSearch() {
-  const params: Record<string, any> = {}
+  const params: Record<string, unknown> = {}
   if (searchForm.keyword) params.keyword = searchForm.keyword
   if (searchForm.loginType) params.loginType = searchForm.loginType
   if (searchForm.result) params.result = searchForm.result
@@ -60,6 +66,11 @@ function doSearch() {
   handleSearch(params)
 }
 
+/**
+ * 清空当前登录日志筛选条件，并恢复默认列表状态。
+ *
+ * @returns 无返回值
+ */
 function doReset() {
   searchForm.keyword = ''
   searchForm.loginType = undefined
@@ -68,8 +79,16 @@ function doReset() {
   handleReset()
 }
 
+/**
+ * 根据表格排序事件同步登录日志列表的排序字段。
+ *
+ * @param sort - 当前表格返回的排序字段与方向
+ * @param sort.prop - 后端排序使用的字段名
+ * @param sort.order - Element Plus 返回的排序方向
+ * @returns 无返回值
+ */
 function handleSortChange(sort: { prop: string; order: string }) {
-  const params: Record<string, any> = {}
+  const params: Record<string, unknown> = {}
   if (sort.prop && sort.order) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'

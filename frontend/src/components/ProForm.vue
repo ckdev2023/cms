@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
 import type { FormInstance, FormRules } from 'element-plus'
-import type { ProFormField } from '@/types/components'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-defineOptions({ name: 'ProForm' })
+import type { ProFormField } from '@/types/components'
+
+type FormModel = Record<string, unknown>
 
 interface Props {
   fields: ProFormField[]
-  model: Record<string, any>
+  model: FormModel
   rules?: FormRules
   labelWidth?: string
   labelPosition?: 'left' | 'right' | 'top'
@@ -27,14 +28,26 @@ const props = withDefaults(defineProps<Props>(), {
   columns: 1,
   inline: false,
   disabled: false,
+  rules: undefined,
   showActions: true,
   submitText: undefined,
   cancelText: undefined,
   loading: false,
 })
+
+const emit = defineEmits<{
+  submit: [model: FormModel]
+  cancel: []
+}>()
+
+defineOptions({ name: 'ProForm' })
+
 const { t } = useI18n({ useScope: 'global' })
 const resolvedSubmitText = computed(() => props.submitText || t('common.save'))
 const resolvedCancelText = computed(() => props.cancelText || t('common.cancel'))
+// Element Plus 各表单控件的 modelValue 类型不一致，统一代理时需要保留宽类型。
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const formModel = computed(() => props.model as Record<string, any>)
 
 function inputPlaceholder(label: string) {
   return t('common.enterField', { field: label })
@@ -43,11 +56,6 @@ function inputPlaceholder(label: string) {
 function selectPlaceholder(label: string) {
   return t('common.selectField', { field: label })
 }
-
-const emit = defineEmits<{
-  submit: [model: Record<string, any>]
-  cancel: []
-}>()
 
 const formRef = ref<FormInstance>()
 const colSpan = computed(() => Math.floor(24 / props.columns))
@@ -99,7 +107,7 @@ defineExpose({ validate, resetFields, formRef })
 
         <el-input
           v-else-if="field.type === 'input'"
-          v-model="model[field.prop]"
+          v-model="formModel[field.prop]"
           :placeholder="field.placeholder || inputPlaceholder(field.label)"
           :disabled="field.disabled"
           clearable
@@ -108,7 +116,7 @@ defineExpose({ validate, resetFields, formRef })
 
         <el-select
           v-else-if="field.type === 'select'"
-          v-model="model[field.prop]"
+          v-model="formModel[field.prop]"
           :placeholder="field.placeholder || selectPlaceholder(field.label)"
           :disabled="field.disabled"
           clearable
@@ -125,7 +133,7 @@ defineExpose({ validate, resetFields, formRef })
 
         <el-date-picker
           v-else-if="field.type === 'date'"
-          v-model="model[field.prop]"
+          v-model="formModel[field.prop]"
           type="date"
           :placeholder="field.placeholder || selectPlaceholder(field.label)"
           :disabled="field.disabled"
@@ -134,7 +142,7 @@ defineExpose({ validate, resetFields, formRef })
 
         <el-date-picker
           v-else-if="field.type === 'daterange'"
-          v-model="model[field.prop]"
+          v-model="formModel[field.prop]"
           type="daterange"
           range-separator="〜"
           :start-placeholder="t('common.startDate')"
@@ -172,7 +180,7 @@ defineExpose({ validate, resetFields, formRef })
 
             <el-input
               v-else-if="field.type === 'input'"
-              v-model="model[field.prop]"
+              v-model="formModel[field.prop]"
               :placeholder="field.placeholder || inputPlaceholder(field.label)"
               :disabled="field.disabled"
               clearable
@@ -181,7 +189,7 @@ defineExpose({ validate, resetFields, formRef })
 
             <el-input
               v-else-if="field.type === 'textarea'"
-              v-model="model[field.prop]"
+              v-model="formModel[field.prop]"
               type="textarea"
               :placeholder="field.placeholder || inputPlaceholder(field.label)"
               :disabled="field.disabled"
@@ -191,7 +199,7 @@ defineExpose({ validate, resetFields, formRef })
 
             <el-input-number
               v-else-if="field.type === 'number'"
-              v-model="model[field.prop]"
+              v-model="formModel[field.prop]"
               :placeholder="field.placeholder"
               :disabled="field.disabled"
               v-bind="field.props"
@@ -200,7 +208,7 @@ defineExpose({ validate, resetFields, formRef })
 
             <el-select
               v-else-if="field.type === 'select'"
-              v-model="model[field.prop]"
+              v-model="formModel[field.prop]"
               :placeholder="field.placeholder || selectPlaceholder(field.label)"
               :disabled="field.disabled"
               clearable
@@ -218,7 +226,7 @@ defineExpose({ validate, resetFields, formRef })
 
             <el-date-picker
               v-else-if="field.type === 'date'"
-              v-model="model[field.prop]"
+              v-model="formModel[field.prop]"
               type="date"
               :placeholder="field.placeholder || selectPlaceholder(field.label)"
               :disabled="field.disabled"
@@ -228,7 +236,7 @@ defineExpose({ validate, resetFields, formRef })
 
             <el-date-picker
               v-else-if="field.type === 'daterange'"
-              v-model="model[field.prop]"
+              v-model="formModel[field.prop]"
               type="daterange"
               range-separator="〜"
               :start-placeholder="t('common.startDate')"
@@ -240,7 +248,7 @@ defineExpose({ validate, resetFields, formRef })
 
             <el-radio-group
               v-else-if="field.type === 'radio'"
-              v-model="model[field.prop]"
+              v-model="formModel[field.prop]"
               :disabled="field.disabled"
               v-bind="field.props"
             >
@@ -256,7 +264,7 @@ defineExpose({ validate, resetFields, formRef })
 
             <el-checkbox-group
               v-else-if="field.type === 'checkbox'"
-              v-model="model[field.prop]"
+              v-model="formModel[field.prop]"
               :disabled="field.disabled"
               v-bind="field.props"
             >
@@ -272,7 +280,7 @@ defineExpose({ validate, resetFields, formRef })
 
             <el-switch
               v-else-if="field.type === 'switch'"
-              v-model="model[field.prop]"
+              v-model="formModel[field.prop]"
               :disabled="field.disabled"
               v-bind="field.props"
             />
@@ -280,14 +288,32 @@ defineExpose({ validate, resetFields, formRef })
         </el-col>
       </el-row>
 
-      <el-form-item v-if="showActions">
-        <slot name="actions">
-          <el-button type="primary" :loading="loading" @click="handleSubmit">
-            {{ resolvedSubmitText }}
-          </el-button>
-          <el-button @click="handleCancel">{{ resolvedCancelText }}</el-button>
-        </slot>
-      </el-form-item>
+      <div v-if="showActions" class="pro-form__actions">
+        <el-form-item>
+          <slot name="actions">
+            <el-button type="primary" :loading="loading" @click="handleSubmit">
+              {{ resolvedSubmitText }}
+            </el-button>
+            <el-button @click="handleCancel">{{ resolvedCancelText }}</el-button>
+          </slot>
+        </el-form-item>
+      </div>
     </template>
   </el-form>
 </template>
+
+<style scoped lang="scss">
+.pro-form__actions {
+  padding-top: var(--app-spacing-md);
+  border-top: 1px solid var(--app-border-color-light);
+  margin-top: var(--app-spacing-sm);
+
+  :deep(.el-form-item) {
+    margin-bottom: 0;
+  }
+
+  :deep(.el-button + .el-button) {
+    margin-left: var(--app-spacing-sm);
+  }
+}
+</style>

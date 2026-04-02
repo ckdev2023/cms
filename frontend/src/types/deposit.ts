@@ -1,3 +1,6 @@
+/**
+ * 定义预存金账户、流水与充值抵扣操作的类型。
+ */
 import type { DepositTransactionType, PaymentMethod } from '@/constants/enums'
 
 export interface DepositAccountListItem {

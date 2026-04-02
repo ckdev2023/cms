@@ -1,9 +1,17 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
+
+const navigateToHome = (): void => {
+  router.push('/')
+}
+
+const navigateBack = (): void => {
+  router.back()
+}
 </script>
 
 <template>
@@ -15,16 +23,16 @@ const { t } = useI18n({ useScope: 'global' })
         <circle cx="100" cy="140" r="5" fill="#e6a23c" />
       </svg>
     </div>
-    <h1>403</h1>
-    <p>{{ t('errors.forbiddenTitle') }}</p>
+    <h1 class="forbidden__code">403</h1>
+    <p class="forbidden__title">{{ t('errors.forbiddenTitle') }}</p>
     <p class="forbidden__hint">
       {{ t('errors.forbiddenHint') }}
     </p>
     <div class="forbidden__actions">
-      <el-button type="primary" @click="router.push('/')">
+      <el-button type="primary" @click="navigateToHome">
         {{ t('errors.backHome') }}
       </el-button>
-      <el-button @click="router.back()">
+      <el-button @click="navigateBack">
         {{ t('errors.goBack') }}
       </el-button>
     </div>
@@ -46,22 +54,23 @@ const { t } = useI18n({ useScope: 'global' })
   height: 120px;
 }
 
-.forbidden h1 {
+.forbidden__code {
   font-size: 72px;
   color: #e6a23c;
   margin: 0;
   line-height: 1;
 }
 
-.forbidden p {
+.forbidden__title {
   font-size: 18px;
   color: #909399;
   margin: 0;
 }
 
 .forbidden__hint {
-  font-size: 14px !important;
-  color: #c0c4cc !important;
+  margin: 0;
+  font-size: 14px;
+  color: #c0c4cc;
 }
 
 .forbidden__actions {

@@ -1,3 +1,6 @@
+/**
+ * 定义仪表盘统计卡片、到期提醒与活动流的数据类型。
+ */
 export interface DashboardSummary {
   activeCustomers: number
   activeCases: number

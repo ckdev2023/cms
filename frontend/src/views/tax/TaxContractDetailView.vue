@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted,ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+
+import { getTaxContract } from '@/api/tax'
 import PageDetail from '@/components/PageDetail.vue'
-import TaxContractStatusFlow from './components/TaxContractStatusFlow.vue'
-import TaxContractFormDialog from './components/TaxContractFormDialog.vue'
+import {
+  BillingCycleLabel,
+  TaxContractStatusLabel,
+} from '@/constants/enum-labels'
+import { BillingCycle,TaxContractStatus } from '@/constants/enums'
+import type { TaxContractDetail } from '@/types/tax'
+import { useLocaleFormatter } from '@/utils/locale-format'
+
 import PeriodsTab from './components/PeriodsTab.vue'
 import TaxContractFilesTab from './components/TaxContractFilesTab.vue'
-import { getTaxContract } from '@/api/tax'
-import { TaxContractStatus, BillingCycle } from '@/constants/enums'
-import {
-  TaxContractStatusLabel,
-  BillingCycleLabel,
-} from '@/constants/enum-labels'
-import { useLocaleFormatter } from '@/utils/locale-format'
-import type { TaxContractDetail } from '@/types/tax'
+import TaxContractFormDialog from './components/TaxContractFormDialog.vue'
+import TaxContractStatusFlow from './components/TaxContractStatusFlow.vue'
 
 defineOptions({ name: 'TaxContractDetailView' })
 
@@ -33,6 +35,11 @@ onMounted(() => {
   fetchContract()
 })
 
+/**
+ * 拉取当前税务合约详情并同步页面展示数据。
+ *
+ * @returns 完成请求后更新详情页状态
+ */
 async function fetchContract() {
   loading.value = true
   try {
@@ -66,7 +73,7 @@ function goToCustomer() {
 }
 
 function formatFee(value: number) {
-  if (value == null) return '-'
+  if (value === null || value === undefined) return '-'
   return formatCurrency(value, '¥')
 }
 
@@ -173,21 +180,3 @@ const statusTagType: Record<
   </PageDetail>
 </template>
 
-<style scoped lang="scss">
-.detail-header-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  &__name {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #303133;
-  }
-}
-
-.detail-section {
-  margin-bottom: 16px;
-}
-</style>

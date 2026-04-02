@@ -1,3 +1,6 @@
+/**
+ * 定义文件中心列表、上传与编辑操作使用的类型。
+ */
 import type { BusinessType } from '@/constants/enums'
 
 export interface FileItem {

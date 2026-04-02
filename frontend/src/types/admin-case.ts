@@ -1,3 +1,6 @@
+/**
+ * 定义行政书士案件模块使用的案件、访谈与资料类型。
+ */
 import type { AdminCaseStatus } from '@/constants/enums'
 
 export interface AdminCaseItem {
@@ -40,7 +43,7 @@ export interface CreateAdminCaseParams {
   ownerUserId?: string
 }
 
-export interface UpdateAdminCaseParams extends Partial<CreateAdminCaseParams> {}
+export type UpdateAdminCaseParams = Partial<CreateAdminCaseParams>
 
 export interface AdminCaseQueryParams {
   page?: number
@@ -75,7 +78,7 @@ export interface CreateInterviewParams {
   customerId?: string
 }
 
-export interface UpdateInterviewParams extends Partial<CreateInterviewParams> {}
+export type UpdateInterviewParams = Partial<CreateInterviewParams>
 
 export interface InterviewQueryParams {
   page?: number

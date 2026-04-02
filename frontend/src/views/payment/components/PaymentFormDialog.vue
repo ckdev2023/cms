@@ -15,20 +15,18 @@ import type { CustomerItem } from '@/types/customer'
 import type { InvoiceListItem } from '@/types/invoice'
 import type { CreatePaymentParams } from '@/types/payment'
 
-defineOptions({ name: 'PaymentFormDialog' })
-const { t } = useI18n()
-const { formatNumber } = useLocaleFormatter()
-
 const props = defineProps<{
   modelValue: boolean
   defaultCustomerId?: string
   defaultInvoiceId?: string
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   saved: []
 }>()
+defineOptions({ name: 'PaymentFormDialog' })
+const { t } = useI18n()
+const { formatNumber } = useLocaleFormatter()
 
 const formRef = ref<FormInstance>()
 const { submitting, withLock } = useSubmitLock()
@@ -447,18 +445,18 @@ function formatAmount(val: number): string {
 
 .alloc-summary {
   display: flex;
-  gap: 20px;
-  font-size: 14px;
-  color: #303133;
+  gap: var(--app-spacing-lg);
+  font-size: var(--app-font-size-base);
+  color: var(--app-text-primary);
 
   strong {
-    color: #409eff;
-    font-size: 16px;
+    color: var(--app-color-primary);
+    font-size: var(--app-font-size-lg);
   }
 }
 
 .unalloc-warning {
-  color: #f56c6c;
-  font-weight: 600;
+  color: var(--app-color-danger);
+  font-weight: var(--app-font-weight-semibold);
 }
 </style>

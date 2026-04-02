@@ -1,16 +1,22 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 
 const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
+
+const navigateToHome = (): void => {
+  router.push('/')
+}
 </script>
 
 <template>
   <div class="not-found">
-    <h1>404</h1>
-    <p>{{ t('errors.notFoundTitle') }}</p>
-    <el-button type="primary" @click="router.push('/')">{{ t('errors.backHome') }}</el-button>
+    <h1 class="not-found__code">404</h1>
+    <p class="not-found__title">{{ t('errors.notFoundTitle') }}</p>
+    <el-button type="primary" @click="navigateToHome">
+      {{ t('errors.backHome') }}
+    </el-button>
   </div>
 </template>
 
@@ -23,12 +29,16 @@ const { t } = useI18n({ useScope: 'global' })
   height: 100vh;
   gap: 16px;
 }
-.not-found h1 {
+
+.not-found__code {
   font-size: 72px;
   color: #dcdfe6;
+  margin: 0;
 }
-.not-found p {
+
+.not-found__title {
   font-size: 18px;
   color: #909399;
+  margin: 0;
 }
 </style>

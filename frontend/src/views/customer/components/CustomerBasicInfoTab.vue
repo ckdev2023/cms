@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { CustomerTypeLabel, ServiceTypeLabel, CustomerStatusLabel, StaffRelationTypeLabel } from '@/constants/enum-labels'
-import type { CustomerType, ServiceType, CustomerStatus, StaffRelationType } from '@/constants/enums'
-import type { CustomerDetail } from '@/types/customer'
 
-defineOptions({ name: 'CustomerBasicInfoTab' })
+import { CustomerStatusLabel, CustomerTypeLabel, ServiceTypeLabel, StaffRelationTypeLabel } from '@/constants/enum-labels'
+import type { CustomerStatus, CustomerType, ServiceType, StaffRelationType } from '@/constants/enums'
+import type { CustomerDetail } from '@/types/customer'
 
 const props = defineProps<{
   customer: CustomerDetail
@@ -14,6 +13,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   edit: []
 }>()
+
+defineOptions({ name: 'CustomerBasicInfoTab' })
 
 const { t } = useI18n({ useScope: 'global' })
 const hasCompanyInfo = computed(() => !!props.customer.companyInfo)
@@ -131,15 +132,15 @@ const hasStaffRelations = computed(() => props.customer.staffRelations?.length >
 
     h4 {
       margin: 0;
-      font-size: 15px;
-      color: #303133;
+      font-size: var(--app-font-size-md);
+      color: var(--app-text-primary);
     }
   }
 
   &__sub-title {
-    margin: 20px 0 12px;
-    font-size: 15px;
-    color: #303133;
+    margin: var(--app-spacing-lg) 0 var(--app-spacing-md);
+    font-size: var(--app-font-size-md);
+    color: var(--app-text-primary);
   }
 }
 </style>

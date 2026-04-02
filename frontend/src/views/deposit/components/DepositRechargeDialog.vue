@@ -1,28 +1,27 @@
 <script setup lang="ts">
-import { ref, reactive, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { PaymentMethod } from '@/constants/enums'
-import { PaymentMethodLabel } from '@/constants/enum-labels'
-import { depositRecharge } from '@/api/deposit'
+import { nextTick, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { getCustomers } from '@/api/customer'
+import { depositRecharge } from '@/api/deposit'
 import { useSubmitLock } from '@/composables/useSubmitLock'
+import { PaymentMethodLabel } from '@/constants/enum-labels'
+import { PaymentMethod } from '@/constants/enums'
 import type { CustomerItem } from '@/types/customer'
 import type { CreateDepositRechargeParams } from '@/types/deposit'
-
-defineOptions({ name: 'DepositRechargeDialog' })
-const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
   defaultCustomerId?: string
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   saved: []
 }>()
+defineOptions({ name: 'DepositRechargeDialog' })
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const { submitting, withLock } = useSubmitLock()
@@ -80,6 +79,9 @@ watch(
   },
 )
 
+/**
+ * 按默认客户与初始支付方式重置充值表单状态。
+ */
 function resetForm() {
   form.customerId = props.defaultCustomerId ?? ''
   form.amount = 0
@@ -88,6 +90,11 @@ function resetForm() {
   nextTick(() => formRef.value?.clearValidate())
 }
 
+/**
+ * 按远程搜索关键字加载可充值的客户选项列表。
+ *
+ * @param query - 客户编号或名称关键字，空字符串时加载默认候选集
+ */
 async function fetchCustomers(query: string) {
   customerLoading.value = true
   try {
@@ -98,6 +105,11 @@ async function fetchCustomers(query: string) {
   }
 }
 
+/**
+ * 将充值表单值转换为预存款充值接口所需的请求体。
+ *
+ * @returns 包含客户、充值金额、收款方式与备注的请求参数
+ */
 function buildPayload(): CreateDepositRechargeParams {
   return {
     customerId: form.customerId,
@@ -107,6 +119,9 @@ function buildPayload(): CreateDepositRechargeParams {
   }
 }
 
+/**
+ * 校验充值表单并提交预存款充值请求。
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return

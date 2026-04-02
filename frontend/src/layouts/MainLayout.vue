@@ -1,35 +1,51 @@
 <script setup lang="ts">
-import { computed, type Component } from 'vue'
-import { useAppStore } from '@/stores/app'
-import { useUserStore } from '@/stores/user'
-import { useTagsViewStore } from '@/stores/tagsView'
+import {
+  Document,
+  Expand,
+  Fold,
+  Folder,
+  Money,
+  Monitor,
+  Setting,
+  SwitchButton,
+  Tickets,
+  User,
+  UserFilled,
+} from '@element-plus/icons-vue'
+import { type Component,computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { useIdleTimeout } from '@/composables/useIdleTimeout'
-import type { AppLocale } from '@/i18n'
-import { P } from '@/constants/permissions'
+
 import Breadcrumb from '@/components/Breadcrumb.vue'
 import TagsView from '@/components/TagsView.vue'
-import { useI18n } from 'vue-i18n'
-import {
-  Fold,
-  Expand,
-  UserFilled,
-  SwitchButton,
-  Monitor,
-  User,
-  Document,
-  Tickets,
-  Money,
-  Folder,
-  Setting,
-} from '@element-plus/icons-vue'
+import { useIdleTimeout } from '@/composables/useIdleTimeout'
+import { P } from '@/constants/permissions'
+import type { AppLocale } from '@/i18n'
+import { useAppStore } from '@/stores/app'
+import { useTagsViewStore } from '@/stores/tagsView'
+import { useUserStore } from '@/stores/user'
+
+interface MenuChild {
+  path: string
+  titleKey: string
+  permissions?: string[]
+}
 
 interface MenuItem {
   path: string
   titleKey: string
   icon: Component
   permissions?: string[]
-  children?: { path: string; titleKey: string; permissions?: string[] }[]
+  children?: MenuChild[]
+}
+
+interface LocalizedMenuChild extends MenuChild {
+  title: string
+}
+
+interface LocalizedMenuItem extends MenuItem {
+  title: string
+  children?: LocalizedMenuChild[]
 }
 
 const appStore = useAppStore()
@@ -40,7 +56,7 @@ const { t } = useI18n({ useScope: 'global' })
 
 useIdleTimeout()
 
-const allMenuItems: MenuItem[] = [
+const allMenuItems: Readonly<MenuItem[]> = [
   { path: '/dashboard', titleKey: 'routes.dashboard', icon: Monitor, permissions: [P.DASHBOARD_VIEW] },
   { path: '/customers', titleKey: 'routes.customers', icon: User, permissions: [P.CUSTOMER_LIST] },
   { path: '/admin-cases', titleKey: 'routes.adminCases', icon: Document, permissions: [P.ADMIN_CASE_LIST] },
@@ -77,7 +93,11 @@ function hasMenuPermission(perms?: string[]): boolean {
   return perms.some((p) => userStore.hasPermission(p))
 }
 
-const menuItems = computed(() =>
+function isMenuItem(item: MenuItem | null): item is MenuItem {
+  return item !== null
+}
+
+const menuItems = computed<MenuItem[]>(() =>
   allMenuItems
     .filter((item) => hasMenuPermission(item.permissions))
     .map((item) => {
@@ -85,9 +105,9 @@ const menuItems = computed(() =>
       const children = item.children.filter((c) => hasMenuPermission(c.permissions))
       return children.length ? { ...item, children } : null
     })
-    .filter(Boolean) as MenuItem[],
+    .filter(isMenuItem),
 )
-const localizedMenuItems = computed(() =>
+const localizedMenuItems = computed<LocalizedMenuItem[]>(() =>
   menuItems.value.map((item) => ({
     ...item,
     title: t(item.titleKey),
@@ -99,16 +119,19 @@ const localizedMenuItems = computed(() =>
 )
 
 const cachedViews = computed(() => Array.from(tagsViewStore.cachedViews))
+const currentRoutePath = computed(() => router.currentRoute.value.path)
 const currentLocale = computed<AppLocale>({
   get: () => appStore.locale,
   set: (value) => appStore.setLocale(value),
 })
+const sidebarWidth = computed(() => (appStore.sidebarCollapsed ? '64px' : '220px'))
 const localeOptions = computed(() => [
   { value: 'zh-CN' as AppLocale, label: t('locale.zhCN') },
   { value: 'ja' as AppLocale, label: t('locale.ja') },
 ])
+const displayName = computed(() => userStore.userInfo?.displayName || t('layout.defaultUser'))
 
-async function handleLogout() {
+async function handleLogout(): Promise<void> {
   await userStore.logout()
   router.push('/login')
 }
@@ -117,7 +140,7 @@ async function handleLogout() {
 <template>
   <el-container class="main-layout">
     <el-aside
-      :width="appStore.sidebarCollapsed ? '64px' : '220px'"
+      :width="sidebarWidth"
       class="sidebar"
     >
       <div class="sidebar__logo">
@@ -131,12 +154,9 @@ async function handleLogout() {
 
       <el-scrollbar>
         <el-menu
-          :default-active="$route.path"
+          :default-active="currentRoutePath"
           :collapse="appStore.sidebarCollapsed"
           router
-          background-color="#304156"
-          text-color="#bfcbd9"
-          active-text-color="#409eff"
           :collapse-transition="false"
         >
           <template v-for="item in localizedMenuItems" :key="item.path">
@@ -166,14 +186,25 @@ async function handleLogout() {
     <el-container class="main-container">
       <el-header class="header">
         <div class="header__left">
-          <el-icon class="header__collapse" @click="appStore.toggleSidebar">
-            <Fold v-if="!appStore.sidebarCollapsed" />
-            <Expand v-else />
-          </el-icon>
+          <button
+            type="button"
+            class="header__collapse-btn"
+            @click="appStore.toggleSidebar"
+          >
+            <el-icon :size="18">
+              <Fold v-if="!appStore.sidebarCollapsed" />
+              <Expand v-else />
+            </el-icon>
+          </button>
           <Breadcrumb />
         </div>
         <div class="header__right">
-          <el-select v-model="currentLocale" size="small" class="header__locale" aria-label="language">
+          <el-select
+            v-model="currentLocale"
+            size="small"
+            class="header__locale"
+            aria-label="language"
+          >
             <el-option
               v-for="option in localeOptions"
               :key="option.value"
@@ -183,8 +214,12 @@ async function handleLogout() {
           </el-select>
           <el-dropdown>
             <span class="header__user">
-              <el-icon><UserFilled /></el-icon>
-              <span>{{ userStore.userInfo?.displayName || t('layout.defaultUser') }}</span>
+              <span class="header__avatar">
+                <el-icon :size="14"><UserFilled /></el-icon>
+              </span>
+              <span class="header__username">
+                {{ displayName }}
+              </span>
             </span>
             <template #dropdown>
               <el-dropdown-menu>
@@ -214,93 +249,184 @@ async function handleLogout() {
 <style scoped lang="scss">
 .main-layout {
   height: 100vh;
+  overflow: hidden;
 }
 
+// ---- Sidebar ----
 .sidebar {
-  background-color: #304156;
-  transition: width 0.3s;
+  background-color: var(--app-sidebar-bg);
+  transition: width var(--app-transition-slow);
   overflow: hidden;
 
+  :deep(.el-menu) {
+    --el-menu-bg-color: var(--app-sidebar-bg);
+    --el-menu-text-color: var(--app-sidebar-text);
+    --el-menu-active-color: var(--app-sidebar-text-active);
+    --el-menu-hover-bg-color: var(--app-sidebar-menu-hover-bg);
+    border-right: none;
+  }
+
+  :deep(.el-sub-menu .el-menu) {
+    --el-menu-bg-color: var(--app-sidebar-bg);
+  }
+
+  :deep(.el-menu-item),
+  :deep(.el-sub-menu__title) {
+    height: 44px;
+    line-height: 44px;
+    margin: 2px 8px;
+    border-radius: var(--app-radius-base);
+    transition: background-color var(--app-transition-fast),
+                color var(--app-transition-fast);
+  }
+
+  :deep(.el-menu-item.is-active) {
+    background-color: var(--app-sidebar-active-bg) !important;
+    color: var(--app-sidebar-text-active);
+  }
+
+  :deep(.el-sub-menu .el-menu-item) {
+    min-width: unset;
+    padding-left: 52px !important;
+  }
+
+  :deep(.el-menu--collapse .el-menu-item),
+  :deep(.el-menu--collapse .el-sub-menu__title) {
+    margin: 2px 8px;
+    padding: 0;
+    justify-content: center;
+  }
+
   &__logo {
-    height: 56px;
+    height: var(--app-header-height);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: #fff;
-    background-color: #263445;
+    background-color: var(--app-sidebar-logo-bg);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     overflow: hidden;
   }
 
   &__logo-text {
-    font-size: 18px;
-    font-weight: 600;
+    font-size: var(--app-font-size-lg);
+    font-weight: var(--app-font-weight-semibold);
+    color: #fff;
     white-space: nowrap;
+    letter-spacing: 0.025em;
   }
 
   &__logo-icon {
-    font-size: 20px;
-    font-weight: 700;
-  }
-
-  .el-menu {
-    border-right: none;
+    font-size: var(--app-font-size-2xl);
+    font-weight: var(--app-font-weight-bold);
+    color: #fff;
   }
 
   .el-scrollbar {
-    height: calc(100vh - 56px);
+    height: calc(100vh - var(--app-header-height));
   }
 }
 
+// ---- Main Container ----
 .main-container {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background-color: var(--app-bg-page);
 }
 
+// ---- Header ----
 .header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid #ebeef5;
-  padding: 0 20px;
-  height: 56px;
-  background: #fff;
+  height: var(--app-header-height);
+  padding: 0 var(--app-spacing-lg);
+  background-color: var(--app-bg-base);
+  border-bottom: 1px solid var(--app-border-color);
+  box-shadow: var(--app-shadow-xs);
+  z-index: 1;
 
   &__left {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--app-spacing-md);
   }
 
-  &__collapse {
-    font-size: 20px;
+  &__collapse-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--app-radius-base);
+    background: transparent;
+    color: var(--app-text-secondary);
     cursor: pointer;
+    transition: all var(--app-transition-fast);
+
     &:hover {
-      color: var(--el-color-primary);
+      background-color: var(--app-bg-hover);
+      color: var(--app-text-primary);
+    }
+
+    &:active {
+      background-color: var(--app-bg-active);
     }
   }
 
   &__right {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: var(--app-spacing-md);
+  }
+
+  &__locale {
+    width: 112px;
   }
 
   &__user {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--app-spacing-sm);
+    padding: var(--app-spacing-xs) var(--app-spacing-sm);
+    border-radius: var(--app-radius-base);
     cursor: pointer;
+    color: var(--app-text-regular);
+    transition: background-color var(--app-transition-fast);
+
+    &:hover {
+      background-color: var(--app-bg-hover);
+    }
+  }
+
+  &__avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--app-radius-round);
+    background: var(--app-color-primary);
+    color: #fff;
+    flex-shrink: 0;
+  }
+
+  &__username {
+    font-size: var(--app-font-size-sm);
+    font-weight: var(--app-font-weight-medium);
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 
-.header__locale {
-  width: 112px;
-}
-
+// ---- Main Content ----
 .main-content {
-  background-color: #f0f2f5;
+  flex: 1;
   overflow-y: auto;
-  padding: 16px;
+  padding: var(--app-spacing-lg);
+  background-color: var(--app-bg-page);
 }
 </style>

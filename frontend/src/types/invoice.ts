@@ -1,4 +1,7 @@
-import type { InvoiceStatus, InvoiceType, BusinessType } from '@/constants/enums'
+/**
+ * 定义请款单列表、明细与作废操作相关的类型。
+ */
+import type { BusinessType, InvoiceStatus, InvoiceType } from '@/constants/enums'
 
 export interface InvoiceItemData {
   id: string

@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { AdminCaseStatus } from '@/constants/enums'
-import { AdminCaseStatusLabel } from '@/constants/enum-labels'
-import { updateAdminCaseStatus, getAdminCaseTransitions } from '@/api/admin-case'
 
-defineOptions({ name: 'AdminCaseStatusFlow' })
+import { getAdminCaseTransitions, updateAdminCaseStatus } from '@/api/admin-case'
+import { AdminCaseStatusLabel } from '@/constants/enum-labels'
+import { AdminCaseStatus } from '@/constants/enums'
 
 const props = defineProps<{
   caseId: string
@@ -16,6 +15,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   updated: []
 }>()
+
+defineOptions({ name: 'AdminCaseStatusFlow' })
 
 const transitions = ref<AdminCaseStatus[]>([])
 const loading = ref(false)
@@ -48,6 +49,11 @@ watch(
   { immediate: true },
 )
 
+/**
+ * 根据当前案件状态加载可执行的下一步流转列表。
+ *
+ * @returns 在请求完成后同步更新按钮区的可流转状态集合
+ */
 async function fetchTransitions() {
   if (!props.caseId) return
   loading.value = true
@@ -59,6 +65,12 @@ async function fetchTransitions() {
   }
 }
 
+/**
+ * 为不同目标状态生成统一的按钮视觉等级。
+ *
+ * @param status - 用户准备切换到的案件状态
+ * @returns 对应 Element Plus 按钮的 type 值
+ */
 function getButtonType(status: AdminCaseStatus): '' | 'primary' | 'success' | 'warning' | 'danger' | 'info' {
   switch (status) {
     case AdminCaseStatus.CANCELLED:
@@ -73,6 +85,14 @@ function getButtonType(status: AdminCaseStatus): '' | 'primary' | 'success' | 'w
   }
 }
 
+/**
+ * 确认并提交案件状态流转请求。
+ *
+ * 取消类流转会显示更高风险提示；成功后通知父级刷新详情数据。
+ *
+ * @param newStatus - 用户选中的目标案件状态
+ * @returns 在用户取消确认或请求结束后完成处理流程
+ */
 async function handleTransition(newStatus: AdminCaseStatus) {
   const label = AdminCaseStatusLabel[newStatus]
   const confirmMsg =
@@ -124,14 +144,14 @@ async function handleTransition(newStatus: AdminCaseStatus) {
     <div v-if="!isTerminal && transitions.length > 0" class="status-flow__actions">
       <span class="status-flow__label">{{ t('detailViews.adminCase.statusFlow.nextAction') }}</span>
       <el-button
-        v-for="t in transitions"
-        :key="t"
-        :type="getButtonType(t)"
+        v-for="status in transitions"
+        :key="status"
+        :type="getButtonType(status)"
         :loading="transitioning"
         size="default"
-        @click="handleTransition(t)"
+        @click="handleTransition(status)"
       >
-        {{ t('detailViews.adminCase.statusFlow.changeTo', { status: AdminCaseStatusLabel[t] }) }}
+        {{ t('detailViews.adminCase.statusFlow.changeTo', { status: AdminCaseStatusLabel[status] }) }}
       </el-button>
     </div>
   </div>
@@ -140,23 +160,23 @@ async function handleTransition(newStatus: AdminCaseStatus) {
 <style scoped lang="scss">
 .status-flow {
   &__steps {
-    margin-bottom: 20px;
+    margin-bottom: var(--app-spacing-lg);
   }
 
   &__rejected {
-    margin-bottom: 16px;
+    margin-bottom: var(--app-spacing-base);
   }
 
   &__actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--app-spacing-sm);
     flex-wrap: wrap;
   }
 
   &__label {
-    font-size: 14px;
-    color: #606266;
+    font-size: var(--app-font-size-base);
+    color: var(--app-text-regular);
     white-space: nowrap;
   }
 }

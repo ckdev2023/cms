@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getFiles, uploadFile, deleteFile, downloadFile, getFilePreviewUrl } from '@/api/file'
-import type { BusinessType } from '@/constants/enums'
-import { useLocaleFormatter } from '@/utils/locale-format'
-import type { FileItem } from '@/types/file'
 
-defineOptions({ name: 'BusinessFilePanel' })
+import { deleteFile, downloadFile, getFilePreviewUrl, getFiles, uploadFile } from '@/api/file'
+import type { BusinessType } from '@/constants/enums'
+import type { FileItem } from '@/types/file'
+import { useLocaleFormatter } from '@/utils/locale-format'
 
 const props = defineProps<{
   businessType: BusinessType
   customerId?: string
   relatedId?: string
 }>()
+
+defineOptions({ name: 'BusinessFilePanel' })
 
 const { t } = useI18n({ useScope: 'global' })
 const { formatDateTime } = useLocaleFormatter()
@@ -125,7 +126,7 @@ async function handleDelete(file: FileItem) {
 }
 
 function formatSize(bytes: number | null): string {
-  if (bytes == null) return '-'
+  if (bytes === null || bytes === undefined) return '-'
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
@@ -234,7 +235,7 @@ defineExpose({ refresh: fetchFiles })
       v-model="previewVisible"
       :title="previewFile?.fileName || t('dialogs.filePreview.defaultTitle')"
       width="80%"
-      :close-on-click-modal="true"
+      close-on-click-modal
       destroy-on-close
     >
       <div v-if="previewFile" class="preview-container">
@@ -264,11 +265,11 @@ defineExpose({ refresh: fetchFiles })
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: var(--app-spacing-md);
 
   &__count {
-    font-size: 13px;
-    color: #909399;
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
   }
 }
 
@@ -279,7 +280,7 @@ defineExpose({ refresh: fetchFiles })
   min-height: 400px;
   max-height: 75vh;
   overflow: auto;
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
 }
 
 .preview-image {

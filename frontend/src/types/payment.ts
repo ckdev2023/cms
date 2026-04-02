@@ -1,4 +1,7 @@
-import type { PaymentStatus, PaymentMethod } from '@/constants/enums'
+/**
+ * 定义收款、分配与冲销流程使用的声明类型。
+ */
+import type { PaymentMethod, PaymentStatus } from '@/constants/enums'
 
 export interface PaymentAllocationItem {
   id: string

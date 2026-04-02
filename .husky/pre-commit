@@ -1,0 +1,12 @@
+#!/usr/bin/env sh
+
+# ── Pre-commit 快速門禁 ──────────────────────────────────────
+#
+# lint-staged がステージ済みファイルに対して以下を実行:
+#   1. ESLint（frontend .ts/.vue, backend .ts）
+#   2. JSDoc 内容品質検査（Layer 2, 強制対象ディレクトリのみ）
+#
+# 全量検査が必要な場合は npm run verify:fast を手動実行。
+# 緊急時のスキップ: git commit --no-verify
+
+npx lint-staged

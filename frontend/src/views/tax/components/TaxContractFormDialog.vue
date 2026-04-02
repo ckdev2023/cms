@@ -1,28 +1,27 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { BillingCycle } from '@/constants/enums'
-import { BillingCycleLabel } from '@/constants/enum-labels'
-import { createTaxContract, updateTaxContract } from '@/api/tax'
-import { getCustomers } from '@/api/customer'
-import type { TaxContractItem, CreateTaxContractParams } from '@/types/tax'
-import type { CustomerItem } from '@/types/customer'
+import { computed, nextTick,reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-defineOptions({ name: 'TaxContractFormDialog' })
-const { t } = useI18n()
+import { getCustomers } from '@/api/customer'
+import { createTaxContract, updateTaxContract } from '@/api/tax'
+import { BillingCycleLabel } from '@/constants/enum-labels'
+import { BillingCycle } from '@/constants/enums'
+import type { CustomerItem } from '@/types/customer'
+import type { CreateTaxContractParams,TaxContractItem } from '@/types/tax'
 
 const props = defineProps<{
   modelValue: boolean
   editData: TaxContractItem | null
   defaultCustomerId?: string
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   saved: []
 }>()
+defineOptions({ name: 'TaxContractFormDialog' })
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
@@ -105,6 +104,11 @@ watch(
   },
 )
 
+/**
+ * 将编辑态的税务合约数据回填到表单模型。
+ *
+ * @param data 当前待编辑的税务合约数据
+ */
 function populateForm(data: TaxContractItem) {
   form.customerId = data.customerId
   form.contractName = data.contractName
@@ -115,6 +119,9 @@ function populateForm(data: TaxContractItem) {
   form.ownerUserId = data.ownerUserId ?? ''
 }
 
+/**
+ * 重置表单为新建态默认值，并清空校验状态。
+ */
 function resetForm() {
   form.customerId = props.defaultCustomerId ?? ''
   form.contractName = ''
@@ -126,6 +133,12 @@ function resetForm() {
   nextTick(() => formRef.value?.clearValidate())
 }
 
+/**
+ * 按关键字加载客户下拉选项，供税务合约选择客户。
+ *
+ * @param query 客户搜索关键字
+ * @returns 完成请求后更新客户选项列表
+ */
 async function fetchCustomers(query: string) {
   customerLoading.value = true
   try {
@@ -136,6 +149,11 @@ async function fetchCustomers(query: string) {
   }
 }
 
+/**
+ * 从表单模型中构造提交给后端的税务合约载荷。
+ *
+ * @returns 过滤空值后的创建/更新请求体
+ */
 function buildPayload(): CreateTaxContractParams {
   const payload: CreateTaxContractParams = {
     customerId: form.customerId,
@@ -151,6 +169,11 @@ function buildPayload(): CreateTaxContractParams {
   return payload
 }
 
+/**
+ * 提交税务合约表单，并在成功后关闭弹窗通知父层刷新。
+ *
+ * @returns 校验失败时提前结束；成功后关闭对话框并触发保存事件
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return

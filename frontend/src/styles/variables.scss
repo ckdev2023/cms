@@ -1,9 +1,163 @@
-$--color-primary: #409eff;
-$--color-success: #67c23a;
-$--color-warning: #e6a23c;
-$--color-danger: #f56c6c;
-$--color-info: #909399;
+// ============================================================
+// Design Tokens — Pure SCSS Variables
+// ============================================================
+// No CSS output. Consumed by global.scss to populate :root.
+// Components should prefer var(--app-*) / var(--el-*) at
+// runtime; SCSS variables here exist for compile-time usage.
+// ============================================================
 
-$--sidebar-width: 220px;
-$--sidebar-collapsed-width: 64px;
-$--header-height: 56px;
+// --------------- Color: Brand ---------------
+$color-primary: #4361ee;
+$color-primary-light-3: #7b90f3;
+$color-primary-light-5: #a1b0f7;
+$color-primary-light-7: #c7d0fa;
+$color-primary-light-8: #d9dffc;
+$color-primary-light-9: #eceffd;
+$color-primary-dark-2: #364ebe;
+
+// --------------- Color: Status ---------------
+$color-success: #22c55e;
+$color-success-light-3: #64d68e;
+$color-success-light-5: #91e2af;
+$color-success-light-7: #bdeecf;
+$color-success-light-8: #d3f3df;
+$color-success-light-9: #e9f9ef;
+$color-success-dark-2: #1b9e4b;
+
+$color-warning: #f59e0b;
+$color-warning-light-3: #f8bb54;
+$color-warning-light-5: #facf85;
+$color-warning-light-7: #fce2b6;
+$color-warning-light-8: #fdecce;
+$color-warning-light-9: #fef5e7;
+$color-warning-dark-2: #c47e09;
+
+$color-danger: #ef4444;
+$color-danger-light-3: #f47c7c;
+$color-danger-light-5: #f7a2a2;
+$color-danger-light-7: #fac7c7;
+$color-danger-light-8: #fcdada;
+$color-danger-light-9: #fdecec;
+$color-danger-dark-2: #bf3636;
+
+$color-info: #6b7280;
+$color-info-light-3: #979ca6;
+$color-info-light-5: #b5b9c0;
+$color-info-light-7: #d3d5d9;
+$color-info-light-8: #e1e3e6;
+$color-info-light-9: #f0f1f2;
+$color-info-dark-2: #565b66;
+
+// --------------- Color: Text ---------------
+$text-color-primary: #1f2937;
+$text-color-regular: #4b5563;
+$text-color-secondary: #6b7280;
+$text-color-placeholder: #9ca3af;
+$text-color-disabled: #d1d5db;
+
+// --------------- Color: Background ---------------
+$bg-color-page: #f8fafc;
+$bg-color-base: #ffffff;
+$bg-color-overlay: #ffffff;
+$bg-color-hover: #f1f5f9;
+$bg-color-active: #e2e8f0;
+$bg-color-muted: #f3f4f6;
+
+// --------------- Color: Fill (Element Plus states) ---------------
+$fill-color: #f0f2f5;
+$fill-color-light: #f5f7fa;
+$fill-color-lighter: #fafafa;
+$fill-color-extra-light: #fafcff;
+$fill-color-blank: #ffffff;
+$fill-color-dark: #ebedf0;
+
+// --------------- Color: Border ---------------
+$border-color: #e5e7eb;
+$border-color-light: #f0f0f0;
+$border-color-lighter: #f5f5f5;
+$border-color-extra-light: #fafafa;
+$border-color-dark: #d1d5db;
+
+// --------------- Color: Sidebar ---------------
+$sidebar-bg: #1e293b;
+$sidebar-logo-bg: #0f172a;
+$sidebar-text: #94a3b8;
+$sidebar-text-active: #ffffff;
+$sidebar-active-bg: rgba(255, 255, 255, 0.08);
+$sidebar-menu-hover-bg: rgba(255, 255, 255, 0.05);
+
+// --------------- Layout ---------------
+$sidebar-width: 220px;
+$sidebar-collapsed-width: 64px;
+$header-height: 56px;
+$tags-height: 38px;
+
+// --------------- Border Radius ---------------
+$radius-sm: 4px;
+$radius-base: 6px;
+$radius-md: 8px;
+$radius-lg: 12px;
+$radius-xl: 16px;
+$radius-round: 999px;
+
+// --------------- Shadow ---------------
+$shadow-xs: 0 1px 2px 0 rgba(0, 0, 0, 0.03);
+$shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.06), 0 1px 2px -1px rgba(0, 0, 0, 0.06);
+$shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.07), 0 2px 4px -2px rgba(0, 0, 0, 0.07);
+$shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -4px rgba(0, 0, 0, 0.08);
+$shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
+
+// --------------- Spacing ---------------
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 12px;
+$spacing-base: 16px;
+$spacing-lg: 20px;
+$spacing-xl: 24px;
+$spacing-2xl: 32px;
+$spacing-3xl: 40px;
+
+// --------------- Typography ---------------
+$font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+  'PingFang SC', 'Hiragino Sans GB', 'Hiragino Kaku Gothic ProN',
+  'Microsoft YaHei', sans-serif;
+$font-family-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, monospace;
+
+$font-size-xs: 12px;
+$font-size-sm: 13px;
+$font-size-base: 14px;
+$font-size-md: 15px;
+$font-size-lg: 16px;
+$font-size-xl: 18px;
+$font-size-2xl: 20px;
+$font-size-3xl: 24px;
+
+$font-weight-normal: 400;
+$font-weight-medium: 500;
+$font-weight-semibold: 600;
+$font-weight-bold: 700;
+
+$line-height-tight: 1.25;
+$line-height-normal: 1.5;
+$line-height-relaxed: 1.75;
+
+// --------------- State: Focus ---------------
+$focus-ring-color: rgba(67, 97, 238, 0.4);
+$focus-ring-width: 3px;
+$focus-ring-offset: 2px;
+
+// --------------- State: Selected ---------------
+$selected-bg: #eef2ff;
+$selected-border: rgba(67, 97, 238, 0.25);
+
+// --------------- State: Skeleton ---------------
+$skeleton-base: #f0f2f5;
+$skeleton-highlight: #fafbfc;
+
+// --------------- State: Disabled ---------------
+$disabled-opacity: 0.5;
+
+// --------------- Transition ---------------
+$transition-fast: 0.15s ease;
+$transition-base: 0.2s ease;
+$transition-slow: 0.3s ease;

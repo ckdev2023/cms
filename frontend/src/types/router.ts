@@ -1,3 +1,6 @@
+/**
+ * 扩展路由元信息声明，统一约束菜单与权限字段。
+ */
 import 'vue-router'
 
 declare module 'vue-router' {

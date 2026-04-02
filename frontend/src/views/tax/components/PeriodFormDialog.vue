@@ -1,24 +1,23 @@
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
+import { computed,reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { createTaxPeriod, updateTaxPeriod } from '@/api/tax'
 import type { TaxPeriodItem } from '@/types/tax'
-
-defineOptions({ name: 'PeriodFormDialog' })
-const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
   contractId: string
   editData: TaxPeriodItem | null
 }>()
-
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
   (e: 'saved'): void
 }>()
+defineOptions({ name: 'PeriodFormDialog' })
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
@@ -52,11 +51,19 @@ watch(
   },
 )
 
+/**
+ * 关闭期间表单对话框并重置校验状态。
+ */
 function handleClose() {
   emit('update:modelValue', false)
   formRef.value?.resetFields()
 }
 
+/**
+ * 提交期间表单，并在成功后通知父层刷新期间列表。
+ *
+ * @returns 校验失败时提前结束；保存成功后关闭对话框
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return

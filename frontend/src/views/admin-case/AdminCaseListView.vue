@@ -1,27 +1,36 @@
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { Plus, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Search, Refresh } from '@element-plus/icons-vue'
+import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+
+import { deleteAdminCase, getAdminCases } from '@/api/admin-case'
 import PageList from '@/components/PageList.vue'
 import ProTable from '@/components/ProTable.vue'
-import AdminCaseFormDialog from './components/AdminCaseFormDialog.vue'
-import { useAppStore } from '@/stores/app'
-import { getAdminCases, deleteAdminCase } from '@/api/admin-case'
-import { useProTable } from '@/composables/useProTable'
 import { useConfirm } from '@/composables/useConfirm'
-import { AdminCaseStatus } from '@/constants/enums'
+import { useProTable } from '@/composables/useProTable'
 import { AdminCaseStatusLabel } from '@/constants/enum-labels'
-import type { ProTableColumn } from '@/types/components'
+import { AdminCaseStatus } from '@/constants/enums'
 import type { AdminCaseItem, AdminCaseQueryParams } from '@/types/admin-case'
-import { useI18n } from 'vue-i18n'
+import type { ProTableColumn } from '@/types/components'
+import { useLocaleFormatter } from '@/utils/locale-format'
+
+import AdminCaseFormDialog from './components/AdminCaseFormDialog.vue'
 
 defineOptions({ name: 'AdminCaseListView' })
 
 const router = useRouter()
 const { confirmDelete } = useConfirm()
-const appStore = useAppStore()
 const { t } = useI18n({ useScope: 'global' })
+const { formatDate } = useLocaleFormatter()
+
+type SortOrder = 'ascending' | 'descending' | null
+
+interface AdminCaseSortChange {
+  prop: string | null
+  order: SortOrder
+}
 
 const columns = computed<ProTableColumn[]>(() => [
   { prop: 'caseName', label: t('pages.adminCases.caseName'), minWidth: 200, sortable: 'custom' },
@@ -66,6 +75,12 @@ function handleEdit(row: AdminCaseItem) {
   dialogVisible.value = true
 }
 
+/**
+ * 删除指定的行政案件并在成功后刷新列表。
+ *
+ * @param row 当前操作行的案件摘要数据。
+ * @returns 删除流程完成后的异步结果。
+ */
 async function handleDelete(row: AdminCaseItem) {
   const ok = await confirmDelete(row.caseName)
   if (!ok) return
@@ -83,13 +98,25 @@ function handleSaved() {
   fetchData()
 }
 
-function doSearch() {
-  const params: Record<string, any> = {}
+/**
+ * 组装案件列表检索请求中需要提交的有效筛选条件。
+ *
+ * @returns 仅包含已填写字段的查询参数对象。
+ */
+function buildSearchParams(): Partial<AdminCaseQueryParams> {
+  const params: Partial<AdminCaseQueryParams> = {}
   if (searchForm.keyword) params.keyword = searchForm.keyword
   if (searchForm.status) params.status = searchForm.status
-  handleSearch(params)
+  return params
 }
 
+function doSearch() {
+  handleSearch(buildSearchParams())
+}
+
+/**
+ * 重置案件列表筛选表单并恢复默认分页查询。
+ */
 function doReset() {
   searchForm.keyword = ''
   searchForm.status = undefined
@@ -97,8 +124,13 @@ function doReset() {
   handleReset()
 }
 
-function handleSortChange(sort: { prop: string; order: string }) {
-  const params: Record<string, any> = {}
+/**
+ * 根据表格排序状态重新发起案件列表查询。
+ *
+ * @param sort 当前表格列的排序字段与方向。
+ */
+function handleSortChange(sort: AdminCaseSortChange) {
+  const params = buildSearchParams()
   if (sort.prop && sort.order) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'
@@ -106,15 +138,16 @@ function handleSortChange(sort: { prop: string; order: string }) {
   handleSearch({ ...searchForm, ...params })
 }
 
-function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
-  return new Date(dateStr).toLocaleDateString(appStore.locale === 'zh-CN' ? 'zh-CN' : 'ja-JP')
-}
-
 function handleRowClick(row: AdminCaseItem) {
   router.push(`/admin-cases/${row.id}`)
 }
 
+/**
+ * 判断案件到期日是否落在未来 30 天内。
+ *
+ * @param dateStr 案件到期日期字符串。
+ * @returns 是否应显示即将到期提醒样式。
+ */
 function isExpiringSoon(dateStr: string | null): boolean {
   if (!dateStr) return false
   const diff = new Date(dateStr).getTime() - Date.now()
@@ -122,6 +155,12 @@ function isExpiringSoon(dateStr: string | null): boolean {
   return days >= 0 && days <= 30
 }
 
+/**
+ * 判断案件到期日是否已经早于当前时间。
+ *
+ * @param dateStr 案件到期日期字符串。
+ * @returns 是否应显示已过期提醒样式。
+ */
 function isExpired(dateStr: string | null): boolean {
   if (!dateStr) return false
   return new Date(dateStr).getTime() < Date.now()
@@ -243,14 +282,3 @@ const statusOptions = computed(() =>
   </PageList>
 </template>
 
-<style scoped lang="scss">
-.expire-warning {
-  color: #e6a23c;
-  font-weight: 600;
-}
-
-.expire-danger {
-  color: #f56c6c;
-  font-weight: 600;
-}
-</style>

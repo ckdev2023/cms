@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { ArrowDown,Close } from '@element-plus/icons-vue'
 import { computed, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useTagsViewStore, type TagView } from '@/stores/tagsView'
-import { Close, ArrowDown } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+
+import { type TagView,useTagsViewStore } from '@/stores/tagsView'
 
 defineOptions({ name: 'TagsView' })
 
@@ -70,6 +71,7 @@ function handleCommand(cmd: string) {
         :class="{ 'is-active': isActive(tag) }"
         @click="handleClick(tag)"
       >
+        <span class="tags-view__dot" />
         <span class="tags-view__title">{{ tag.title }}</span>
         <el-icon
           v-if="!tag.affix"
@@ -81,7 +83,9 @@ function handleCommand(cmd: string) {
       </div>
     </div>
     <el-dropdown class="tags-view__actions" @command="handleCommand">
-      <el-icon class="tags-view__actions-btn"><ArrowDown /></el-icon>
+      <span class="tags-view__actions-btn">
+        <el-icon><ArrowDown /></el-icon>
+      </span>
       <template #dropdown>
         <el-dropdown-menu>
           <el-dropdown-item command="closeOthers">
@@ -100,18 +104,19 @@ function handleCommand(cmd: string) {
 .tags-view {
   display: flex;
   align-items: center;
-  height: 34px;
-  border-bottom: 1px solid #d8dce5;
-  background: #fff;
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  height: var(--app-tags-height);
+  background: var(--app-bg-base);
+  border-bottom: 1px solid var(--app-border-color-light);
 
   &__scroll {
     display: flex;
     flex: 1;
+    align-items: center;
     overflow-x: auto;
-    gap: 4px;
-    padding: 0 8px;
+    gap: 6px;
+    padding: 0 var(--app-spacing-md);
     scrollbar-width: none;
+
     &::-webkit-scrollbar {
       display: none;
     }
@@ -120,56 +125,111 @@ function handleCommand(cmd: string) {
   &__item {
     display: inline-flex;
     align-items: center;
-    gap: 4px;
-    height: 26px;
-    padding: 0 10px;
-    border: 1px solid #d8dce5;
-    border-radius: 3px;
-    font-size: 12px;
-    color: #495060;
-    background: #fff;
+    gap: 6px;
+    height: 28px;
+    padding: 0 var(--app-spacing-sm) 0 10px;
+    border-radius: var(--app-radius-base);
+    font-size: var(--app-font-size-xs);
+    color: var(--app-text-secondary);
+    background: transparent;
     cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
-    transition: all 0.2s;
+    transition: color var(--app-transition-fast),
+                background-color var(--app-transition-fast);
+
+    .tags-view__close {
+      opacity: 0;
+      transform: scale(0.7);
+    }
 
     &:hover {
-      color: var(--el-color-primary);
+      color: var(--app-text-primary);
+      background: var(--app-bg-hover);
+
+      .tags-view__close {
+        opacity: 1;
+        transform: scale(1);
+      }
     }
 
     &.is-active {
-      background-color: var(--el-color-primary);
-      color: #fff;
-      border-color: var(--el-color-primary);
+      color: var(--app-color-primary);
+      background: var(--app-color-primary-light);
+      font-weight: var(--app-font-weight-medium);
 
-      .tags-view__close:hover {
-        background-color: rgba(255, 255, 255, 0.3);
+      .tags-view__dot {
+        background: var(--app-color-primary);
+        opacity: 1;
+      }
+
+      .tags-view__close {
+        opacity: 1;
+        transform: scale(1);
+        color: var(--app-color-primary);
+
+        &:hover {
+          background: rgba(67, 97, 238, 0.15);
+        }
       }
     }
   }
 
+  &__dot {
+    width: 6px;
+    height: 6px;
+    border-radius: var(--app-radius-round);
+    background: var(--app-text-placeholder);
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: all var(--app-transition-fast);
+  }
+
+  &__title {
+    line-height: 1;
+  }
+
   &__close {
     font-size: 12px;
-    border-radius: 50%;
+    border-radius: var(--app-radius-round);
     width: 16px;
     height: 16px;
-    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--app-text-placeholder);
+    transition: all var(--app-transition-fast);
 
     &:hover {
-      background-color: rgba(0, 0, 0, 0.1);
+      background-color: rgba(0, 0, 0, 0.08);
+      color: var(--app-text-primary);
     }
   }
 
   &__actions {
-    padding: 0 8px;
+    flex-shrink: 0;
+    padding: 0 var(--app-spacing-sm);
+    border-left: 1px solid var(--app-border-color-light);
+    height: 100%;
+    display: flex;
+    align-items: center;
   }
 
   &__actions-btn {
-    font-size: 16px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: var(--app-radius-base);
+    font-size: 14px;
     cursor: pointer;
-    color: #606266;
+    color: var(--app-text-placeholder);
+    transition: all var(--app-transition-fast);
+
     &:hover {
-      color: var(--el-color-primary);
+      color: var(--app-color-primary);
+      background: var(--app-bg-hover);
     }
   }
 }

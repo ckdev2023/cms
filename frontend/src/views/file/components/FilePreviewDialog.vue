@@ -1,14 +1,16 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
 import { getFilePreviewUrl } from '@/api/file'
 import type { FileItem } from '@/types/file'
 
+const props = defineProps<{ file: FileItem | null }>()
 defineOptions({ name: 'FilePreviewDialog' })
 const { t } = useI18n()
 
 const visible = defineModel<boolean>({ default: false })
-const props = defineProps<{ file: FileItem | null }>()
+const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp'])
 
 const previewUrl = computed(() => {
   if (!props.file) return ''
@@ -17,7 +19,7 @@ const previewUrl = computed(() => {
 
 const isImage = computed(() => {
   if (!props.file?.fileExt) return false
-  return ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(props.file.fileExt)
+  return imageExtensions.has(props.file.fileExt)
 })
 
 const isPdf = computed(() => props.file?.fileExt === '.pdf')
@@ -30,7 +32,7 @@ const isPreviewable = computed(() => isImage.value || isPdf.value)
     v-model="visible"
     :title="file?.fileName || t('dialogs.filePreview.defaultTitle')"
     width="80%"
-    :close-on-click-modal="true"
+    close-on-click-modal
     destroy-on-close
     class="preview-dialog"
   >
@@ -70,7 +72,7 @@ const isPreviewable = computed(() => isImage.value || isPdf.value)
   min-height: 400px;
   max-height: 75vh;
   overflow: auto;
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
 }
 
 .preview-image {

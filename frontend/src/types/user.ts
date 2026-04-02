@@ -1,3 +1,6 @@
+/**
+ * 定义登录鉴权流程使用的用户身份与凭证类型。
+ */
 export interface UserInfo {
   id: string
   username: string

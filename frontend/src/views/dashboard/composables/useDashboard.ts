@@ -1,4 +1,5 @@
-import { ref, onMounted } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
+
 import {
   getDashboardSummary,
   getExpiringItems,
@@ -12,16 +13,29 @@ import type {
   RecentActivityItem,
 } from '@/types/dashboard'
 
-export function useDashboard() {
-  const loading = ref(true)
-  const summary = ref<DashboardSummary>({
+const EXPIRING_WINDOW_DAYS = 30
+const RECENT_ACTIVITY_LIMIT = 10
+
+interface DashboardLoadingStates {
+  summary: boolean
+  expiring: boolean
+  finance: boolean
+  activity: boolean
+}
+
+type DashboardSectionKey = keyof DashboardLoadingStates
+
+function createEmptySummary(): DashboardSummary {
+  return {
     activeCustomers: 0,
     activeCases: 0,
     pendingInvoices: 0,
     activeContracts: 0,
-  })
-  const expiringItems = ref<ExpiringItem[]>([])
-  const financeSummary = ref<FinanceSummary>({
+  }
+}
+
+function createEmptyFinanceSummary(): FinanceSummary {
+  return {
     draftCount: 0,
     draftAmount: 0,
     sentCount: 0,
@@ -32,79 +46,92 @@ export function useDashboard() {
     overdueAmount: 0,
     monthlyCollected: 0,
     monthlyCollectedCount: 0,
-  })
-  const recentActivity = ref<RecentActivityItem[]>([])
+  }
+}
 
-  const loadingStates = ref({
+function createInitialLoadingStates(): DashboardLoadingStates {
+  return {
     summary: true,
     expiring: true,
     finance: true,
     activity: true,
-  })
+  }
+}
 
-  async function fetchAll() {
-    loading.value = true
+/**
+ * 聚合仪表盘首页的各区块数据请求与加载状态。
+ *
+ * @returns 包含汇总卡片、到期提醒、财务概览、最近动态及刷新方法的对象
+ */
+export function useDashboard() {
+  const summary = ref<DashboardSummary>(createEmptySummary())
+  const expiringItems = ref<ExpiringItem[]>([])
+  const financeSummary = ref<FinanceSummary>(createEmptyFinanceSummary())
+  const recentActivity = ref<RecentActivityItem[]>([])
+  const loadingStates = reactive<DashboardLoadingStates>(createInitialLoadingStates())
+
+  async function runSectionRequest<T>(
+    section: DashboardSectionKey,
+    request: () => Promise<{ data: T }>,
+    onSuccess: (data: T) => void,
+    onError?: () => void,
+  ): Promise<void> {
+    loadingStates[section] = true
+    try {
+      const res = await request()
+      onSuccess(res.data)
+    } catch {
+      onError?.()
+    } finally {
+      loadingStates[section] = false
+    }
+  }
+
+  /**
+   * 并行刷新仪表盘全部区块。
+   */
+  async function fetchAll(): Promise<void> {
     await Promise.allSettled([
       fetchSummary(),
       fetchExpiring(),
       fetchFinance(),
       fetchActivity(),
     ])
-    loading.value = false
   }
 
-  async function fetchSummary() {
-    loadingStates.value.summary = true
-    try {
-      const res = await getDashboardSummary()
-      summary.value = res.data
-    } catch {
-      // keep default values
-    } finally {
-      loadingStates.value.summary = false
-    }
+  function fetchSummary(): Promise<void> {
+    return runSectionRequest('summary', getDashboardSummary, (data) => {
+      summary.value = data
+    })
   }
 
-  async function fetchExpiring() {
-    loadingStates.value.expiring = true
-    try {
-      const res = await getExpiringItems(30)
-      expiringItems.value = res.data
-    } catch {
+  function fetchExpiring(): Promise<void> {
+    return runSectionRequest('expiring', () => getExpiringItems(EXPIRING_WINDOW_DAYS), (data) => {
+      expiringItems.value = data
+    }, () => {
       expiringItems.value = []
-    } finally {
-      loadingStates.value.expiring = false
-    }
+    })
   }
 
-  async function fetchFinance() {
-    loadingStates.value.finance = true
-    try {
-      const res = await getFinanceSummary()
-      financeSummary.value = res.data
-    } catch {
-      // keep default values
-    } finally {
-      loadingStates.value.finance = false
-    }
+  function fetchFinance(): Promise<void> {
+    return runSectionRequest('finance', getFinanceSummary, (data) => {
+      financeSummary.value = data
+    })
   }
 
-  async function fetchActivity() {
-    loadingStates.value.activity = true
-    try {
-      const res = await getRecentActivity(10)
-      recentActivity.value = res.data
-    } catch {
+  function fetchActivity(): Promise<void> {
+    return runSectionRequest('activity', () => getRecentActivity(RECENT_ACTIVITY_LIMIT), (data) => {
+      recentActivity.value = data
+    }, () => {
       recentActivity.value = []
-    } finally {
-      loadingStates.value.activity = false
-    }
+    })
   }
 
-  onMounted(fetchAll)
+  onMounted(() => {
+    void fetchAll()
+  })
 
   return {
-    loading,
     loadingStates,
     summary,
     expiringItems,

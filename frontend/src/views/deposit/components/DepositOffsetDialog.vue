@@ -1,31 +1,30 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { InvoiceStatus } from '@/constants/enums'
-import { InvoiceStatusLabel } from '@/constants/enum-labels'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { depositOffset } from '@/api/deposit'
 import { getInvoices } from '@/api/invoice'
 import { useSubmitLock } from '@/composables/useSubmitLock'
-import { useLocaleFormatter } from '@/utils/locale-format'
-import type { InvoiceListItem } from '@/types/invoice'
+import { InvoiceStatusLabel } from '@/constants/enum-labels'
+import { InvoiceStatus } from '@/constants/enums'
 import type { CreateDepositOffsetParams } from '@/types/deposit'
-
-defineOptions({ name: 'DepositOffsetDialog' })
-const { t } = useI18n()
-const { formatCurrency } = useLocaleFormatter()
+import type { InvoiceListItem } from '@/types/invoice'
+import { useLocaleFormatter } from '@/utils/locale-format'
 
 const props = defineProps<{
   modelValue: boolean
   customerId: string
   balance: number
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   saved: []
 }>()
+defineOptions({ name: 'DepositOffsetDialog' })
+const { t } = useI18n()
+const { formatCurrency } = useLocaleFormatter()
 
 const formRef = ref<FormInstance>()
 const { submitting, withLock } = useSubmitLock()
@@ -82,6 +81,9 @@ watch(
   },
 )
 
+/**
+ * 在弹窗打开时重置核销表单，并清理上次校验状态。
+ */
 function resetForm() {
   form.invoiceId = ''
   form.amount = 0
@@ -89,6 +91,9 @@ function resetForm() {
   nextTick(() => formRef.value?.clearValidate())
 }
 
+/**
+ * 查询当前客户可用于预存款核销的发票列表。
+ */
 async function fetchInvoices() {
   invoiceLoading.value = true
   try {
@@ -108,6 +113,9 @@ async function fetchInvoices() {
   }
 }
 
+/**
+ * 选中发票后按余额与发票金额自动回填建议核销金额。
+ */
 function onInvoiceSelect() {
   if (selectedInvoice.value) {
     form.amount = Math.min(
@@ -117,6 +125,11 @@ function onInvoiceSelect() {
   }
 }
 
+/**
+ * 将弹窗表单值转换为预存款核销接口所需的请求体。
+ *
+ * @returns 包含客户、发票、金额与备注信息的核销参数
+ */
 function buildPayload(): CreateDepositOffsetParams {
   return {
     customerId: props.customerId,
@@ -126,6 +139,9 @@ function buildPayload(): CreateDepositOffsetParams {
   }
 }
 
+/**
+ * 校验核销表单并提交预存款核销请求。
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
@@ -232,16 +248,16 @@ function handleClose() {
 
 <style scoped lang="scss">
 .balance-alert {
-  margin-bottom: 20px;
+  margin-bottom: var(--app-spacing-lg);
 
   strong {
-    font-size: 16px;
-    color: #409eff;
+    font-size: var(--app-font-size-lg);
+    color: var(--app-color-primary);
   }
 }
 
 .static-value {
-  font-weight: 600;
-  color: #303133;
+  font-weight: var(--app-font-weight-semibold);
+  color: var(--app-text-primary);
 }
 </style>

@@ -1,24 +1,25 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ChatLineSquare, Delete, Edit, Location } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { Edit, Delete, ChatLineSquare, Location } from '@element-plus/icons-vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
 import {
-  getInterviews,
   createInterview,
-  updateInterview,
   deleteInterview,
+  getInterviews,
+  updateInterview,
 } from '@/api/admin-case'
 import { useConfirm } from '@/composables/useConfirm'
-import { useLocaleFormatter } from '@/utils/locale-format'
 import type { InterviewItem, InterviewQueryParams } from '@/types/admin-case'
-
-defineOptions({ name: 'InterviewTab' })
+import { useLocaleFormatter } from '@/utils/locale-format'
 
 const props = defineProps<{
   caseId: string
 }>()
+
+defineOptions({ name: 'InterviewTab' })
 
 const { confirmDelete } = useConfirm()
 const { t } = useI18n({ useScope: 'global' })
@@ -66,6 +67,11 @@ watch(
   { immediate: true },
 )
 
+/**
+ * 按当前分页条件拉取面谈记录时间线。
+ *
+ * @returns 请求完成后更新面谈列表、总数与加载状态
+ */
 async function fetchInterviews() {
   loading.value = true
   try {
@@ -82,6 +88,9 @@ function handlePageChange(page: number) {
   fetchInterviews()
 }
 
+/**
+ * 打开新增面谈表单，并填充默认日期与空白字段。
+ */
 function openCreateForm() {
   editingInterview.value = null
   formModel.interviewDate = new Date().toISOString().slice(0, 10)
@@ -90,6 +99,11 @@ function openCreateForm() {
   showForm.value = true
 }
 
+/**
+ * 将既有面谈记录写入表单，进入编辑模式。
+ *
+ * @param item - 用户选中的面谈记录
+ */
 function openEditForm(item: InterviewItem) {
   editingInterview.value = item
   formModel.interviewDate = item.interviewDate?.slice(0, 10) ?? ''
@@ -104,6 +118,11 @@ function cancelForm() {
   formRef.value?.resetFields()
 }
 
+/**
+ * 校验面谈表单后提交新增或更新请求。
+ *
+ * @returns 当校验失败或请求结束时完成提交流程
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
@@ -133,6 +152,12 @@ async function handleSubmit() {
   }
 }
 
+/**
+ * 确认后删除指定面谈记录。
+ *
+ * @param item - 当前准备删除的面谈记录
+ * @returns 用户取消确认或请求结束后完成删除流程
+ */
 async function handleDelete(item: InterviewItem) {
   const confirmed = await confirmDelete(t('detailViews.adminCase.interviewsTab.deleteName'))
   if (!confirmed) return
@@ -281,8 +306,8 @@ async function handleDelete(item: InterviewItem) {
   }
 
   &__count {
-    font-size: 13px;
-    color: #909399;
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
   }
 
   &__form-card {
@@ -316,8 +341,8 @@ async function handleDelete(item: InterviewItem) {
 
   &__location,
   &__author {
-    font-size: 13px;
-    color: #909399;
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -329,17 +354,17 @@ async function handleDelete(item: InterviewItem) {
   }
 
   &__content {
-    font-size: 14px;
+    font-size: var(--app-font-size-base);
     line-height: 1.6;
-    color: #303133;
+    color: var(--app-text-primary);
     white-space: pre-wrap;
     word-break: break-word;
   }
 
   &__footer {
-    margin-top: 8px;
-    font-size: 12px;
-    color: #c0c4cc;
+    margin-top: var(--app-spacing-sm);
+    font-size: var(--app-font-size-xs);
+    color: var(--app-text-disabled);
   }
 
   &__pagination {

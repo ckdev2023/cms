@@ -1,25 +1,24 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { CustomerType, ServiceType } from '@/constants/enums'
-import { CustomerTypeLabel, ServiceTypeLabel } from '@/constants/enum-labels'
-import { createCustomer, updateCustomer } from '@/api/customer'
-import type { CustomerItem, CreateCustomerParams } from '@/types/customer'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-defineOptions({ name: 'CustomerFormDialog' })
-const { t } = useI18n()
+import { createCustomer, updateCustomer } from '@/api/customer'
+import { CustomerTypeLabel, ServiceTypeLabel } from '@/constants/enum-labels'
+import { CustomerType, ServiceType } from '@/constants/enums'
+import type { CreateCustomerParams, CustomerItem } from '@/types/customer'
 
 const props = defineProps<{
   modelValue: boolean
   editData: CustomerItem | null
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   saved: []
 }>()
+defineOptions({ name: 'CustomerFormDialog' })
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
@@ -45,21 +44,101 @@ interface FormModel {
   residenceExpireDate: string
 }
 
-const form = reactive<FormModel>({
-  customerType: CustomerType.COMPANY,
-  customerName: '',
-  phone: '',
-  email: '',
-  address: '',
-  serviceType: ServiceType.BOTH,
-  ownerUserId: '',
-  corporationNumber: '',
-  fiscalMonth: undefined,
-  representativeName: '',
-  nationality: '',
-  residenceStatus: '',
-  residenceExpireDate: '',
-})
+type BaseFormValues = Pick<
+  FormModel,
+  | 'customerType'
+  | 'customerName'
+  | 'phone'
+  | 'email'
+  | 'address'
+  | 'serviceType'
+  | 'ownerUserId'
+>
+
+type CompanyFormValues = Pick<
+  FormModel,
+  'corporationNumber' | 'fiscalMonth' | 'representativeName'
+>
+
+type PersonFormValues = Pick<
+  FormModel,
+  'nationality' | 'residenceStatus' | 'residenceExpireDate'
+>
+
+/**
+ * 创建客户弹窗所需的默认表单模型。
+ *
+ * @returns 适用于新增客户场景的初始表单值
+ */
+function createDefaultFormModel(): FormModel {
+  return {
+    customerType: CustomerType.COMPANY,
+    customerName: '',
+    phone: '',
+    email: '',
+    address: '',
+    serviceType: ServiceType.BOTH,
+    ownerUserId: '',
+    corporationNumber: '',
+    fiscalMonth: undefined,
+    representativeName: '',
+    nationality: '',
+    residenceStatus: '',
+    residenceExpireDate: '',
+  }
+}
+
+/**
+ * 从客户详情中提取所有通用字段，供新增/编辑表单复用。
+ *
+ * @param data - 当前正在编辑的客户记录
+ * @returns 适用于公司和个人客户的基础表单字段
+ */
+function buildBaseFormValues(data: CustomerItem): BaseFormValues {
+  return {
+    customerType: data.customerType,
+    customerName: data.customerName,
+    phone: data.phone ?? '',
+    email: data.email ?? '',
+    address: data.address ?? '',
+    serviceType: data.serviceType,
+    ownerUserId: data.ownerUserId ?? '',
+  }
+}
+
+/**
+ * 从客户详情中提取公司客户专属字段。
+ *
+ * @param data - 当前正在编辑的客户记录
+ * @returns 公司客户表单所需的补充字段
+ */
+function buildCompanyFormValues(data: CustomerItem): CompanyFormValues {
+  const companyInfo = data.companyInfo
+
+  return {
+    corporationNumber: companyInfo?.corporationNumber ?? '',
+    fiscalMonth: companyInfo?.fiscalMonth ?? undefined,
+    representativeName: companyInfo?.representativeName ?? '',
+  }
+}
+
+/**
+ * 从客户详情中提取个人客户专属字段。
+ *
+ * @param data - 当前正在编辑的客户记录
+ * @returns 个人客户表单所需的补充字段
+ */
+function buildPersonFormValues(data: CustomerItem): PersonFormValues {
+  const personInfo = data.personInfo
+
+  return {
+    nationality: personInfo?.nationality ?? '',
+    residenceStatus: personInfo?.residenceStatus ?? '',
+    residenceExpireDate: personInfo?.residenceExpireDate ?? '',
+  }
+}
+
+const form = reactive<FormModel>(createDefaultFormModel())
 
 const rules = computed<FormRules>(() => ({
   customerType: [{ required: true, message: t('common.selectField', { field: t('dialogs.customerForm.customerType') }), trigger: 'change' }],
@@ -101,39 +180,35 @@ watch(
   },
 )
 
+/**
+ * 将待编辑客户数据展开到表单模型，兼容公司客户和个人客户字段。
+ *
+ * @param data - 当前正在编辑的客户记录
+ */
 function populateForm(data: CustomerItem) {
-  form.customerType = data.customerType
-  form.customerName = data.customerName
-  form.phone = data.phone ?? ''
-  form.email = data.email ?? ''
-  form.address = data.address ?? ''
-  form.serviceType = data.serviceType
-  form.ownerUserId = data.ownerUserId ?? ''
-  form.corporationNumber = data.companyInfo?.corporationNumber ?? ''
-  form.fiscalMonth = data.companyInfo?.fiscalMonth ?? undefined
-  form.representativeName = data.companyInfo?.representativeName ?? ''
-  form.nationality = data.personInfo?.nationality ?? ''
-  form.residenceStatus = data.personInfo?.residenceStatus ?? ''
-  form.residenceExpireDate = data.personInfo?.residenceExpireDate ?? ''
+  Object.assign(
+    form,
+    buildBaseFormValues(data),
+    buildCompanyFormValues(data),
+    buildPersonFormValues(data),
+  )
 }
 
+/**
+ * 将客户表单恢复为默认初始值，并清空上一次校验结果。
+ */
 function resetForm() {
-  form.customerType = CustomerType.COMPANY
-  form.customerName = ''
-  form.phone = ''
-  form.email = ''
-  form.address = ''
-  form.serviceType = ServiceType.BOTH
-  form.ownerUserId = ''
-  form.corporationNumber = ''
-  form.fiscalMonth = undefined
-  form.representativeName = ''
-  form.nationality = ''
-  form.residenceStatus = ''
-  form.residenceExpireDate = ''
+  Object.assign(form, createDefaultFormModel())
   nextTick(() => formRef.value?.clearValidate())
 }
 
+/**
+ * 根据客户类型整理接口所需的提交载荷。
+ *
+ * 仅在用户填写了对应字段时写入可选属性，避免把空值结构提交给后端。
+ *
+ * @returns 创建或更新客户接口需要的请求体
+ */
 function buildPayload(): CreateCustomerParams {
   const payload: CreateCustomerParams = {
     customerType: form.customerType,
@@ -161,6 +236,13 @@ function buildPayload(): CreateCustomerParams {
   return payload
 }
 
+/**
+ * 校验客户表单并提交创建或更新请求。
+ *
+ * 成功后会关闭弹窗，并通知父组件刷新客户列表或详情页数据。
+ *
+ * @throws {Error} 客户保存请求失败时由请求层统一提示并继续抛出
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return

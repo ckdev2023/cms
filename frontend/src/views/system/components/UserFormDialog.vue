@@ -1,23 +1,22 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { createUser, updateUser, getAllRoles } from '@/api/system'
-import type { SystemUser, CreateUserParams, RoleRef } from '@/types/system'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-defineOptions({ name: 'UserFormDialog' })
-const { t } = useI18n()
+import { createUser, getAllRoles, updateUser } from '@/api/system'
+import type { CreateUserParams, RoleRef, SystemUser } from '@/types/system'
 
 const props = defineProps<{
   modelValue: boolean
   editData: SystemUser | null
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   saved: []
 }>()
+defineOptions({ name: 'UserFormDialog' })
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
@@ -66,6 +65,11 @@ const rules = computed<FormRules>(() => ({
   ],
 }))
 
+/**
+ * 拉取用户表单角色下拉所需的全量角色选项。
+ *
+ * @returns 无返回值
+ */
 async function loadRoles() {
   try {
     const res = await getAllRoles()
@@ -95,6 +99,12 @@ watch(
   },
 )
 
+/**
+ * 将待编辑用户的数据写入表单，并清空历史校验状态。
+ *
+ * @param user - 当前正在编辑的用户记录
+ * @returns 无返回值
+ */
 function populateForm(user: SystemUser) {
   form.username = user.username
   form.password = ''
@@ -105,6 +115,11 @@ function populateForm(user: SystemUser) {
   nextTick(() => formRef.value?.clearValidate())
 }
 
+/**
+ * 清空用户表单字段，准备创建新用户。
+ *
+ * @returns 无返回值
+ */
 function resetForm() {
   form.username = ''
   form.password = ''
@@ -115,6 +130,11 @@ function resetForm() {
   nextTick(() => formRef.value?.clearValidate())
 }
 
+/**
+ * 校验用户表单并提交创建或更新请求。
+ *
+ * @returns 无返回值
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return

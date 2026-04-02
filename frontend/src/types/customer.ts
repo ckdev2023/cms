@@ -1,4 +1,7 @@
-import type { CustomerType, ServiceType, CustomerStatus, NoteType } from '@/constants/enums'
+/**
+ * 定义客户档案、备注与客户补充信息的声明类型。
+ */
+import type { CustomerStatus, CustomerType, NoteType, ServiceType } from '@/constants/enums'
 
 export interface CompanyInfoData {
   id?: string
@@ -61,7 +64,7 @@ export interface CreateCustomerParams {
   }
 }
 
-export interface UpdateCustomerParams extends Partial<CreateCustomerParams> {}
+export type UpdateCustomerParams = Partial<CreateCustomerParams>
 
 export interface CustomerQueryParams {
   page?: number

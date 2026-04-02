@@ -1,3 +1,6 @@
+/**
+ * 定义审计日志与登录日志列表查询使用的类型。
+ */
 import type { PaginationParams } from './api'
 
 export interface AuditLogItem {

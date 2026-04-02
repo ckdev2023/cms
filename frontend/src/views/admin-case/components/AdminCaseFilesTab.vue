@@ -1,25 +1,26 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import {
-  getAdminCaseDocuments,
-  createAdminCaseDocument,
-  updateAdminCaseDocument,
-  deleteAdminCaseDocument,
-} from '@/api/admin-case'
-import { uploadFile, downloadFile, getFilePreviewUrl } from '@/api/file'
-import { BusinessType } from '@/constants/enums'
-import { useLocaleFormatter } from '@/utils/locale-format'
-import type { AdminCaseDocumentItem } from '@/types/admin-case'
 
-defineOptions({ name: 'AdminCaseFilesTab' })
+import {
+  createAdminCaseDocument,
+  deleteAdminCaseDocument,
+  getAdminCaseDocuments,
+  updateAdminCaseDocument,
+} from '@/api/admin-case'
+import { downloadFile, getFilePreviewUrl, uploadFile } from '@/api/file'
+import { BusinessType } from '@/constants/enums'
+import type { AdminCaseDocumentItem } from '@/types/admin-case'
+import { useLocaleFormatter } from '@/utils/locale-format'
 
 const props = defineProps<{
   caseId: string
   customerId?: string
 }>()
+
+defineOptions({ name: 'AdminCaseFilesTab' })
 
 const { t } = useI18n({ useScope: 'global' })
 const { formatDateTime } = useLocaleFormatter()
@@ -38,11 +39,19 @@ const editForm = ref({ documentType: '', remark: '' })
 
 const MAX_SIZE_MB = 50
 const ALLOWED_ACCEPT = '.jpg,.jpeg,.png,.gif,.webp,.pdf,.xlsx,.xls,.docx,.doc,.txt,.csv'
+const ALLOWED_EXTENSIONS = ALLOWED_ACCEPT.split(',')
+const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp']
+const PREVIEWABLE_EXTENSIONS = [...IMAGE_EXTENSIONS, '.pdf']
 
 onMounted(() => {
   fetchDocuments()
 })
 
+/**
+ * 拉取案件关联的文件列表，并同步表格加载状态。
+ *
+ * @returns 请求完成后更新当前案件的文件集合
+ */
 async function fetchDocuments() {
   loading.value = true
   try {
@@ -57,6 +66,14 @@ function handleClickUpload() {
   fileInputRef.value?.click()
 }
 
+/**
+ * 校验并逐个上传用户选择的文件，然后写入案件文件记录。
+ *
+ * 超限或后缀不合法的文件会被跳过，并给出逐项提示。
+ *
+ * @param e - 原生文件输入框的 change 事件对象
+ * @returns 上传流程完成后恢复按钮状态，并在成功时刷新文件列表
+ */
 async function handleFileChange(e: Event) {
   const input = e.target as HTMLInputElement
   if (!input.files?.length) return
@@ -73,7 +90,7 @@ async function handleFileChange(e: Event) {
         continue
       }
       const ext = '.' + (file.name.split('.').pop()?.toLowerCase() ?? '')
-      if (!ALLOWED_ACCEPT.split(',').includes(ext)) {
+      if (!ALLOWED_EXTENSIONS.includes(ext)) {
         ElMessage.warning(t('dialogs.fileUpload.invalidFileType', { name: file.name }))
         continue
       }
@@ -104,6 +121,12 @@ async function handleFileChange(e: Event) {
   }
 }
 
+/**
+ * 下载指定案件文件的原始附件。
+ *
+ * @param doc - 当前操作的案件文件记录
+ * @returns 下载请求完成后结束；失败时显示统一错误提示
+ */
 async function handleDownload(doc: AdminCaseDocumentItem) {
   if (!doc.file) return
   try {
@@ -118,6 +141,11 @@ function handlePreview(doc: AdminCaseDocumentItem) {
   previewVisible.value = true
 }
 
+/**
+ * 打开文件元信息编辑弹窗，并回填当前文档备注与类型。
+ *
+ * @param doc - 当前准备编辑的案件文件记录
+ */
 function handleEdit(doc: AdminCaseDocumentItem) {
   editingDoc.value = doc
   editForm.value = {
@@ -127,6 +155,11 @@ function handleEdit(doc: AdminCaseDocumentItem) {
   editVisible.value = true
 }
 
+/**
+ * 提交文件备注与文档类型的更新请求。
+ *
+ * @returns 保存完成后关闭弹窗并刷新当前文件列表
+ */
 async function handleEditSubmit() {
   if (!editingDoc.value) return
   editLoading.value = true
@@ -143,6 +176,12 @@ async function handleEditSubmit() {
   }
 }
 
+/**
+ * 确认后删除案件文件记录，并在成功后刷新表格。
+ *
+ * @param doc - 当前准备删除的案件文件记录
+ * @returns 删除确认被取消或请求结束后完成处理
+ */
 async function handleDelete(doc: AdminCaseDocumentItem) {
   const name = doc.file?.fileName ?? doc.id
   try {
@@ -159,16 +198,21 @@ async function handleDelete(doc: AdminCaseDocumentItem) {
   }
 }
 
+/**
+ * 将字节数格式化为适合表格展示的容量字符串。
+ *
+ * @param bytes - 文件大小字节数；无值时显示占位符
+ * @returns 已按 B、KB、MB 自动换算的文本结果
+ */
 function formatSize(bytes: number | null): string {
-  if (bytes == null) return '-'
+  if (bytes === null) return '-'
   if (bytes < 1024) return `${bytes} B`
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
 function isPreviewable(doc: AdminCaseDocumentItem): boolean {
-  const exts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf']
-  return !!doc.file?.fileExt && exts.includes(doc.file.fileExt)
+  return !!doc.file?.fileExt && PREVIEWABLE_EXTENSIONS.includes(doc.file.fileExt)
 }
 
 function getPreviewUrl(doc: AdminCaseDocumentItem): string {
@@ -176,7 +220,7 @@ function getPreviewUrl(doc: AdminCaseDocumentItem): string {
 }
 
 const isImage = (doc: AdminCaseDocumentItem) =>
-  !!doc.file?.fileExt && ['.jpg', '.jpeg', '.png', '.gif', '.webp'].includes(doc.file.fileExt)
+  !!doc.file?.fileExt && IMAGE_EXTENSIONS.includes(doc.file.fileExt)
 
 const isPdf = (doc: AdminCaseDocumentItem) => doc.file?.fileExt === '.pdf'
 </script>
@@ -281,7 +325,7 @@ const isPdf = (doc: AdminCaseDocumentItem) => doc.file?.fileExt === '.pdf'
       v-model="previewVisible"
       :title="previewDoc?.file?.fileName || t('dialogs.filePreview.defaultTitle')"
       width="80%"
-      :close-on-click-modal="true"
+      close-on-click-modal
       destroy-on-close
     >
       <div v-if="previewDoc" class="preview-container">
@@ -344,8 +388,8 @@ const isPdf = (doc: AdminCaseDocumentItem) => doc.file?.fileExt === '.pdf'
   margin-bottom: 12px;
 
   &__count {
-    font-size: 13px;
-    color: #909399;
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
   }
 }
 
@@ -356,7 +400,7 @@ const isPdf = (doc: AdminCaseDocumentItem) => doc.file?.fileExt === '.pdf'
   min-height: 400px;
   max-height: 75vh;
   overflow: auto;
-  background: #f5f7fa;
+  background: var(--el-fill-color-light);
 }
 
 .preview-image {

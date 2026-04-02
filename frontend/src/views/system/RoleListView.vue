@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
+import { Plus, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Search, Refresh } from '@element-plus/icons-vue'
+import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { deleteRole, getRoles } from '@/api/system'
 import PageList from '@/components/PageList.vue'
 import ProTable from '@/components/ProTable.vue'
-import RoleFormDialog from './components/RoleFormDialog.vue'
-import { useAppStore } from '@/stores/app'
-import { getRoles, deleteRole } from '@/api/system'
-import { useProTable } from '@/composables/useProTable'
 import { useConfirm } from '@/composables/useConfirm'
+import { useProTable } from '@/composables/useProTable'
+import { useAppStore } from '@/stores/app'
 import type { ProTableColumn } from '@/types/components'
-import type { SystemRole, RoleQueryParams } from '@/types/system'
-import { useI18n } from 'vue-i18n'
+import type { RoleQueryParams, SystemRole } from '@/types/system'
+
+import RoleFormDialog from './components/RoleFormDialog.vue'
 
 defineOptions({ name: 'RoleListView' })
 
@@ -58,6 +60,12 @@ function handleEdit(row: SystemRole) {
   dialogVisible.value = true
 }
 
+/**
+ * 删除非系统角色，并在成功后刷新角色列表。
+ *
+ * @param row - 当前选中的角色记录
+ * @returns 无返回值
+ */
 async function handleDelete(row: SystemRole) {
   if (row.isSystem) {
     ElMessage.warning(t('pages.roles.systemRoleDeleteBlocked'))
@@ -81,7 +89,7 @@ function handleSaved() {
 }
 
 function doSearch() {
-  const params: Record<string, any> = {}
+  const params: Record<string, unknown> = {}
   if (searchForm.keyword) params.keyword = searchForm.keyword
   handleSearch(params)
 }
@@ -91,8 +99,16 @@ function doReset() {
   handleReset()
 }
 
+/**
+ * 根据表格排序事件同步角色列表的排序字段。
+ *
+ * @param sort - 当前表格返回的排序字段与方向
+ * @param sort.prop - 后端排序使用的字段名
+ * @param sort.order - Element Plus 返回的排序方向
+ * @returns 无返回值
+ */
 function handleSortChange(sort: { prop: string; order: string }) {
-  const params: Record<string, any> = {}
+  const params: Record<string, unknown> = {}
   if (sort.prop && sort.order) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'

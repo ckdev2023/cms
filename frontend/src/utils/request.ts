@@ -1,9 +1,14 @@
-import axios from 'axios'
-import type { AxiosInstance, AxiosRequestConfig, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
+import axios, {
+  type AxiosInstance,
+  type AxiosRequestConfig,
+  type AxiosResponse,
+  type InternalAxiosRequestConfig,
+} from 'axios'
 import { ElMessage } from 'element-plus'
-import type { ApiResponse } from '@/types'
-import router from '@/router'
+
 import { translate } from '@/i18n'
+import router from '@/router'
+import type { ApiResponse } from '@/types'
 
 const service: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
@@ -51,6 +56,16 @@ service.interceptors.response.use(
   },
 )
 
+/**
+ * 发送统一配置的 API 请求并解包标准响应体。
+ *
+ * 请求前会自动附带本地 access token；响应阶段会统一处理业务错误、
+ * 鉴权失效跳转与消息提示。
+ *
+ * @param config - Axios 请求配置，包含 URL、method、params、data 等信息
+ * @returns 符合 `ApiResponse<T>` 结构的业务响应体
+ * @throws {Error} 后端返回非零业务码或网络请求失败时抛出错误
+ */
 export function request<T = unknown>(config: AxiosRequestConfig): Promise<ApiResponse<T>> {
   return service(config).then((res) => res.data as ApiResponse<T>)
 }

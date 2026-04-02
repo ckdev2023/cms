@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
+import { Key, Plus, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Search, Refresh, Key } from '@element-plus/icons-vue'
+import { computed, reactive, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+import { deleteUser, getUsers, toggleUserStatus } from '@/api/system'
 import PageList from '@/components/PageList.vue'
 import ProTable from '@/components/ProTable.vue'
-import UserFormDialog from './components/UserFormDialog.vue'
-import ResetPasswordDialog from './components/ResetPasswordDialog.vue'
-import { useAppStore } from '@/stores/app'
-import { getUsers, deleteUser, toggleUserStatus } from '@/api/system'
-import { useProTable } from '@/composables/useProTable'
 import { useConfirm } from '@/composables/useConfirm'
-import { UserStatus } from '@/constants/enums'
+import { useProTable } from '@/composables/useProTable'
 import { UserStatusLabel } from '@/constants/enum-labels'
+import { UserStatus } from '@/constants/enums'
+import { useAppStore } from '@/stores/app'
 import type { ProTableColumn } from '@/types/components'
 import type { SystemUser, UserQueryParams } from '@/types/system'
-import { useI18n } from 'vue-i18n'
+
+import ResetPasswordDialog from './components/ResetPasswordDialog.vue'
+import UserFormDialog from './components/UserFormDialog.vue'
 
 defineOptions({ name: 'UserListView' })
 
@@ -70,6 +72,12 @@ function handleResetPassword(row: SystemUser) {
   resetPwdDialogVisible.value = true
 }
 
+/**
+ * 切换系统用户启用状态，并在成功后刷新用户列表。
+ *
+ * @param row - 当前选中的用户记录
+ * @returns 无返回值
+ */
 async function handleToggleStatus(row: SystemUser) {
   const action =
     row.status === UserStatus.ACTIVE ? t('pages.users.disableAction') : t('pages.users.enableAction')
@@ -88,6 +96,12 @@ async function handleToggleStatus(row: SystemUser) {
   }
 }
 
+/**
+ * 删除指定系统用户，并在成功后刷新用户列表。
+ *
+ * @param row - 当前选中的用户记录
+ * @returns 无返回值
+ */
 async function handleDelete(row: SystemUser) {
   const ok = await confirmDelete(row.displayName)
   if (!ok) return
@@ -105,8 +119,13 @@ function handleSaved() {
   fetchData()
 }
 
+/**
+ * 汇总筛选表单条件，触发用户列表检索。
+ *
+ * @returns 无返回值
+ */
 function doSearch() {
-  const params: Record<string, any> = {}
+  const params: Record<string, unknown> = {}
   if (searchForm.keyword) params.keyword = searchForm.keyword
   if (searchForm.status) params.status = searchForm.status
   handleSearch(params)
@@ -118,8 +137,16 @@ function doReset() {
   handleReset()
 }
 
+/**
+ * 根据表格排序事件同步用户列表的排序字段。
+ *
+ * @param sort - 当前表格返回的排序字段与方向
+ * @param sort.prop - 后端排序使用的字段名
+ * @param sort.order - Element Plus 返回的排序方向
+ * @returns 无返回值
+ */
 function handleSortChange(sort: { prop: string; order: string }) {
-  const params: Record<string, any> = {}
+  const params: Record<string, unknown> = {}
   if (sort.prop && sort.order) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'
@@ -201,11 +228,11 @@ const statusTagType: Record<string, 'success' | 'info' | 'warning' | 'danger'> =
           v-for="role in (row as SystemUser).roles"
           :key="role.roleCode"
           size="small"
-          style="margin-right: 4px"
+          class="role-tag"
         >
           {{ role.roleName }}
         </el-tag>
-          <span v-if="!(row as SystemUser).roles?.length" style="color: #999">{{ t('common.unassigned') }}</span>
+          <span v-if="!(row as SystemUser).roles?.length" class="text-placeholder">{{ t('common.unassigned') }}</span>
       </template>
 
       <template #status="{ row }">
@@ -251,3 +278,9 @@ const statusTagType: Record<string, 'success' | 'info' | 'warning' | 'danger'> =
     />
   </PageList>
 </template>
+
+<style scoped lang="scss">
+.role-tag + .role-tag {
+  margin-left: var(--app-spacing-xs);
+}
+</style>

@@ -1,33 +1,39 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
+import { Delete, Plus } from '@element-plus/icons-vue'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { FormInstance, FormRules } from 'element-plus'
-import { ElMessage } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
-import { InvoiceType, BusinessType } from '@/constants/enums'
-import { InvoiceTypeLabel, BusinessTypeLabel } from '@/constants/enum-labels'
-import { createInvoice, updateInvoice } from '@/api/invoice'
-import { getCustomers } from '@/api/customer'
-import { useSubmitLock } from '@/composables/useSubmitLock'
-import { useLocaleFormatter } from '@/utils/locale-format'
-import type { InvoiceListItem, CreateInvoiceParams, CreateInvoiceItemParams } from '@/types/invoice'
-import type { CustomerItem } from '@/types/customer'
 
-defineOptions({ name: 'InvoiceFormDialog' })
-const { t } = useI18n()
-const { formatNumber } = useLocaleFormatter()
+import { getCustomers } from '@/api/customer'
+import { createInvoice, updateInvoice } from '@/api/invoice'
+import { useSubmitLock } from '@/composables/useSubmitLock'
+import { BusinessTypeLabel, InvoiceTypeLabel } from '@/constants/enum-labels'
+import { BusinessType, InvoiceType } from '@/constants/enums'
+import type { CustomerItem } from '@/types/customer'
+import type {
+  CreateInvoiceItemParams,
+  CreateInvoiceParams,
+  InvoiceDetail,
+  InvoiceListItem,
+} from '@/types/invoice'
+import { useLocaleFormatter } from '@/utils/locale-format'
+
+type InvoiceFormSource = InvoiceListItem &
+  Partial<Pick<InvoiceDetail, 'relatedId' | 'relatedType' | 'remark'>>
 
 const props = defineProps<{
   modelValue: boolean
-  editData: InvoiceListItem | null
+  editData: InvoiceFormSource | null
   editItems?: CreateInvoiceItemParams[]
   defaultCustomerId?: string
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   saved: []
 }>()
+defineOptions({ name: 'InvoiceFormDialog' })
+const { t } = useI18n()
+const { formatNumber } = useLocaleFormatter()
 
 const formRef = ref<FormInstance>()
 const { submitting, withLock } = useSubmitLock()
@@ -56,6 +62,10 @@ interface FormModel {
   items: ItemRow[]
 }
 
+function createEmptyItemRow(): ItemRow {
+  return { description: '', quantity: 1, unitPrice: 0, amount: 0 }
+}
+
 const form = reactive<FormModel>({
   customerId: '',
   invoiceType: InvoiceType.ADMIN,
@@ -63,7 +73,7 @@ const form = reactive<FormModel>({
   relatedId: '',
   relatedType: '',
   remark: '',
-  items: [{ description: '', quantity: 1, unitPrice: 0, amount: 0 }],
+  items: [createEmptyItemRow()],
 })
 
 const rules: FormRules = {
@@ -103,13 +113,18 @@ watch(
   },
 )
 
-function populateForm(data: InvoiceListItem) {
+/**
+ * 将编辑态发票数据映射到表单模型，确保弹窗打开时回显已有字段与明细行。
+ *
+ * @param data - 当前准备编辑的发票基础资料
+ */
+function populateForm(data: InvoiceFormSource) {
   form.customerId = data.customerId
   form.invoiceType = data.invoiceType
   form.dueDate = data.dueDate ?? ''
-  form.relatedId = ''
-  form.relatedType = ''
-  form.remark = ''
+  form.relatedId = data.relatedId ?? ''
+  form.relatedType = data.relatedType ?? ''
+  form.remark = data.remark ?? ''
   if (props.editItems?.length) {
     form.items = props.editItems.map((it) => ({
       description: it.description,
@@ -118,10 +133,13 @@ function populateForm(data: InvoiceListItem) {
       amount: (it.quantity ?? 1) * it.unitPrice,
     }))
   } else {
-    form.items = [{ description: '', quantity: 1, unitPrice: 0, amount: 0 }]
+    form.items = [createEmptyItemRow()]
   }
 }
 
+/**
+ * 还原新建态表单默认值，并清除上一次弹窗残留的校验状态。
+ */
 function resetForm() {
   form.customerId = props.defaultCustomerId ?? ''
   form.invoiceType = InvoiceType.ADMIN
@@ -129,10 +147,15 @@ function resetForm() {
   form.relatedId = ''
   form.relatedType = ''
   form.remark = ''
-  form.items = [{ description: '', quantity: 1, unitPrice: 0, amount: 0 }]
+  form.items = [createEmptyItemRow()]
   nextTick(() => formRef.value?.clearValidate())
 }
 
+/**
+ * 按输入关键字加载客户候选项，为新建与编辑发票时的客户选择框提供远程搜索。
+ *
+ * @param query - 下拉框当前输入的客户关键字；为空时返回默认前 50 条
+ */
 async function fetchCustomers(query: string) {
   customerLoading.value = true
   try {
@@ -144,7 +167,7 @@ async function fetchCustomers(query: string) {
 }
 
 function addItem() {
-  form.items.push({ description: '', quantity: 1, unitPrice: 0, amount: 0 })
+  form.items.push(createEmptyItemRow())
 }
 
 function removeItem(index: number) {
@@ -157,6 +180,11 @@ function recalcItem(index: number) {
   it.amount = Math.round(it.quantity * it.unitPrice * 100) / 100
 }
 
+/**
+ * 将弹窗表单整理为接口可提交的发票载荷，过滤掉当前为空的可选字段。
+ *
+ * @returns 可直接传给创建或更新接口的发票参数对象
+ */
 function buildPayload(): CreateInvoiceParams {
   const payload: CreateInvoiceParams = {
     customerId: form.customerId,
@@ -177,6 +205,9 @@ function buildPayload(): CreateInvoiceParams {
   return payload
 }
 
+/**
+ * 校验发票表单与明细行完整性，通过后按编辑态或新建态提交对应接口。
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
@@ -398,17 +429,17 @@ function formatAmount(val: number): string {
 }
 
 .item-total {
-  font-size: 16px;
-  color: #303133;
+  font-size: var(--app-font-size-lg);
+  color: var(--app-text-primary);
 
   strong {
-    color: #409eff;
-    font-size: 18px;
+    color: var(--app-color-primary);
+    font-size: var(--app-font-size-xl);
   }
 }
 
 .item-amount {
-  font-weight: 600;
-  color: #303133;
+  font-weight: var(--app-font-weight-semibold);
+  color: var(--app-text-primary);
 }
 </style>

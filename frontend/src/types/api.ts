@@ -1,3 +1,6 @@
+/**
+ * 定义前端请求层复用的基础响应体与分页查询类型。
+ */
 export interface ApiResponse<T = unknown> {
   code: number
   message: string

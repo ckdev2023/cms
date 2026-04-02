@@ -1,22 +1,24 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+
+import { getAccountTransactions, getDepositAccount } from '@/api/deposit'
 import PageDetail from '@/components/PageDetail.vue'
 import ProTable from '@/components/ProTable.vue'
-import DepositRechargeDialog from './components/DepositRechargeDialog.vue'
-import DepositOffsetDialog from './components/DepositOffsetDialog.vue'
-import DepositRefundDialog from './components/DepositRefundDialog.vue'
-import { getDepositAccount, getAccountTransactions } from '@/api/deposit'
-import { DepositTransactionType } from '@/constants/enums'
 import { DepositTransactionTypeLabel } from '@/constants/enum-labels'
-import { useLocaleFormatter } from '@/utils/locale-format'
+import { DepositTransactionType } from '@/constants/enums'
 import type { ProTableColumn } from '@/types/components'
 import type {
   DepositAccountDetail,
   DepositTransactionListItem,
   DepositTransactionQueryParams,
 } from '@/types/deposit'
+import { useLocaleFormatter } from '@/utils/locale-format'
+
+import DepositOffsetDialog from './components/DepositOffsetDialog.vue'
+import DepositRechargeDialog from './components/DepositRechargeDialog.vue'
+import DepositRefundDialog from './components/DepositRefundDialog.vue'
 
 defineOptions({ name: 'DepositDetailView' })
 
@@ -39,9 +41,9 @@ const offsetVisible = ref(false)
 const refundVisible = ref(false)
 
 const accountId = computed(() => route.params.id as string)
-const canOperate = computed(() => account.value != null)
+const canOperate = computed(() => account.value !== null)
 const hasBalance = computed(() =>
-  account.value != null && Number(account.value.balance) > 0,
+  account.value !== null && Number(account.value.balance) > 0,
 )
 
 const txnColumns = computed<ProTableColumn[]>(() => [
@@ -102,6 +104,9 @@ onMounted(() => {
   fetchTransactions()
 })
 
+/**
+ * 根据当前路由中的账户 ID 拉取预存款账户详情。
+ */
 async function fetchAccount() {
   loading.value = true
   try {
@@ -112,6 +117,9 @@ async function fetchAccount() {
   }
 }
 
+/**
+ * 按分页与交易类型筛选条件加载账户流水列表。
+ */
 async function fetchTransactions() {
   txnLoading.value = true
   try {
@@ -167,6 +175,13 @@ function goToInvoice(invoiceId: string) {
   router.push(`/finance/invoices/${invoiceId}`)
 }
 
+/**
+ * 按交易方向格式化流水金额，统一补充正负号展示。
+ *
+ * @param val - 原始交易金额
+ * @param type - 当前流水的业务类型
+ * @returns 适合在流水表格中展示的带符号金额文本
+ */
 function formatSignedAmount(
   val: number | string,
   type: DepositTransactionType,
@@ -185,6 +200,12 @@ function formatSignedAmount(
   return `${prefix} ¥ ${formatNumber(Math.abs(num))}`
 }
 
+/**
+ * 根据交易类型返回金额单元格的语义样式类名。
+ *
+ * @param type - 当前流水的业务类型
+ * @returns 充值返回加号样式，扣减类交易返回减号样式，其余返回空字符串
+ */
 function getAmountClass(type: DepositTransactionType) {
   if (type === DepositTransactionType.RECHARGE) return 'amount--plus'
   if (
@@ -317,7 +338,7 @@ function getAmountClass(type: DepositTransactionType) {
 
           <template #balanceAfter="{ row }">
             <span class="amount-cell">
-              {{ formatAmount(row.balanceAfter) }}
+              {{ formatCurrency(row.balanceAfter) }}
             </span>
           </template>
 
@@ -364,61 +385,3 @@ function getAmountClass(type: DepositTransactionType) {
   </PageDetail>
 </template>
 
-<style scoped lang="scss">
-.detail-header-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-
-  &__name {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #303133;
-  }
-
-  &__balance {
-    font-size: 16px;
-    font-weight: 700;
-    color: #409eff;
-    padding: 2px 12px;
-    background: #ecf5ff;
-    border-radius: 4px;
-  }
-
-  &__actions {
-    display: flex;
-    gap: 6px;
-    margin-left: 8px;
-  }
-}
-
-.detail-section {
-  margin-bottom: 16px;
-}
-
-.balance-highlight {
-  font-size: 18px;
-  font-weight: 700;
-  color: #409eff;
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.amount-cell {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-
-  &.amount--plus {
-    color: #67c23a;
-  }
-
-  &.amount--minus {
-    color: #f56c6c;
-  }
-}
-</style>

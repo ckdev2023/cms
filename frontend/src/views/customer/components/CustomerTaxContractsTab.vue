@@ -1,27 +1,28 @@
 <script setup lang="ts">
-import { ref, watch, computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
 import { Plus } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
+
+import { deleteTaxContract, getTaxContracts } from '@/api/tax'
 import ProTable from '@/components/ProTable.vue'
-import TaxContractFormDialog from '@/views/tax/components/TaxContractFormDialog.vue'
-import { getTaxContracts, deleteTaxContract } from '@/api/tax'
 import { useConfirm } from '@/composables/useConfirm'
-import { TaxContractStatus, BillingCycle } from '@/constants/enums'
 import {
-  TaxContractStatusLabel,
   BillingCycleLabel,
+  TaxContractStatusLabel,
 } from '@/constants/enum-labels'
-import { useLocaleFormatter } from '@/utils/locale-format'
+import { BillingCycle, TaxContractStatus } from '@/constants/enums'
 import type { ProTableColumn } from '@/types/components'
 import type { TaxContractItem } from '@/types/tax'
-
-defineOptions({ name: 'CustomerTaxContractsTab' })
+import { useLocaleFormatter } from '@/utils/locale-format'
+import TaxContractFormDialog from '@/views/tax/components/TaxContractFormDialog.vue'
 
 const props = defineProps<{
   customerId: string
 }>()
+
+defineOptions({ name: 'CustomerTaxContractsTab' })
 
 const router = useRouter()
 const { confirmDelete } = useConfirm()
@@ -94,6 +95,11 @@ watch(
   { immediate: true },
 )
 
+/**
+ * 按当前客户和分页条件加载税务契约列表。
+ *
+ * @throws {Error} 税务契约列表接口请求失败时由请求层继续抛出
+ */
 async function fetchData() {
   loading.value = true
   try {
@@ -130,6 +136,12 @@ function handleRowClick(row: TaxContractItem) {
   router.push(`/tax-contracts/${row.id}`)
 }
 
+/**
+ * 删除指定税务契约，并在成功后刷新当前客户下的契约列表。
+ *
+ * @param row - 当前准备删除的税务契约记录
+ * @throws {Error} 删除税务契约请求失败时由请求层统一提示并继续抛出
+ */
 async function handleDelete(row: TaxContractItem) {
   const ok = await confirmDelete(row.contractName)
   if (!ok) return
@@ -246,8 +258,8 @@ function handleSaved() {
   }
 
   &__count {
-    font-size: 13px;
-    color: #909399;
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
   }
 }
 </style>

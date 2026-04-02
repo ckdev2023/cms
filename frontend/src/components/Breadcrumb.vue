@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { ArrowRight } from '@element-plus/icons-vue'
 import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 defineOptions({ name: 'Breadcrumb' })
 
@@ -24,7 +25,7 @@ function handleClick(path: string) {
 </script>
 
 <template>
-  <el-breadcrumb separator="/" class="app-breadcrumb">
+  <el-breadcrumb :separator-icon="ArrowRight" class="app-breadcrumb">
     <el-breadcrumb-item v-for="(item, idx) in items" :key="item.path">
       <span v-if="idx === items.length - 1" class="is-current">
         {{ item.title }}
@@ -40,15 +41,31 @@ function handleClick(path: string) {
 .app-breadcrumb {
   line-height: 1;
 
+  :deep(.el-breadcrumb__separator) {
+    color: var(--app-text-disabled);
+    font-size: 12px;
+    margin: 0 6px;
+
+    .el-icon {
+      font-size: 12px;
+      vertical-align: middle;
+    }
+  }
+
   .is-current {
-    color: #97a8be;
+    color: var(--app-text-primary);
+    font-size: var(--app-font-size-sm);
+    font-weight: var(--app-font-weight-medium);
   }
 
   .is-link {
-    color: #606266;
+    color: var(--app-text-placeholder);
+    font-size: var(--app-font-size-sm);
     cursor: pointer;
+    transition: color var(--app-transition-fast);
+
     &:hover {
-      color: var(--el-color-primary);
+      color: var(--app-color-primary);
     }
   }
 }

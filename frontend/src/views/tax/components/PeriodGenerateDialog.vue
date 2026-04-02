@@ -1,22 +1,21 @@
 <script setup lang="ts">
-import { ref, reactive, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { generateTaxPeriods } from '@/api/tax'
+import { reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-defineOptions({ name: 'PeriodGenerateDialog' })
-const { t } = useI18n()
+import { generateTaxPeriods } from '@/api/tax'
 
 const props = defineProps<{
   modelValue: boolean
   contractId: string
 }>()
-
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
   (e: 'generated'): void
 }>()
+defineOptions({ name: 'PeriodGenerateDialog' })
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
@@ -54,11 +53,19 @@ watch(
   },
 )
 
+/**
+ * 关闭期间批量生成对话框并重置表单校验。
+ */
 function handleClose() {
   emit('update:modelValue', false)
   formRef.value?.resetFields()
 }
 
+/**
+ * 提交批量生成期间请求，并在成功后通知父层刷新列表。
+ *
+ * @returns 校验失败或区间非法时提前结束；成功后关闭对话框
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return

@@ -1,8 +1,11 @@
+/**
+ * 定义税务合同、月度期间、资料与作业项的类型。
+ */
 import type {
-  TaxContractStatus,
   BillingCycle,
-  MonthlyStatus,
   MaterialStatus,
+  MonthlyStatus,
+  TaxContractStatus,
 } from '@/constants/enums'
 
 // ── Tax Contract ─────────────────────────────────────────
@@ -49,8 +52,7 @@ export interface CreateTaxContractParams {
   ownerUserId?: string
 }
 
-export interface UpdateTaxContractParams
-  extends Partial<CreateTaxContractParams> {}
+export type UpdateTaxContractParams = Partial<CreateTaxContractParams>
 
 export interface TaxContractQueryParams {
   page?: number
@@ -107,8 +109,7 @@ export interface CreateTaxPeriodParams {
   materialStatus?: MaterialStatus
 }
 
-export interface UpdateTaxPeriodParams
-  extends Partial<CreateTaxPeriodParams> {}
+export type UpdateTaxPeriodParams = Partial<CreateTaxPeriodParams>
 
 export interface TaxPeriodQueryParams {
   page?: number
@@ -150,8 +151,7 @@ export interface CreateTaxDocumentParams {
   remark?: string
 }
 
-export interface UpdateTaxDocumentParams
-  extends Partial<CreateTaxDocumentParams> {}
+export type UpdateTaxDocumentParams = Partial<CreateTaxDocumentParams>
 
 // ── Tax Monthly Work Item ────────────────────────────────
 
@@ -175,5 +175,4 @@ export interface CreateTaxWorkItemParams {
   sortOrder?: number
 }
 
-export interface UpdateTaxWorkItemParams
-  extends Partial<CreateTaxWorkItemParams> {}
+export type UpdateTaxWorkItemParams = Partial<CreateTaxWorkItemParams>

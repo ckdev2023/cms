@@ -52,7 +52,9 @@ async function handleLogin() {
 </script>
 
 <template>
-  <div class="login-container">
+  <div class="login-page">
+    <div class="login-page__bg" />
+
     <div class="login-toolbar">
       <el-select v-model="currentLocale" size="small" class="login-toolbar__locale" aria-label="language">
         <el-option
@@ -63,8 +65,13 @@ async function handleLogin() {
         />
       </el-select>
     </div>
+
     <div class="login-card">
-      <h2 class="login-title">{{ t('login.title') }}</h2>
+      <div class="login-card__brand">
+        <span class="login-card__logo-mark">事</span>
+        <h1 class="login-card__title">{{ t('login.title') }}</h1>
+      </div>
+
       <el-form ref="formRef" :model="form" :rules="rules" size="large" @keyup.enter="handleLogin">
         <el-form-item prop="username">
           <el-input v-model="form.username" :placeholder="t('login.username')" :prefix-icon="User" />
@@ -78,8 +85,8 @@ async function handleLogin() {
             show-password
           />
         </el-form-item>
-        <el-form-item>
-          <el-button type="primary" :loading="loading" style="width: 100%" @click="handleLogin">
+        <el-form-item class="login-card__submit">
+          <el-button type="primary" :loading="loading" class="login-card__btn" @click="handleLogin">
             {{ t('login.submit') }}
           </el-button>
         </el-form-item>
@@ -89,20 +96,56 @@ async function handleLogin() {
 </template>
 
 <style scoped lang="scss">
-.login-container {
+@use '@/styles/variables' as *;
+
+.login-page {
+  position: relative;
   width: 100%;
   height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  position: relative;
+  background: $sidebar-bg;
+  overflow: hidden;
+
+  &__bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 50% 0%, rgba($color-primary, 0.18) 0%, transparent 70%),
+      radial-gradient(ellipse 60% 50% at 80% 100%, rgba($color-primary, 0.10) 0%, transparent 60%);
+    pointer-events: none;
+  }
 }
 
 .login-toolbar {
   position: absolute;
-  top: 24px;
-  right: 24px;
+  top: $spacing-xl;
+  right: $spacing-xl;
+  z-index: 1;
+
+  :deep(.el-select) {
+    --el-text-color-regular: #{$sidebar-text};
+    --el-border-color: rgba(255, 255, 255, 0.15);
+    --el-bg-color: rgba(255, 255, 255, 0.06);
+
+    .el-input__wrapper {
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15) inset;
+      background-color: rgba(255, 255, 255, 0.06);
+
+      &:hover {
+        box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.25) inset;
+      }
+    }
+
+    .el-input__inner {
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .el-select__suffix {
+      color: $sidebar-text;
+    }
+  }
 }
 
 .login-toolbar__locale {
@@ -110,17 +153,75 @@ async function handleLogin() {
 }
 
 .login-card {
+  position: relative;
   width: 400px;
-  padding: 40px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+  padding: $spacing-3xl $spacing-2xl $spacing-2xl;
+  background: $bg-color-base;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-xl, 0 0 0 1px rgba(255, 255, 255, 0.05);
+  z-index: 1;
+
+  &__brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: $spacing-md;
+    margin-bottom: $spacing-2xl;
+  }
+
+  &__logo-mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border-radius: $radius-lg;
+    background: $color-primary;
+    color: #fff;
+    font-size: $font-size-3xl;
+    font-weight: $font-weight-bold;
+    line-height: 1;
+    letter-spacing: -0.01em;
+    box-shadow: 0 4px 12px rgba($color-primary, 0.35);
+  }
+
+  &__title {
+    margin: 0;
+    font-size: $font-size-2xl;
+    font-weight: $font-weight-semibold;
+    color: $text-color-primary;
+    letter-spacing: 0.01em;
+    line-height: $line-height-tight;
+  }
+
+  &__submit {
+    margin-bottom: 0;
+    margin-top: $spacing-sm;
+  }
+
+  &__btn {
+    width: 100%;
+    height: 42px;
+    font-size: $font-size-md;
+    font-weight: $font-weight-medium;
+    letter-spacing: 0.02em;
+    border-radius: $radius-md;
+  }
+
+  :deep(.el-form-item) {
+    margin-bottom: $spacing-lg;
+  }
+
+  :deep(.el-input__wrapper) {
+    border-radius: $radius-md;
+    padding: 2px $spacing-md;
+  }
 }
 
-.login-title {
-  text-align: center;
-  margin-bottom: 32px;
-  color: #303133;
-  font-size: 22px;
+@media (max-width: 480px) {
+  .login-card {
+    width: calc(100% - #{$spacing-2xl} * 2);
+    padding: $spacing-2xl $spacing-lg $spacing-lg;
+  }
 }
 </style>

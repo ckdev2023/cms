@@ -229,9 +229,3 @@ const methodOptions = Object.entries(PaymentMethodLabel).map(([value, label]) =>
   </PageList>
 </template>
 
-<style scoped lang="scss">
-.amount-cell {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-</style>

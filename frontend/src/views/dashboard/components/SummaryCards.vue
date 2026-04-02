@@ -1,87 +1,139 @@
 <script setup lang="ts">
-import { computed, type Component } from 'vue'
-import { User, Document, Money, Tickets } from '@element-plus/icons-vue'
-import type { DashboardSummary } from '@/types/dashboard'
+import { Document, Money, Tickets, User } from '@element-plus/icons-vue'
+import { type Component, computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import type { DashboardSummary } from '@/types/dashboard'
 
 defineProps<{
   data: DashboardSummary
   loading: boolean
 }>()
 
-interface SummaryCard {
+interface KpiCard {
   key: keyof DashboardSummary
   labelKey: string
   icon: Component
-  color: string
+  accent: string
+  tint: string
 }
 
 const { t } = useI18n({ useScope: 'global' })
 
-const cards = computed<SummaryCard[]>(() => [
-  { key: 'activeCustomers', labelKey: 'dashboard.summary.activeCustomers', icon: User, color: '#409eff' },
-  { key: 'activeCases', labelKey: 'dashboard.summary.activeCases', icon: Document, color: '#67c23a' },
-  { key: 'pendingInvoices', labelKey: 'dashboard.summary.pendingInvoices', icon: Money, color: '#e6a23c' },
-  { key: 'activeContracts', labelKey: 'dashboard.summary.activeContracts', icon: Tickets, color: '#909399' },
+const cards = computed<KpiCard[]>(() => [
+  {
+    key: 'activeCustomers',
+    labelKey: 'dashboard.summary.activeCustomers',
+    icon: User,
+    accent: 'var(--app-color-primary)',
+    tint: 'var(--app-color-primary-light)',
+  },
+  {
+    key: 'activeCases',
+    labelKey: 'dashboard.summary.activeCases',
+    icon: Document,
+    accent: 'var(--app-color-success)',
+    tint: 'var(--app-color-success-light)',
+  },
+  {
+    key: 'pendingInvoices',
+    labelKey: 'dashboard.summary.pendingInvoices',
+    icon: Money,
+    accent: 'var(--app-color-warning)',
+    tint: 'var(--app-color-warning-light)',
+  },
+  {
+    key: 'activeContracts',
+    labelKey: 'dashboard.summary.activeContracts',
+    icon: Tickets,
+    accent: 'var(--app-color-info)',
+    tint: 'var(--app-color-info-light)',
+  },
 ])
 </script>
 
 <template>
-  <el-row :gutter="16">
-    <el-col v-for="card in cards" :key="card.key" :xs="12" :sm="12" :md="6">
-      <el-card shadow="hover" class="summary-card" :body-style="{ padding: '20px' }">
-        <el-skeleton :loading="loading" animated :rows="1">
-          <template #default>
-            <div class="summary-card__body">
-              <div class="summary-card__info">
-                <div class="summary-card__label">{{ t(card.labelKey) }}</div>
-                <div class="summary-card__value" :style="{ color: card.color }">
-                  {{ data[card.key] }}
-                </div>
-              </div>
-              <div class="summary-card__icon" :style="{ backgroundColor: card.color + '18' }">
-                <el-icon :size="28" :style="{ color: card.color }">
-                  <component :is="card.icon" />
-                </el-icon>
-              </div>
-            </div>
-          </template>
-        </el-skeleton>
-      </el-card>
-    </el-col>
-  </el-row>
+  <div class="kpi-strip">
+    <div
+      v-for="card in cards"
+      :key="card.key"
+      class="kpi-card"
+      :style="{ '--_accent': card.accent, '--_tint': card.tint }"
+    >
+      <el-skeleton :loading="loading" animated :rows="1">
+        <template #default>
+          <div class="dc-icon-badge kpi-card__icon">
+            <el-icon :size="18">
+              <component :is="card.icon" />
+            </el-icon>
+          </div>
+          <div class="dc-metric dc-metric--xl kpi-card__value">{{ data[card.key] }}</div>
+          <div class="kpi-card__label">{{ t(card.labelKey) }}</div>
+        </template>
+      </el-skeleton>
+    </div>
+  </div>
 </template>
 
 <style scoped lang="scss">
-.summary-card {
-  margin-bottom: 16px;
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--app-spacing-base);
+}
 
-  &__body {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+.kpi-card {
+  background: var(--app-bg-base);
+  border: 1px solid var(--app-border-color-light);
+  border-radius: var(--app-radius-lg);
+  padding: var(--app-spacing-lg) var(--app-spacing-xl);
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow var(--app-transition-base),
+              transform var(--app-transition-base);
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--_accent);
+    border-radius: var(--app-radius-lg) var(--app-radius-lg) 0 0;
   }
 
-  &__label {
-    font-size: 14px;
-    color: #909399;
-    margin-bottom: 8px;
-  }
-
-  &__value {
-    font-size: 28px;
-    font-weight: 600;
-    line-height: 1.2;
+  &:hover {
+    box-shadow: var(--app-shadow-md);
+    transform: translateY(-1px);
   }
 
   &__icon {
-    width: 56px;
-    height: 56px;
-    border-radius: 12px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
+    background: var(--_tint);
+    color: var(--_accent);
+    margin-bottom: var(--app-spacing-md);
+  }
+
+  &__value {
+    margin-bottom: var(--app-spacing-xs);
+  }
+
+  &__label {
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
+    line-height: 1.4;
+  }
+}
+
+@media (max-width: 992px) {
+  .kpi-strip {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 576px) {
+  .kpi-strip {
+    grid-template-columns: 1fr;
   }
 }
 </style>

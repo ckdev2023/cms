@@ -1,17 +1,19 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import PageDetail from '@/components/PageDetail.vue'
-import AdminCaseStatusFlow from './components/AdminCaseStatusFlow.vue'
-import AdminCaseFormDialog from './components/AdminCaseFormDialog.vue'
-import InterviewTab from './components/InterviewTab.vue'
-import AdminCaseFilesTab from './components/AdminCaseFilesTab.vue'
+import { useRoute, useRouter } from 'vue-router'
+
 import { getAdminCase } from '@/api/admin-case'
-import { AdminCaseStatus } from '@/constants/enums'
+import PageDetail from '@/components/PageDetail.vue'
 import { AdminCaseStatusLabel } from '@/constants/enum-labels'
-import { useLocaleFormatter } from '@/utils/locale-format'
+import { AdminCaseStatus } from '@/constants/enums'
 import type { AdminCaseDetail } from '@/types/admin-case'
+import { useLocaleFormatter } from '@/utils/locale-format'
+
+import AdminCaseFilesTab from './components/AdminCaseFilesTab.vue'
+import AdminCaseFormDialog from './components/AdminCaseFormDialog.vue'
+import AdminCaseStatusFlow from './components/AdminCaseStatusFlow.vue'
+import InterviewTab from './components/InterviewTab.vue'
 
 defineOptions({ name: 'AdminCaseDetailView' })
 
@@ -26,10 +28,13 @@ const showEditDialog = ref(false)
 
 const caseId = computed(() => route.params.id as string)
 
-onMounted(() => {
-  fetchCase()
-})
+watch(caseId, () => fetchCase(), { immediate: true })
 
+/**
+ * 按路由中的案件 ID 拉取详情数据，并同步页面加载状态。
+ *
+ * @returns 请求完成后更新当前详情页展示的案件记录
+ */
 async function fetchCase() {
   loading.value = true
   try {
@@ -48,11 +53,7 @@ function handleEdit() {
   showEditDialog.value = true
 }
 
-function handleSaved() {
-  fetchCase()
-}
-
-function handleStatusUpdated() {
+function refreshCaseDetail() {
   fetchCase()
 }
 
@@ -146,7 +147,7 @@ function isExpired(dateStr: string): boolean {
             <AdminCaseStatusFlow
               :case-id="caseId"
               :current-status="adminCase.status"
-              @updated="handleStatusUpdated"
+              @updated="refreshCaseDetail"
             />
           </el-tab-pane>
 
@@ -167,36 +168,8 @@ function isExpired(dateStr: string): boolean {
     <AdminCaseFormDialog
       v-model="showEditDialog"
       :edit-data="adminCase"
-      @saved="handleSaved"
+      @saved="refreshCaseDetail"
     />
   </PageDetail>
 </template>
 
-<style scoped lang="scss">
-.detail-header-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  &__name {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #303133;
-  }
-}
-
-.detail-section {
-  margin-bottom: 16px;
-}
-
-.expire-warning {
-  color: #e6a23c;
-  font-weight: 600;
-}
-
-.expire-danger {
-  color: #f56c6c;
-  font-weight: 600;
-}
-</style>

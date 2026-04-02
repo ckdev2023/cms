@@ -1,9 +1,230 @@
-@use './variables.scss' as *;
+@use './variables' as *;
 
-* {
+// ============================================================
+// 1. CSS Custom Properties — Runtime Design Tokens
+// ============================================================
+// Overrides Element Plus defaults and exposes app-level tokens
+// that any component can consume via var(--app-*).
+// Loaded after element-plus/dist/index.css in main.ts so the
+// cascade ensures our values take precedence.
+// ============================================================
+
+:root {
+  // ---- Element Plus: Primary ----
+  --el-color-primary: #{$color-primary};
+  --el-color-primary-light-3: #{$color-primary-light-3};
+  --el-color-primary-light-5: #{$color-primary-light-5};
+  --el-color-primary-light-7: #{$color-primary-light-7};
+  --el-color-primary-light-8: #{$color-primary-light-8};
+  --el-color-primary-light-9: #{$color-primary-light-9};
+  --el-color-primary-dark-2: #{$color-primary-dark-2};
+
+  // ---- Element Plus: Success ----
+  --el-color-success: #{$color-success};
+  --el-color-success-light-3: #{$color-success-light-3};
+  --el-color-success-light-5: #{$color-success-light-5};
+  --el-color-success-light-7: #{$color-success-light-7};
+  --el-color-success-light-8: #{$color-success-light-8};
+  --el-color-success-light-9: #{$color-success-light-9};
+  --el-color-success-dark-2: #{$color-success-dark-2};
+
+  // ---- Element Plus: Warning ----
+  --el-color-warning: #{$color-warning};
+  --el-color-warning-light-3: #{$color-warning-light-3};
+  --el-color-warning-light-5: #{$color-warning-light-5};
+  --el-color-warning-light-7: #{$color-warning-light-7};
+  --el-color-warning-light-8: #{$color-warning-light-8};
+  --el-color-warning-light-9: #{$color-warning-light-9};
+  --el-color-warning-dark-2: #{$color-warning-dark-2};
+
+  // ---- Element Plus: Danger ----
+  --el-color-danger: #{$color-danger};
+  --el-color-danger-light-3: #{$color-danger-light-3};
+  --el-color-danger-light-5: #{$color-danger-light-5};
+  --el-color-danger-light-7: #{$color-danger-light-7};
+  --el-color-danger-light-8: #{$color-danger-light-8};
+  --el-color-danger-light-9: #{$color-danger-light-9};
+  --el-color-danger-dark-2: #{$color-danger-dark-2};
+
+  // ---- Element Plus: Info ----
+  --el-color-info: #{$color-info};
+  --el-color-info-light-3: #{$color-info-light-3};
+  --el-color-info-light-5: #{$color-info-light-5};
+  --el-color-info-light-7: #{$color-info-light-7};
+  --el-color-info-light-8: #{$color-info-light-8};
+  --el-color-info-light-9: #{$color-info-light-9};
+  --el-color-info-dark-2: #{$color-info-dark-2};
+
+  // ---- Element Plus: Text ----
+  --el-text-color-primary: #{$text-color-primary};
+  --el-text-color-regular: #{$text-color-regular};
+  --el-text-color-secondary: #{$text-color-secondary};
+  --el-text-color-placeholder: #{$text-color-placeholder};
+  --el-text-color-disabled: #{$text-color-disabled};
+
+  // ---- Element Plus: Background ----
+  --el-bg-color: #{$bg-color-base};
+  --el-bg-color-page: #{$bg-color-page};
+  --el-bg-color-overlay: #{$bg-color-overlay};
+
+  // ---- Element Plus: Fill ----
+  --el-fill-color: #{$fill-color};
+  --el-fill-color-light: #{$fill-color-light};
+  --el-fill-color-lighter: #{$fill-color-lighter};
+  --el-fill-color-extra-light: #{$fill-color-extra-light};
+  --el-fill-color-blank: #{$fill-color-blank};
+  --el-fill-color-dark: #{$fill-color-dark};
+
+  // ---- Element Plus: Border ----
+  --el-border-color: #{$border-color};
+  --el-border-color-light: #{$border-color-light};
+  --el-border-color-lighter: #{$border-color-lighter};
+  --el-border-color-extra-light: #{$border-color-extra-light};
+  --el-border-color-dark: #{$border-color-dark};
+
+  // ---- Element Plus: Border Radius ----
+  --el-border-radius-base: #{$radius-base};
+  --el-border-radius-small: #{$radius-sm};
+  --el-border-radius-round: #{$radius-round};
+
+  // ---- Element Plus: Font ----
+  --el-font-family: #{$font-family};
+  --el-font-size-base: #{$font-size-base};
+  --el-font-size-small: #{$font-size-sm};
+  --el-font-size-extra-small: #{$font-size-xs};
+  --el-font-size-medium: #{$font-size-lg};
+  --el-font-size-large: #{$font-size-xl};
+
+  // ---- Element Plus: Shadow ----
+  --el-box-shadow: #{$shadow-md};
+  --el-box-shadow-light: #{$shadow-sm};
+  --el-box-shadow-lighter: #{$shadow-xs};
+  --el-box-shadow-dark: #{$shadow-lg};
+
+  // ---- App Tokens: Color ----
+  --app-color-primary: #{$color-primary};
+  --app-color-primary-light: #{$color-primary-light-9};
+  --app-color-success: #{$color-success};
+  --app-color-success-light: #{$color-success-light-9};
+  --app-color-warning: #{$color-warning};
+  --app-color-warning-light: #{$color-warning-light-9};
+  --app-color-danger: #{$color-danger};
+  --app-color-danger-light: #{$color-danger-light-9};
+  --app-color-info: #{$color-info};
+  --app-color-info-light: #{$color-info-light-9};
+
+  // ---- App Tokens: Text ----
+  --app-text-primary: #{$text-color-primary};
+  --app-text-regular: #{$text-color-regular};
+  --app-text-secondary: #{$text-color-secondary};
+  --app-text-placeholder: #{$text-color-placeholder};
+  --app-text-disabled: #{$text-color-disabled};
+
+  // ---- App Tokens: Background ----
+  --app-bg-page: #{$bg-color-page};
+  --app-bg-base: #{$bg-color-base};
+  --app-bg-overlay: #{$bg-color-overlay};
+  --app-bg-hover: #{$bg-color-hover};
+  --app-bg-active: #{$bg-color-active};
+  --app-bg-muted: #{$bg-color-muted};
+
+  // ---- App Tokens: Border ----
+  --app-border-color: #{$border-color};
+  --app-border-color-light: #{$border-color-light};
+
+  // ---- App Tokens: Sidebar ----
+  --app-sidebar-bg: #{$sidebar-bg};
+  --app-sidebar-logo-bg: #{$sidebar-logo-bg};
+  --app-sidebar-text: #{$sidebar-text};
+  --app-sidebar-text-active: #{$sidebar-text-active};
+  --app-sidebar-active-bg: #{$sidebar-active-bg};
+  --app-sidebar-menu-hover-bg: #{$sidebar-menu-hover-bg};
+
+  // ---- App Tokens: Layout ----
+  --app-sidebar-width: #{$sidebar-width};
+  --app-sidebar-collapsed-width: #{$sidebar-collapsed-width};
+  --app-header-height: #{$header-height};
+  --app-tags-height: #{$tags-height};
+
+  // ---- App Tokens: Radius ----
+  --app-radius-sm: #{$radius-sm};
+  --app-radius-base: #{$radius-base};
+  --app-radius-md: #{$radius-md};
+  --app-radius-lg: #{$radius-lg};
+  --app-radius-xl: #{$radius-xl};
+  --app-radius-round: #{$radius-round};
+
+  // ---- App Tokens: Shadow ----
+  --app-shadow-xs: #{$shadow-xs};
+  --app-shadow-sm: #{$shadow-sm};
+  --app-shadow-md: #{$shadow-md};
+  --app-shadow-lg: #{$shadow-lg};
+  --app-shadow-xl: #{$shadow-xl};
+
+  // ---- App Tokens: Spacing ----
+  --app-spacing-xs: #{$spacing-xs};
+  --app-spacing-sm: #{$spacing-sm};
+  --app-spacing-md: #{$spacing-md};
+  --app-spacing-base: #{$spacing-base};
+  --app-spacing-lg: #{$spacing-lg};
+  --app-spacing-xl: #{$spacing-xl};
+  --app-spacing-2xl: #{$spacing-2xl};
+  --app-spacing-3xl: #{$spacing-3xl};
+
+  // ---- App Tokens: Typography ----
+  --app-font-family: #{$font-family};
+  --app-font-family-mono: #{$font-family-mono};
+  --app-font-size-xs: #{$font-size-xs};
+  --app-font-size-sm: #{$font-size-sm};
+  --app-font-size-base: #{$font-size-base};
+  --app-font-size-md: #{$font-size-md};
+  --app-font-size-lg: #{$font-size-lg};
+  --app-font-size-xl: #{$font-size-xl};
+  --app-font-size-2xl: #{$font-size-2xl};
+  --app-font-size-3xl: #{$font-size-3xl};
+  --app-font-weight-normal: #{$font-weight-normal};
+  --app-font-weight-medium: #{$font-weight-medium};
+  --app-font-weight-semibold: #{$font-weight-semibold};
+  --app-font-weight-bold: #{$font-weight-bold};
+
+  // ---- App Tokens: Transition ----
+  --app-transition-fast: #{$transition-fast};
+  --app-transition-base: #{$transition-base};
+  --app-transition-slow: #{$transition-slow};
+
+  // ---- App Tokens: Focus ----
+  --app-focus-ring-color: #{$focus-ring-color};
+  --app-focus-ring-width: #{$focus-ring-width};
+  --app-focus-ring-offset: #{$focus-ring-offset};
+
+  // ---- App Tokens: Selected ----
+  --app-selected-bg: #{$selected-bg};
+  --app-selected-border: #{$selected-border};
+
+  // ---- App Tokens: Skeleton ----
+  --app-skeleton-base: #{$skeleton-base};
+  --app-skeleton-highlight: #{$skeleton-highlight};
+
+  // ---- App Tokens: Disabled ----
+  --app-disabled-opacity: #{$disabled-opacity};
+}
+
+// ============================================================
+// 2. Base Reset & Typography
+// ============================================================
+
+*,
+*::before,
+*::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 html,
@@ -11,8 +232,10 @@ body,
 #app {
   width: 100%;
   height: 100%;
-  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB',
-    'Hiragino Kaku Gothic ProN', 'Microsoft YaHei', Arial, sans-serif;
+  font-family: var(--app-font-family);
+  font-size: var(--app-font-size-base);
+  color: var(--app-text-primary);
+  line-height: #{$line-height-normal};
 }
 
 a {
@@ -20,14 +243,537 @@ a {
   color: inherit;
 }
 
-.page-container {
-  padding: 20px;
-}
+// ============================================================
+// 3. Element Plus — Global Component Skin
+// ============================================================
 
+// ---- Card ----
 .el-card {
-  border-radius: 4px;
+  border-radius: var(--app-radius-md);
+  border-color: var(--app-border-color);
+
+  &.is-always-shadow {
+    box-shadow: var(--app-shadow-sm);
+  }
+
+  &.is-hover-shadow:hover {
+    box-shadow: var(--app-shadow-md);
+  }
 }
 
+// ---- Table ----
 .el-table {
-  --el-table-header-bg-color: #fafafa;
+  --el-table-border-color: var(--app-border-color-light);
+  --el-table-header-bg-color: #{$bg-color-page};
+  --el-table-row-hover-bg-color: var(--app-bg-hover);
+  --el-table-header-text-color: var(--app-text-secondary);
+
+  font-size: var(--app-font-size-base);
+
+  th.el-table__cell {
+    font-weight: #{$font-weight-semibold};
+    font-size: var(--app-font-size-sm);
+  }
+}
+
+// ---- Dialog ----
+.el-dialog {
+  border-radius: var(--app-radius-lg);
+
+  .el-dialog__header {
+    padding: #{$spacing-lg} #{$spacing-xl} #{$spacing-md};
+  }
+
+  .el-dialog__title {
+    font-weight: #{$font-weight-semibold};
+    font-size: var(--app-font-size-lg);
+  }
+
+  .el-dialog__body {
+    padding: #{$spacing-base} #{$spacing-xl};
+  }
+
+  .el-dialog__footer {
+    padding: #{$spacing-md} #{$spacing-xl} #{$spacing-lg};
+  }
+}
+
+// ---- Drawer ----
+.el-drawer {
+  .el-drawer__header {
+    margin-bottom: 0;
+    padding: #{$spacing-lg} #{$spacing-xl};
+    border-bottom: 1px solid var(--app-border-color);
+  }
+
+  .el-drawer__title {
+    font-weight: #{$font-weight-semibold};
+  }
+
+  .el-drawer__body {
+    padding: #{$spacing-lg} #{$spacing-xl};
+  }
+
+  .el-drawer__footer {
+    padding: #{$spacing-md} #{$spacing-xl} #{$spacing-lg};
+    border-top: 1px solid var(--app-border-color);
+  }
+}
+
+// ---- Message Box ----
+.el-message-box {
+  border-radius: var(--app-radius-lg);
+}
+
+// ---- Message (toast) ----
+.el-message {
+  border-radius: var(--app-radius-md);
+}
+
+// ---- Notification ----
+.el-notification {
+  border-radius: var(--app-radius-md);
+}
+
+// ---- Dropdown Menu ----
+.el-dropdown__popper.el-popper {
+  border-radius: var(--app-radius-md);
+}
+
+// ---- Popover ----
+.el-popover.el-popper {
+  border-radius: var(--app-radius-md);
+}
+
+// ---- Tag ----
+.el-tag {
+  border-radius: var(--app-radius-sm);
+  font-weight: #{$font-weight-medium};
+}
+
+.el-table .el-tag {
+  border-radius: var(--app-radius-round);
+  padding: 0 #{$spacing-sm};
+}
+
+// ---- Pagination ----
+.el-pagination {
+  --el-pagination-font-size: #{$font-size-sm};
+
+  .el-pager li {
+    border-radius: var(--app-radius-sm);
+    min-width: 30px;
+    height: 30px;
+    line-height: 30px;
+  }
+
+  .btn-prev,
+  .btn-next {
+    border-radius: var(--app-radius-sm);
+    min-width: 30px;
+    height: 30px;
+  }
+
+  &.is-background .el-pager li:not(.is-disabled).is-active {
+    font-weight: #{$font-weight-semibold};
+  }
+}
+
+// ---- Form ----
+.el-form-item__label {
+  font-weight: #{$font-weight-medium};
+  color: var(--app-text-regular);
+}
+
+// ---- Menu (sidebar context — unscoped overrides) ----
+.el-menu {
+  border-right: none;
+}
+
+// ============================================================
+// 4. Global UI States
+// ============================================================
+
+// ---- 4a. Focus-visible — keyboard accessibility ring ----
+// Applied to buttons, links, inputs, and interactive elements
+// so keyboard users see a clear focus indicator.
+
+:focus-visible {
+  outline: var(--app-focus-ring-width) solid var(--app-focus-ring-color);
+  outline-offset: var(--app-focus-ring-offset);
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.el-button:focus-visible,
+.el-input__wrapper:focus-within,
+.el-select .el-input.is-focus .el-input__wrapper,
+.el-checkbox__input.is-focus .el-checkbox__inner,
+.el-radio__input.is-focus .el-radio__inner,
+.el-switch:focus-visible {
+  outline: var(--app-focus-ring-width) solid var(--app-focus-ring-color);
+  outline-offset: var(--app-focus-ring-offset);
+}
+
+.el-input__wrapper:focus-within {
+  outline-offset: -1px;
+}
+
+// ---- 4b. Loading overlay — themed v-loading ----
+.el-loading-mask {
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(1px);
+  border-radius: inherit;
+  z-index: 10;
+}
+
+.el-loading-spinner {
+  .circular {
+    width: 36px;
+    height: 36px;
+  }
+
+  .path {
+    stroke: var(--el-color-primary);
+    stroke-width: 3;
+  }
+
+  .el-loading-text {
+    color: var(--app-text-secondary);
+    font-size: var(--app-font-size-sm);
+    margin-top: var(--app-spacing-sm);
+  }
+}
+
+// ---- 4c. Empty state — unified el-empty theming ----
+.el-empty {
+  padding: var(--app-spacing-2xl) var(--app-spacing-base);
+
+  .el-empty__image {
+    width: 100px;
+    opacity: 0.6;
+  }
+
+  .el-empty__description p {
+    color: var(--app-text-placeholder);
+    font-size: var(--app-font-size-sm);
+    line-height: #{$line-height-normal};
+  }
+
+  .el-empty__bottom {
+    margin-top: var(--app-spacing-base);
+  }
+}
+
+// Compact variant for embedded empty states (cards, panels, tabs)
+.el-card .el-empty,
+.el-tab-pane .el-empty,
+.pro-drawer__body .el-empty {
+  padding: var(--app-spacing-xl) var(--app-spacing-base);
+
+  .el-empty__image {
+    width: 80px;
+  }
+}
+
+// ---- 4d. Skeleton — themed el-skeleton ----
+.el-skeleton {
+  --el-skeleton-color: var(--app-skeleton-base);
+  --el-skeleton-to-color: var(--app-skeleton-highlight);
+}
+
+.el-skeleton.is-animated .el-skeleton__item {
+  border-radius: var(--app-radius-sm);
+}
+
+.el-skeleton__paragraph {
+  margin-top: var(--app-spacing-md);
+}
+
+// ---- 4e. Hover — interactive element transitions ----
+.el-table__row {
+  transition: background-color var(--app-transition-fast);
+}
+
+.el-table__row--clickable,
+.el-table__body tr[style*="cursor"] {
+  cursor: pointer;
+}
+
+// ---- 4f. Selected state — reusable selection pattern ----
+.is-selected,
+[aria-selected='true'] {
+  background-color: var(--app-selected-bg) !important;
+  border-color: var(--app-selected-border);
+}
+
+.el-table__row.is-selected td.el-table__cell {
+  background-color: var(--app-selected-bg);
+}
+
+// ---- 4g. Danger zone — destructive action styling ----
+.danger-zone {
+  border: 1px solid var(--el-color-danger-light-5);
+  border-radius: var(--app-radius-md);
+  padding: var(--app-spacing-lg);
+  background: var(--el-color-danger-light-9);
+
+  &__title {
+    font-weight: var(--app-font-weight-semibold);
+    color: var(--el-color-danger);
+    margin-bottom: var(--app-spacing-sm);
+  }
+
+  &__desc {
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-regular);
+    margin-bottom: var(--app-spacing-base);
+  }
+}
+
+.el-button--danger.is-link:hover,
+.el-button--danger.is-text:hover {
+  color: var(--el-color-danger-dark-2);
+}
+
+// ---- 4h. Disabled state — unified opacity ----
+.is-disabled,
+[disabled],
+[aria-disabled='true'] {
+  &:not(.el-button):not(.el-input):not(.el-select):not(.el-radio):not(.el-checkbox):not(.el-switch) {
+    opacity: var(--app-disabled-opacity);
+    pointer-events: none;
+  }
+}
+
+// ---- 4i. El-Alert refinements ----
+.el-alert {
+  border-radius: var(--app-radius-md);
+
+  .el-alert__title {
+    font-weight: var(--app-font-weight-medium);
+  }
+}
+
+// ---- 4j. Status badge consistency ----
+.el-table .el-tag {
+  font-variant-numeric: tabular-nums;
+}
+
+// ---- 4k. Smooth page transition ----
+.el-main {
+  &.main-content {
+    scroll-behavior: smooth;
+  }
+}
+
+// ============================================================
+// 5. Utility Classes
+// ============================================================
+
+.page-container {
+  padding: var(--app-spacing-lg);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.text-primary {
+  color: var(--app-text-primary);
+}
+
+.text-regular {
+  color: var(--app-text-regular);
+}
+
+.text-secondary {
+  color: var(--app-text-secondary);
+}
+
+.text-placeholder {
+  color: var(--app-text-placeholder);
+}
+
+// ============================================================
+// 6. Business Page — Shared Utility Classes
+// ============================================================
+// Extracted from repeated scoped styles across detail/list views
+// so every business page shares one canonical implementation.
+// ============================================================
+
+// ---- Detail header info (name + tags + actions row) ----
+.detail-header-info {
+  display: flex;
+  align-items: center;
+  gap: var(--app-spacing-sm);
+
+  &__name {
+    margin: 0;
+    font-size: var(--app-font-size-xl);
+    font-weight: var(--app-font-weight-semibold);
+    color: var(--app-text-primary);
+    line-height: 1.3;
+  }
+
+  &__balance {
+    font-size: var(--app-font-size-lg);
+    font-weight: var(--app-font-weight-bold);
+    color: var(--app-color-primary);
+    padding: 2px var(--app-spacing-md);
+    background: var(--app-color-primary-light);
+    border-radius: var(--app-radius-sm);
+  }
+
+  &__actions {
+    display: flex;
+    gap: var(--app-spacing-xs);
+    margin-left: var(--app-spacing-sm);
+  }
+}
+
+// ---- Detail section card spacing ----
+.detail-section {
+  margin-bottom: var(--app-spacing-base);
+
+  &:last-child {
+    margin-bottom: 0;
+  }
+}
+
+// ---- Card header with count badge ----
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .item-count,
+  .alloc-count {
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
+  }
+}
+
+// ---- Amount display in tables ----
+.amount-cell {
+  font-weight: var(--app-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+
+  &--zero {
+    color: var(--app-text-disabled);
+  }
+
+  &.amount--plus {
+    color: var(--app-color-success);
+  }
+
+  &.amount--minus {
+    color: var(--app-color-danger);
+  }
+}
+
+// ---- Highlighted amount in descriptions ----
+.amount-highlight {
+  font-size: var(--app-font-size-lg);
+  font-weight: var(--app-font-weight-bold);
+  color: var(--app-color-primary);
+}
+
+.balance-highlight {
+  font-size: var(--app-font-size-xl);
+  font-weight: var(--app-font-weight-bold);
+  color: var(--app-color-primary);
+}
+
+// ---- Summary totals row ----
+.items-total,
+.payment-summary,
+.alloc-total {
+  text-align: right;
+  padding: var(--app-spacing-md) var(--app-spacing-sm) 0;
+  font-size: var(--app-font-size-lg);
+
+  strong {
+    color: var(--app-color-primary);
+    font-size: var(--app-font-size-xl);
+  }
+}
+
+.payment-remaining {
+  font-size: var(--app-font-size-base);
+  color: var(--app-text-secondary);
+}
+
+// ---- Expiration / due date warnings ----
+.expire-warning,
+.due-warning {
+  color: var(--app-color-warning);
+  font-weight: var(--app-font-weight-semibold);
+}
+
+.expire-danger,
+.due-danger {
+  color: var(--app-color-danger);
+  font-weight: var(--app-font-weight-semibold);
+}
+
+// ---- Void / reversal info card accent ----
+.void-info,
+.reversal-info {
+  :deep(.el-descriptions__title) {
+    color: var(--app-color-danger);
+  }
+}
+
+// ---- JSON pre block (audit log detail) ----
+.log-json {
+  max-height: 200px;
+  overflow: auto;
+  font-size: var(--app-font-size-xs);
+  line-height: 1.4;
+  background: var(--el-fill-color-light);
+  padding: var(--app-spacing-sm);
+  border-radius: var(--app-radius-sm);
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+// ---- Summary stat cards (deposit list) ----
+.summary-cards {
+  display: flex;
+  gap: var(--app-spacing-base);
+  margin-bottom: var(--app-spacing-base);
+}
+
+.summary-card {
+  display: flex;
+  flex-direction: column;
+  padding: var(--app-spacing-md) var(--app-spacing-lg);
+  background: var(--app-bg-muted);
+  border-radius: var(--app-radius-md);
+  min-width: 140px;
+
+  &__label {
+    font-size: var(--app-font-size-xs);
+    color: var(--app-text-secondary);
+    margin-bottom: var(--app-spacing-xs);
+  }
+
+  &__value {
+    font-size: var(--app-font-size-2xl);
+    font-weight: var(--app-font-weight-bold);
+    color: var(--app-text-primary);
+    font-variant-numeric: tabular-nums;
+
+    &--active {
+      color: var(--app-color-success);
+    }
+
+    &--amount {
+      color: var(--app-color-primary);
+    }
+  }
 }

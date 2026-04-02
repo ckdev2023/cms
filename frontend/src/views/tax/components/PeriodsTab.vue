@@ -1,26 +1,28 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { Calendar, Delete,Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { Plus, Calendar, Delete } from '@element-plus/icons-vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+
 import {
-  getTaxPeriods,
   deleteTaxPeriod,
+  getTaxPeriods,
 } from '@/api/tax'
-import { MonthlyStatus, MaterialStatus } from '@/constants/enums'
-import { MonthlyStatusLabel, MaterialStatusLabel } from '@/constants/enum-labels'
 import { useConfirm } from '@/composables/useConfirm'
+import { MaterialStatusLabel,MonthlyStatusLabel } from '@/constants/enum-labels'
+import { MaterialStatus,MonthlyStatus } from '@/constants/enums'
+import type { TaxPeriodItem, TaxPeriodQueryParams } from '@/types/tax'
 import { useLocaleFormatter } from '@/utils/locale-format'
+
+import PeriodDetailDialog from './PeriodDetailDialog.vue'
 import PeriodFormDialog from './PeriodFormDialog.vue'
 import PeriodGenerateDialog from './PeriodGenerateDialog.vue'
-import PeriodDetailDialog from './PeriodDetailDialog.vue'
-import type { TaxPeriodItem, TaxPeriodQueryParams } from '@/types/tax'
-
-defineOptions({ name: 'PeriodsTab' })
 
 const props = defineProps<{
   contractId: string
 }>()
+
+defineOptions({ name: 'PeriodsTab' })
 
 const { confirmDelete } = useConfirm()
 const { t } = useI18n({ useScope: 'global' })
@@ -53,6 +55,11 @@ watch(
   { immediate: true },
 )
 
+/**
+ * 拉取当前税务合约下的期间分页数据。
+ *
+ * @returns 完成请求后同步表格数据与总数
+ */
 async function fetchPeriods() {
   loading.value = true
   try {
@@ -90,6 +97,12 @@ function openDetailDialog(item: TaxPeriodItem) {
   showDetailDialog.value = true
 }
 
+/**
+ * 删除指定期间，并在成功后刷新期间列表。
+ *
+ * @param item 当前选中的期间记录
+ * @returns 用户取消时提前结束；删除成功后重新拉取列表
+ */
 async function handleDelete(item: TaxPeriodItem) {
   const confirmed = await confirmDelete(
     t('detailViews.taxContract.periodsTab.deleteName', { period: item.periodYm }),
@@ -120,6 +133,9 @@ function handlePeriodDetailUpdated() {
 const filterMonthlyStatus = ref<MonthlyStatus | ''>('')
 const filterMaterialStatus = ref<MaterialStatus | ''>('')
 
+/**
+ * 将工具栏筛选条件写回查询参数并重新加载期间列表。
+ */
 function handleFilter() {
   queryParams.monthlyStatus = filterMonthlyStatus.value || undefined
   queryParams.materialStatus = filterMaterialStatus.value || undefined
@@ -127,6 +143,9 @@ function handleFilter() {
   fetchPeriods()
 }
 
+/**
+ * 清空期间状态筛选并恢复默认分页查询。
+ */
 function handleResetFilter() {
   filterMonthlyStatus.value = ''
   filterMaterialStatus.value = ''
@@ -136,6 +155,12 @@ function handleResetFilter() {
   fetchPeriods()
 }
 
+/**
+ * 将月度主状态映射为标签颜色。
+ *
+ * @param status 当前期间主状态
+ * @returns Element Plus 标签类型
+ */
 function monthlyStatusTagType(
   status: MonthlyStatus,
 ): 'info' | 'success' | 'warning' {
@@ -151,6 +176,12 @@ function monthlyStatusTagType(
   }
 }
 
+/**
+ * 将资料收集状态映射为标签颜色。
+ *
+ * @param status 当前期间资料状态
+ * @returns Element Plus 标签类型
+ */
 function materialStatusTagType(
   status: MaterialStatus,
 ): 'info' | 'success' | 'warning' {
@@ -186,6 +217,12 @@ const isDeadlineOverdue = computed(() => {
   }
 })
 
+/**
+ * 将期间年月字符串格式化为多语言展示文本。
+ *
+ * @param ym 期间值，格式为 `YYYY-MM`
+ * @returns 本地化后的期间标签
+ */
 function formatPeriodLabel(ym: string) {
   const [year, month] = ym.split('-')
   return t('detailViews.taxContract.periodsTab.periodLabel', {
@@ -398,16 +435,16 @@ function formatPeriodLabel(ym: string) {
 }
 
 .deadline-overdue {
-  color: #f56c6c;
-  font-weight: 600;
+  color: var(--app-color-danger);
+  font-weight: var(--app-font-weight-semibold);
 }
 
 .deadline-urgent {
-  color: #e6a23c;
-  font-weight: 600;
+  color: var(--app-color-warning);
+  font-weight: var(--app-font-weight-semibold);
 }
 
 .text-muted {
-  color: #c0c4cc;
+  color: var(--app-text-disabled);
 }
 </style>

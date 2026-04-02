@@ -1,28 +1,29 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
+import { computed, ref, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { uploadFile } from '@/api/file'
-import { BusinessType } from '@/constants/enums'
 import { BusinessTypeLabel } from '@/constants/enum-labels'
+import { BusinessType } from '@/constants/enums'
 import type { UploadFileParams } from '@/types/file'
 
+const emit = defineEmits<{ saved: [] }>()
 defineOptions({ name: 'FileUploadDialog' })
 const { t } = useI18n()
 
 const visible = defineModel<boolean>({ default: false })
-const emit = defineEmits<{ saved: [] }>()
-
 const MAX_SIZE_MB = 50
 const ALLOWED_ACCEPT = '.jpg,.jpeg,.png,.gif,.webp,.pdf,.xlsx,.xls,.docx,.doc,.txt,.csv'
+const allowedExtensions = new Set(ALLOWED_ACCEPT.split(','))
 
 const uploading = ref(false)
 const selectedFiles = ref<File[]>([])
 const businessType = ref<BusinessType>(BusinessType.INTERNAL)
 const description = ref('')
 
-const fileInputRef = ref<HTMLInputElement | null>(null)
+const fileInputRef = useTemplateRef<HTMLInputElement>('fileInputRef')
 
 watch(visible, (val) => {
   if (!val) {
@@ -36,6 +37,11 @@ function handleDragOver(e: DragEvent) {
   e.preventDefault()
 }
 
+/**
+ * 接收用户拖拽到上传区域的文件并加入待上传列表。
+ *
+ * @param e - 浏览器拖拽事件对象
+ */
 function handleDrop(e: DragEvent) {
   e.preventDefault()
   if (e.dataTransfer?.files) {
@@ -47,6 +53,11 @@ function handleClickSelect() {
   fileInputRef.value?.click()
 }
 
+/**
+ * 处理原生文件选择器返回的文件列表。
+ *
+ * @param e - 文件输入框的 change 事件
+ */
 function handleFileChange(e: Event) {
   const input = e.target as HTMLInputElement
   if (input.files) {
@@ -55,6 +66,13 @@ function handleFileChange(e: Event) {
   }
 }
 
+/**
+ * 校验并收集用户本次待上传的文件。
+ *
+ * 超出大小限制或扩展名不在白名单内的文件会即时提示，并跳过加入待上传列表。
+ *
+ * @param files - 用户通过拖拽或文件选择器提供的原始文件列表
+ */
 function addFiles(files: File[]) {
   for (const file of files) {
     if (file.size > MAX_SIZE_MB * 1024 * 1024) {
@@ -62,7 +80,7 @@ function addFiles(files: File[]) {
       continue
     }
     const ext = '.' + file.name.split('.').pop()?.toLowerCase()
-    if (!ALLOWED_ACCEPT.split(',').includes(ext)) {
+    if (!allowedExtensions.has(ext)) {
       ElMessage.warning(t('dialogs.fileUpload.invalidFileType', { name: file.name }))
       continue
     }
@@ -84,6 +102,11 @@ function formatSize(bytes: number): string {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
+/**
+ * 按当前分类和说明批量上传已选择的文件。
+ *
+ * 上传成功后关闭弹窗并通知父级刷新；若中途失败，则保留已成功数量用于提示部分成功结果。
+ */
 async function handleSubmit() {
   if (!canSubmit.value) return
   uploading.value = true
@@ -153,7 +176,7 @@ async function handleSubmit() {
           @drop="handleDrop"
           @click="handleClickSelect"
         >
-          <el-icon :size="40" color="#c0c4cc"><UploadFilled /></el-icon>
+          <el-icon :size="40" class="upload-zone__icon"><UploadFilled /></el-icon>
           <p class="upload-zone__text">
             {{ t('dialogs.fileUpload.selectHint') }}
           </p>
@@ -212,47 +235,51 @@ async function handleSubmit() {
 .upload-zone {
   width: 100%;
   min-height: 120px;
-  border: 2px dashed #dcdfe6;
-  border-radius: 8px;
+  border: 2px dashed var(--app-border-color);
+  border-radius: var(--app-radius-md);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 0.2s;
-  padding: 16px;
+  transition: border-color var(--app-transition-base);
+  padding: var(--app-spacing-base);
 
   &:hover {
-    border-color: #409eff;
+    border-color: var(--app-color-primary);
+  }
+
+  &__icon {
+    color: var(--app-text-disabled);
   }
 
   &__text {
-    margin: 8px 0 4px;
-    font-size: 14px;
-    color: #606266;
+    margin: var(--app-spacing-sm) 0 var(--app-spacing-xs);
+    font-size: var(--app-font-size-base);
+    color: var(--app-text-regular);
   }
 
   &__hint {
     margin: 0;
-    font-size: 12px;
-    color: #909399;
+    font-size: var(--app-font-size-xs);
+    color: var(--app-text-secondary);
   }
 }
 
 .file-list {
-  margin-top: 12px;
+  margin-top: var(--app-spacing-md);
   max-height: 200px;
   overflow-y: auto;
 
   &__item {
     display: flex;
     align-items: center;
-    padding: 6px 8px;
-    border-radius: 4px;
-    gap: 8px;
+    padding: var(--app-spacing-xs) var(--app-spacing-sm);
+    border-radius: var(--app-radius-sm);
+    gap: var(--app-spacing-sm);
 
     &:hover {
-      background: #f5f7fa;
+      background: var(--app-bg-hover);
     }
   }
 
@@ -261,14 +288,14 @@ async function handleSubmit() {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 13px;
-    color: #303133;
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-primary);
   }
 
   &__size {
     flex-shrink: 0;
-    font-size: 12px;
-    color: #909399;
+    font-size: var(--app-font-size-xs);
+    color: var(--app-text-secondary);
   }
 }
 </style>

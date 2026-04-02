@@ -1,17 +1,29 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import PageDetail from '@/components/PageDetail.vue'
-import InvoiceStatusFlow from './components/InvoiceStatusFlow.vue'
-import InvoiceFormDialog from './components/InvoiceFormDialog.vue'
+import { useRoute, useRouter } from 'vue-router'
+
 import { getInvoice } from '@/api/invoice'
 import { getPaymentsByInvoice } from '@/api/payment'
-import { InvoiceStatus, InvoiceType, PaymentStatus, PaymentMethod } from '@/constants/enums'
-import { InvoiceStatusLabel, InvoiceTypeLabel, PaymentStatusLabel, PaymentMethodLabel } from '@/constants/enum-labels'
-import { useLocaleFormatter } from '@/utils/locale-format'
-import type { InvoiceDetail } from '@/types/invoice'
+import PageDetail from '@/components/PageDetail.vue'
+import {
+  InvoiceStatusLabel,
+  InvoiceTypeLabel,
+  PaymentMethodLabel,
+  PaymentStatusLabel,
+} from '@/constants/enum-labels'
+import {
+  InvoiceStatus,
+  InvoiceType,
+  PaymentMethod,
+  PaymentStatus,
+} from '@/constants/enums'
+import type { CreateInvoiceItemParams, InvoiceDetail } from '@/types/invoice'
 import type { InvoicePaymentItem } from '@/types/payment'
+import { useLocaleFormatter } from '@/utils/locale-format'
+
+import InvoiceFormDialog from './components/InvoiceFormDialog.vue'
+import InvoiceStatusFlow from './components/InvoiceStatusFlow.vue'
 
 defineOptions({ name: 'InvoiceDetailView' })
 
@@ -28,26 +40,49 @@ const paymentsLoading = ref(false)
 
 const invoiceId = computed(() => route.params.id as string)
 const canEdit = computed(() => invoice.value?.status === InvoiceStatus.DRAFT)
+const hasPayments = computed(() => invoicePayments.value.length > 0)
+const remainingAmount = computed(() => Number(invoice.value?.totalAmount ?? 0) - paidTotal.value)
+const invoiceEditItems = computed<CreateInvoiceItemParams[]>(() =>
+  invoice.value?.items.map((item) => ({
+    description: item.description,
+    quantity: item.quantity,
+    unitPrice: item.unitPrice,
+  })) ?? [],
+)
 
-onMounted(() => {
-  fetchInvoice()
-  fetchPayments()
-})
+watch(
+  invoiceId,
+  (id) => {
+    void fetchInvoice(id)
+    void fetchPayments(id)
+  },
+  { immediate: true },
+)
 
-async function fetchInvoice() {
+/**
+ * 按当前路由中的发票 ID 拉取最新明细，保证详情页与状态页签使用同一份数据源。
+ *
+ * @param id - 当前详情页对应的发票 ID
+ */
+async function fetchInvoice(id: string): Promise<void> {
   loading.value = true
   try {
-    const res = await getInvoice(invoiceId.value)
+    const res = await getInvoice(id)
     invoice.value = res.data
   } finally {
     loading.value = false
   }
 }
 
-async function fetchPayments() {
+/**
+ * 查询当前发票已关联的收款记录，用于展示支付列表与剩余待收金额。
+ *
+ * @param id - 当前详情页对应的发票 ID
+ */
+async function fetchPayments(id: string): Promise<void> {
   paymentsLoading.value = true
   try {
-    const res = await getPaymentsByInvoice(invoiceId.value)
+    const res = await getPaymentsByInvoice(id)
     invoicePayments.value = res.data
   } finally {
     paymentsLoading.value = false
@@ -67,12 +102,12 @@ function handleEdit() {
 }
 
 function handleSaved() {
-  fetchInvoice()
+  void fetchInvoice(invoiceId.value)
 }
 
 function handleStatusUpdated() {
-  fetchInvoice()
-  fetchPayments()
+  void fetchInvoice(invoiceId.value)
+  void fetchPayments(invoiceId.value)
 }
 
 function goToPayment(paymentId: string) {
@@ -217,7 +252,7 @@ const paymentStatusTagType: Record<string, 'primary' | 'success' | 'info' | 'war
           <el-tab-pane :label="t('detailViews.invoice.paymentInfo')" name="payments">
             <div v-loading="paymentsLoading">
               <el-table
-                v-if="invoicePayments.length > 0"
+                v-if="hasPayments"
                 :data="invoicePayments"
                 border
                 size="small"
@@ -258,14 +293,14 @@ const paymentStatusTagType: Record<string, 'primary' | 'success' | 'info' | 'war
                   </template>
                 </el-table-column>
               </el-table>
-              <div v-if="invoicePayments.length > 0" class="payment-summary">
+              <div v-if="hasPayments" class="payment-summary">
                 {{ t('detailViews.invoice.paymentTotal') }}：<strong>{{ formatCurrency(paidTotal) }}</strong>
                 <span class="payment-remaining">
-                  （{{ t('detailViews.invoice.remainingAmount') }}：{{ formatCurrency(Number(invoice!.totalAmount) - paidTotal) }}）
+                  （{{ t('detailViews.invoice.remainingAmount') }}：{{ formatCurrency(remainingAmount) }}）
                 </span>
               </div>
               <el-empty
-                v-if="invoicePayments.length === 0 && !paymentsLoading"
+                v-if="!hasPayments && !paymentsLoading"
                 :description="t('detailViews.invoice.noPayments')"
               />
             </div>
@@ -278,77 +313,9 @@ const paymentStatusTagType: Record<string, 'primary' | 'success' | 'info' | 'war
       v-if="invoice"
       v-model="showEditDialog"
       :edit-data="invoice"
-      :edit-items="invoice.items?.map(it => ({ description: it.description, quantity: it.quantity, unitPrice: it.unitPrice }))"
+      :edit-items="invoiceEditItems"
       @saved="handleSaved"
     />
   </PageDetail>
 </template>
 
-<style scoped lang="scss">
-.detail-header-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  &__name {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #303133;
-  }
-}
-
-.detail-section {
-  margin-bottom: 16px;
-}
-
-.amount-highlight {
-  font-size: 16px;
-  font-weight: 700;
-  color: #409eff;
-}
-
-.void-info {
-  :deep(.el-descriptions__title) {
-    color: #f56c6c;
-  }
-}
-
-.card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-
-  .item-count {
-    font-size: 13px;
-    color: #909399;
-  }
-}
-
-.items-total {
-  text-align: right;
-  padding: 12px 8px 0;
-  font-size: 16px;
-
-  strong {
-    color: #409eff;
-    font-size: 18px;
-  }
-}
-
-.payment-summary {
-  text-align: right;
-  padding: 12px 8px 0;
-  font-size: 16px;
-
-  strong {
-    color: #409eff;
-    font-size: 18px;
-  }
-}
-
-.payment-remaining {
-  font-size: 14px;
-  color: #909399;
-}
-</style>

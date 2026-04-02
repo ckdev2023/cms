@@ -1,20 +1,22 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { Plus, Refresh, Search } from '@element-plus/icons-vue'
+import { computed, onMounted, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Plus, Search, Refresh } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+
+import { getDepositAccounts, getDepositSummary } from '@/api/deposit'
 import PageList from '@/components/PageList.vue'
 import ProTable from '@/components/ProTable.vue'
-import DepositRechargeDialog from './components/DepositRechargeDialog.vue'
-import { getDepositAccounts, getDepositSummary } from '@/api/deposit'
 import { useProTable } from '@/composables/useProTable'
-import { useLocaleFormatter } from '@/utils/locale-format'
 import type { ProTableColumn } from '@/types/components'
 import type {
   DepositAccountListItem,
   DepositAccountQueryParams,
   DepositAccountSummary,
 } from '@/types/deposit'
+import { useLocaleFormatter } from '@/utils/locale-format'
+
+import DepositRechargeDialog from './components/DepositRechargeDialog.vue'
 
 defineOptions({ name: 'DepositListView' })
 
@@ -60,6 +62,13 @@ const searchForm = reactive<DepositAccountQueryParams>({
   hasBalance: undefined,
 })
 
+type DepositListSearchParams = Partial<
+  Pick<DepositAccountQueryParams, 'keyword' | 'hasBalance'>
+> & {
+  sortBy?: string
+  sortOrder?: 'ASC' | 'DESC'
+}
+
 const {
   loading,
   data,
@@ -80,6 +89,9 @@ onMounted(() => {
   loadSummary()
 })
 
+/**
+ * 拉取预存款账户总览数据，用于列表页顶部统计卡片展示。
+ */
 async function loadSummary() {
   try {
     const res = await getDepositSummary()
@@ -98,10 +110,13 @@ function handleSaved() {
   loadSummary()
 }
 
+/**
+ * 按当前筛选表单重载预存款账户列表。
+ */
 function doSearch() {
-  const params: Record<string, any> = {}
+  const params: DepositListSearchParams = {}
   if (searchForm.keyword) params.keyword = searchForm.keyword
-  if (searchForm.hasBalance) params.hasBalance = true
+  if (searchForm.hasBalance === true) params.hasBalance = true
   handleSearch(params)
 }
 
@@ -111,8 +126,18 @@ function doReset() {
   handleReset()
 }
 
-function handleSortChange(sort: { prop: string; order: string }) {
-  const params: Record<string, any> = {}
+/**
+ * 根据表格排序状态拼装查询参数并刷新账户列表。
+ *
+ * @param sort - 表格组件返回的当前排序字段与方向
+ * @param sort.prop - 当前参与排序的字段名
+ * @param sort.order - 当前排序方向，未排序时为 null
+ */
+function handleSortChange(sort: {
+  prop: string
+  order: 'ascending' | 'descending' | null
+}) {
+  const params: DepositListSearchParams = {}
   if (sort.prop && sort.order) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'
@@ -220,49 +245,3 @@ function handleRowClick(row: DepositAccountListItem) {
   </PageList>
 </template>
 
-<style scoped lang="scss">
-.summary-cards {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.summary-card {
-  display: flex;
-  flex-direction: column;
-  padding: 12px 20px;
-  background: #f4f4f5;
-  border-radius: 8px;
-  min-width: 140px;
-
-  &__label {
-    font-size: 12px;
-    color: #909399;
-    margin-bottom: 4px;
-  }
-
-  &__value {
-    font-size: 20px;
-    font-weight: 700;
-    color: #303133;
-    font-variant-numeric: tabular-nums;
-
-    &--active {
-      color: #67c23a;
-    }
-
-    &--amount {
-      color: #409eff;
-    }
-  }
-}
-
-.amount-cell {
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-
-  &--zero {
-    color: #c0c4cc;
-  }
-}
-</style>

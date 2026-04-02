@@ -1,21 +1,21 @@
 <script setup lang="ts">
-import { ref, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { ElMessage } from 'element-plus'
+import { nextTick, ref, useTemplateRef, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { updateFile } from '@/api/file'
-import { BusinessType } from '@/constants/enums'
 import { BusinessTypeLabel } from '@/constants/enum-labels'
+import { BusinessType } from '@/constants/enums'
 import type { FileItem, UpdateFileParams } from '@/types/file'
 
+const props = defineProps<{ editData: FileItem | null }>()
+const emit = defineEmits<{ saved: [] }>()
 defineOptions({ name: 'FileEditDialog' })
 const { t } = useI18n()
 
 const visible = defineModel<boolean>({ default: false })
-const props = defineProps<{ editData: FileItem | null }>()
-const emit = defineEmits<{ saved: [] }>()
-
-const formRef = ref<FormInstance>()
+const formRef = useTemplateRef<FormInstance>('formRef')
 const loading = ref(false)
 
 const form = ref<UpdateFileParams>({
@@ -46,6 +46,11 @@ watch(
   { immediate: true },
 )
 
+/**
+ * 提交当前文件的基础信息修改并关闭弹窗。
+ *
+ * 表单校验通过后调用更新接口，成功时通知父级刷新文件列表。
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid || !props.editData) return

@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n'
+
 import type {
   AdminCaseStatus,
   AuditActionType,
@@ -20,12 +22,21 @@ import type {
   PermissionType,
   ServiceType,
   StaffRelationType,
-  TaxContractStatus,
   TaskStatus,
+  TaxContractStatus,
   UserStatus,
 } from './enums'
-import { i18n } from '@/i18n'
 
+/**
+ * 为枚举值构造随当前语言自动切换的标签映射表。
+ *
+ * 返回的对象通过 Proxy 在读取属性时动态选择日文或中文标签，
+ * 用于保证下拉选项、详情页标签等常量展示始终与 i18n 当前语言一致。
+ *
+ * @param ja - 以枚举值为键的日文标签映射
+ * @param zhCN - 以枚举值为键的简体中文标签映射
+ * @returns 可按枚举值读取本地化文案的标签映射对象
+ */
 function createLocalizedLabelMap<T extends string>(
   ja: Record<T, string>,
   zhCN: Record<T, string>,

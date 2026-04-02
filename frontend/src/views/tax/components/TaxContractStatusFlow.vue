@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { TaxContractStatus } from '@/constants/enums'
-import { TaxContractStatusLabel } from '@/constants/enum-labels'
-import {
-  updateTaxContractStatus,
-  getTaxContractTransitions,
-} from '@/api/tax'
 
-defineOptions({ name: 'TaxContractStatusFlow' })
+import {
+  getTaxContractTransitions,
+  updateTaxContractStatus,
+} from '@/api/tax'
+import { TaxContractStatusLabel } from '@/constants/enum-labels'
+import { TaxContractStatus } from '@/constants/enums'
 
 const props = defineProps<{
   contractId: string
@@ -19,6 +18,8 @@ const props = defineProps<{
 const emit = defineEmits<{
   updated: []
 }>()
+
+defineOptions({ name: 'TaxContractStatusFlow' })
 
 const transitions = ref<TaxContractStatus[]>([])
 const loading = ref(false)
@@ -35,6 +36,11 @@ watch(
   { immediate: true },
 )
 
+/**
+ * 拉取当前状态下允许的税务合约状态流转选项。
+ *
+ * @returns 完成请求后更新可执行流转按钮列表
+ */
 async function fetchTransitions() {
   if (!props.contractId) return
   loading.value = true
@@ -46,6 +52,12 @@ async function fetchTransitions() {
   }
 }
 
+/**
+ * 将目标合约状态映射为操作按钮的视觉类型。
+ *
+ * @param status 目标税务合约状态
+ * @returns Element Plus 按钮类型
+ */
 function getButtonType(
   status: TaxContractStatus,
 ): '' | 'primary' | 'success' | 'warning' | 'danger' | 'info' {
@@ -61,6 +73,12 @@ function getButtonType(
   }
 }
 
+/**
+ * 确认并提交税务合约状态流转。
+ *
+ * @param newStatus 用户选择的目标状态
+ * @returns 用户取消时提前结束；成功流转后通知父层刷新详情
+ */
 async function handleTransition(newStatus: TaxContractStatus) {
   const label = TaxContractStatusLabel[newStatus]
   const confirmMsg =
@@ -115,14 +133,14 @@ async function handleTransition(newStatus: TaxContractStatus) {
     >
       <span class="status-flow__label">{{ t('detailViews.taxContract.statusFlow.nextAction') }}</span>
       <el-button
-        v-for="t in transitions"
-        :key="t"
-        :type="getButtonType(t)"
+        v-for="status in transitions"
+        :key="status"
+        :type="getButtonType(status)"
         :loading="transitioning"
         size="default"
-        @click="handleTransition(t)"
+        @click="handleTransition(status)"
       >
-        {{ t('detailViews.taxContract.statusFlow.changeTo', { status: TaxContractStatusLabel[t] }) }}
+        {{ t('detailViews.taxContract.statusFlow.changeTo', { status: TaxContractStatusLabel[status] }) }}
       </el-button>
     </div>
 
@@ -139,25 +157,25 @@ async function handleTransition(newStatus: TaxContractStatus) {
   &__current {
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: var(--app-spacing-sm);
+    margin-bottom: var(--app-spacing-base);
   }
 
   &__actions {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: var(--app-spacing-sm);
     flex-wrap: wrap;
   }
 
   &__label {
-    font-size: 14px;
-    color: #606266;
+    font-size: var(--app-font-size-base);
+    color: var(--app-text-regular);
     white-space: nowrap;
   }
 
   &__terminal {
-    margin-top: 8px;
+    margin-top: var(--app-spacing-sm);
   }
 }
 </style>

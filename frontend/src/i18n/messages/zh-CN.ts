@@ -1,3 +1,5 @@
+import type { AppMessageSchema } from './ja'
+
 const zhCNMessages = {
   app: {
     title: '事务所管理',
@@ -764,6 +766,6 @@ const zhCNMessages = {
       optionalDescription: '文件说明（可选）',
     },
   },
-} as const
+} as const satisfies AppMessageSchema
 
 export default zhCNMessages

@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+
+import { getCustomer } from '@/api/customer'
 import PageDetail from '@/components/PageDetail.vue'
-import CustomerBasicInfoTab from './components/CustomerBasicInfoTab.vue'
-import CustomerNotesTab from './components/CustomerNotesTab.vue'
+import { CustomerStatusLabel,CustomerTypeLabel } from '@/constants/enum-labels'
+import type { CustomerStatus,CustomerType } from '@/constants/enums'
+import type { CustomerDetail } from '@/types/customer'
+
 import CustomerAdminCasesTab from './components/CustomerAdminCasesTab.vue'
-import CustomerTaxContractsTab from './components/CustomerTaxContractsTab.vue'
+import CustomerBasicInfoTab from './components/CustomerBasicInfoTab.vue'
 import CustomerFilesTab from './components/CustomerFilesTab.vue'
 import CustomerFormDialog from './components/CustomerFormDialog.vue'
-import { getCustomer } from '@/api/customer'
-import { CustomerTypeLabel, CustomerStatusLabel } from '@/constants/enum-labels'
-import type { CustomerType, CustomerStatus } from '@/constants/enums'
-import type { CustomerDetail } from '@/types/customer'
+import CustomerNotesTab from './components/CustomerNotesTab.vue'
+import CustomerTaxContractsTab from './components/CustomerTaxContractsTab.vue'
 
 defineOptions({ name: 'CustomerDetailView' })
 
@@ -31,10 +33,17 @@ const pageTitle = computed(() => {
   return customer.value.customerName
 })
 
-onMounted(() => {
-  fetchCustomer()
-})
+watch(customerId, () => {
+  if (customerId.value) {
+    fetchCustomer()
+  }
+}, { immediate: true })
 
+/**
+ * 拉取当前路由对应的客户详情并同步到页面状态。
+ *
+ * @throws {Error} 客户详情接口请求失败时由请求层继续抛出
+ */
 async function fetchCustomer() {
   loading.value = true
   try {
@@ -114,17 +123,3 @@ function handleSaved() {
   </PageDetail>
 </template>
 
-<style scoped lang="scss">
-.detail-header-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-
-  &__name {
-    margin: 0;
-    font-size: 18px;
-    font-weight: 600;
-    color: #303133;
-  }
-}
-</style>

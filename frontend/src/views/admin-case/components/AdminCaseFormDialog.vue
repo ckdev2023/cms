@@ -1,28 +1,27 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { AdminCaseStatus } from '@/constants/enums'
-import { AdminCaseStatusLabel } from '@/constants/enum-labels'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { createAdminCase, updateAdminCase } from '@/api/admin-case'
 import { getCustomers } from '@/api/customer'
+import { AdminCaseStatusLabel } from '@/constants/enum-labels'
+import { AdminCaseStatus } from '@/constants/enums'
 import type { AdminCaseItem, CreateAdminCaseParams } from '@/types/admin-case'
 import type { CustomerItem } from '@/types/customer'
-
-defineOptions({ name: 'AdminCaseFormDialog' })
-const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: boolean
   editData: AdminCaseItem | null
   defaultCustomerId?: string
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   saved: []
 }>()
+defineOptions({ name: 'AdminCaseFormDialog' })
+const { t } = useI18n()
 
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
@@ -86,6 +85,11 @@ watch(
   },
 )
 
+/**
+ * 将既有案件详情写入表单，用于编辑场景回填初始值。
+ *
+ * @param data - 当前正在编辑的案件记录
+ */
 function populateForm(data: AdminCaseItem) {
   form.customerId = data.customerId
   form.caseName = data.caseName
@@ -96,6 +100,9 @@ function populateForm(data: AdminCaseItem) {
   form.ownerUserId = data.ownerUserId ?? ''
 }
 
+/**
+ * 重置新建表单的本地状态，并清理上一次校验残留。
+ */
 function resetForm() {
   form.customerId = props.defaultCustomerId ?? ''
   form.caseName = ''
@@ -107,6 +114,12 @@ function resetForm() {
   nextTick(() => formRef.value?.clearValidate())
 }
 
+/**
+ * 按关键字远程查询客户列表，供案件表单下拉选择使用。
+ *
+ * @param query - 用户在客户选择框中输入的检索关键字
+ * @returns 请求结束后刷新可选客户列表与加载状态
+ */
 async function fetchCustomers(query: string) {
   customerLoading.value = true
   try {
@@ -117,6 +130,13 @@ async function fetchCustomers(query: string) {
   }
 }
 
+/**
+ * 根据表单当前值构造创建或更新案件所需的请求载荷。
+ *
+ * 空字符串字段会在提交前被裁剪，避免向接口写入无意义的空值。
+ *
+ * @returns 符合案件保存接口约定的参数对象
+ */
 function buildPayload(): CreateAdminCaseParams {
   const payload: CreateAdminCaseParams = {
     customerId: form.customerId,
@@ -131,6 +151,11 @@ function buildPayload(): CreateAdminCaseParams {
   return payload
 }
 
+/**
+ * 校验表单后提交案件新建或编辑请求。
+ *
+ * @returns 当校验失败、用户关闭弹窗或请求完成时结束提交流程
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return

@@ -1,3 +1,16 @@
+/**
+ * 定义通用表格列与表单字段组件共享的声明类型。
+ */
+import type { FormItemRule } from 'element-plus'
+
+export type ProFormOptionValue = string | number
+
+export interface ProFormOption {
+  label: string
+  value: ProFormOptionValue
+  disabled?: boolean
+}
+
 export interface ProTableColumn {
   prop: string
   label: string
@@ -24,10 +37,10 @@ export interface ProFormField {
     | 'checkbox'
     | 'switch'
   placeholder?: string
-  rules?: any[]
-  options?: { label: string; value: any; disabled?: boolean }[]
+  rules?: FormItemRule[]
+  options?: ProFormOption[]
   span?: number
   disabled?: boolean
-  props?: Record<string, any>
+  props?: Record<string, unknown>
   slot?: string
 }

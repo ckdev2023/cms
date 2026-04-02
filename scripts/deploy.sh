@@ -11,8 +11,11 @@
 #   - /var/log/cms directory created
 #
 # Usage:
-#   ./scripts/deploy.sh              # deploy from local build
-#   ./scripts/deploy.sh --skip-build # deploy pre-built artifacts
+#   ./scripts/deploy.sh                          # verify(standard) + build + deploy
+#   ./scripts/deploy.sh --skip-build             # verify(standard) + deploy pre-built artifacts
+#   ./scripts/deploy.sh --skip-verify            # skip verify, build + deploy (emergency only)
+#   ./scripts/deploy.sh --verify-level=fast      # override verify level (fast/standard/full)
+#   ./scripts/deploy.sh --verify-level=full      # full verify (includes redundant build check)
 
 set -euo pipefail
 
@@ -25,15 +28,25 @@ REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 BACKUP_DIR="${DEPLOY_DIR}/releases"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 SKIP_BUILD=false
+SKIP_VERIFY=false
+VERIFY_LEVEL="standard"
 
 for arg in "$@"; do
     case "$arg" in
-        --skip-build) SKIP_BUILD=true ;;
+        --skip-build)  SKIP_BUILD=true ;;
+        --skip-verify) SKIP_VERIFY=true ;;
+        --verify-level=*) VERIFY_LEVEL="${arg#*=}" ;;
     esac
 done
 
 log() { echo "[$(date '+%H:%M:%S')] $*"; }
 die() { log "ERROR: $*"; exit 1; }
+
+# Validate --verify-level value
+case "$VERIFY_LEVEL" in
+    fast|standard|full) ;;
+    *) die "Invalid --verify-level=${VERIFY_LEVEL}. Must be fast, standard, or full." ;;
+esac
 
 # ── Pre-flight checks ────────────────────────────────────────
 log "=== CMS Deployment — ${TIMESTAMP} ==="
@@ -44,6 +57,34 @@ command -v nginx >/dev/null || die "nginx not found"
 
 [ -d "${DEPLOY_DIR}" ] || die "${DEPLOY_DIR} does not exist"
 [ -f "${BACKEND_DIR}/.env" ] || die "${BACKEND_DIR}/.env not found — copy from deploy/.env.production.example"
+
+# ── Step 0: Pre-deploy verification ──────────────────────────
+if [ "${SKIP_VERIFY}" = true ]; then
+    log "⚠️  Pre-deploy verification SKIPPED (--skip-verify)."
+    log "    This is intended for emergencies only."
+    log "    Quality issues may reach production."
+else
+    log "Running pre-deploy verification (level: ${VERIFY_LEVEL})..."
+    DELIVER_SCRIPT="${REPO_ROOT}/scripts/ai-deliver.sh"
+    if [ -x "$DELIVER_SCRIPT" ] || [ -f "$DELIVER_SCRIPT" ]; then
+        if ! bash "$DELIVER_SCRIPT" "--${VERIFY_LEVEL}"; then
+            die "Pre-deploy verification failed. Fix the issues above or use --skip-verify for emergencies."
+        fi
+        log "Pre-deploy verification passed."
+    else
+        log "⚠️  ai-deliver.sh not found — falling back to npm run verify."
+        case "$VERIFY_LEVEL" in
+            fast)     VERIFY_CMD="verify:fast" ;;
+            standard) VERIFY_CMD="verify" ;;
+            full)     VERIFY_CMD="verify:full" ;;
+        esac
+        cd "$REPO_ROOT"
+        if ! npm run "$VERIFY_CMD"; then
+            die "Pre-deploy verification (npm run ${VERIFY_CMD}) failed. Fix the issues or use --skip-verify."
+        fi
+        log "Pre-deploy verification passed."
+    fi
+fi
 
 # ── Step 1: Build ─────────────────────────────────────────────
 if [ "${SKIP_BUILD}" = false ]; then

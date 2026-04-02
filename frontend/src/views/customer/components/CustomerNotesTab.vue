@@ -1,21 +1,22 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ChatLineSquare, Delete, Edit } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { Edit, Delete, ChatLineSquare } from '@element-plus/icons-vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { NoteType } from '@/constants/enums'
-import { NoteTypeLabel } from '@/constants/enum-labels'
-import { getNotes, createNote, updateNote, deleteNote } from '@/api/customer'
-import { useConfirm } from '@/composables/useConfirm'
-import { useLocaleFormatter } from '@/utils/locale-format'
-import type { NoteItem, NoteQueryParams } from '@/types/customer'
 
-defineOptions({ name: 'CustomerNotesTab' })
+import { createNote, deleteNote, getNotes, updateNote } from '@/api/customer'
+import { useConfirm } from '@/composables/useConfirm'
+import { NoteTypeLabel } from '@/constants/enum-labels'
+import { NoteType } from '@/constants/enums'
+import type { NoteItem, NoteQueryParams } from '@/types/customer'
+import { useLocaleFormatter } from '@/utils/locale-format'
 
 const props = defineProps<{
   customerId: string
 }>()
+
+defineOptions({ name: 'CustomerNotesTab' })
 
 const { confirmDelete } = useConfirm()
 const { t } = useI18n({ useScope: 'global' })
@@ -73,6 +74,11 @@ watch(() => props.customerId, () => {
   }
 }, { immediate: true })
 
+/**
+ * 按当前分页与筛选条件加载客户备注时间线。
+ *
+ * @throws {Error} 备注列表接口请求失败时由请求层继续抛出
+ */
 async function fetchNotes() {
   loading.value = true
   try {
@@ -95,6 +101,9 @@ function handlePageChange(page: number) {
   fetchNotes()
 }
 
+/**
+ * 打开新增备注表单，并重置编辑态与默认备注类型。
+ */
 function openCreateForm() {
   editingNote.value = null
   formModel.content = ''
@@ -102,6 +111,11 @@ function openCreateForm() {
   showForm.value = true
 }
 
+/**
+ * 打开备注编辑表单，并将当前备注内容回填到表单模型。
+ *
+ * @param note - 当前准备编辑的备注记录
+ */
 function openEditForm(note: NoteItem) {
   editingNote.value = note
   formModel.content = note.content
@@ -115,6 +129,13 @@ function cancelForm() {
   formRef.value?.resetFields()
 }
 
+/**
+ * 校验备注表单并提交新增或编辑请求。
+ *
+ * 保存成功后会重置编辑态，并回到第一页重新加载最新备注列表。
+ *
+ * @throws {Error} 备注保存请求失败时由请求层统一提示并继续抛出
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
@@ -144,6 +165,12 @@ async function handleSubmit() {
   }
 }
 
+/**
+ * 删除指定客户备注，并在成功后刷新时间线数据。
+ *
+ * @param note - 当前准备删除的备注记录
+ * @throws {Error} 备注删除请求失败时由请求层统一提示并继续抛出
+ */
 async function handleDelete(note: NoteItem) {
   const confirmed = await confirmDelete(t('detailViews.customer.notesTab.noteDeleteName'))
   if (!confirmed) return
@@ -307,8 +334,8 @@ async function handleDelete(note: NoteItem) {
   }
 
   &__count {
-    font-size: 13px;
-    color: #909399;
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
   }
 
   &__form-card {
@@ -341,8 +368,8 @@ async function handleDelete(note: NoteItem) {
   }
 
   &__note-author {
-    font-size: 13px;
-    color: #909399;
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -354,17 +381,17 @@ async function handleDelete(note: NoteItem) {
   }
 
   &__note-content {
-    font-size: 14px;
+    font-size: var(--app-font-size-base);
     line-height: 1.6;
-    color: #303133;
+    color: var(--app-text-primary);
     white-space: pre-wrap;
     word-break: break-word;
   }
 
   &__note-updated {
-    margin-top: 8px;
-    font-size: 12px;
-    color: #c0c4cc;
+    margin-top: var(--app-spacing-sm);
+    font-size: var(--app-font-size-xs);
+    color: var(--app-text-disabled);
   }
 
   &__pagination {

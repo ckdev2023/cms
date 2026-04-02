@@ -1,0 +1,24 @@
+#!/usr/bin/env sh
+
+# ── Pre-push 全量門禁 ──────────────────────────────────────
+#
+# リモートに送信する前に標準レベルの検査を実行:
+#   lint（前後端） + type-check（前後端） + JSDoc 品質 + テスト（前後端）
+#
+# ai-deliver.sh --standard を呼び出し、構造化された結果を表示。
+# npm run verify と同等のチェックだが、個別結果が見やすい。
+#
+# 緊急時のスキップ: git push --no-verify
+# ────────────────────────────────────────────────────────────
+
+# Skip if there are no local commits to push
+z40="0000000000000000000000000000000000000000"
+while read local_ref local_oid remote_ref remote_oid; do
+  if [ "$local_oid" = "$z40" ]; then
+    continue
+  fi
+  # At least one real ref is being pushed — run the gate
+  exec bash scripts/ai-deliver.sh --standard
+done
+
+# If we reach here, nothing meaningful to push — skip checks

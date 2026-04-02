@@ -1,73 +1,35 @@
 <script setup lang="ts">
-import { ref, reactive, watch, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import {
-  Plus,
-  Delete,
-} from '@element-plus/icons-vue'
-import {
-  getTaxPeriod,
-  updateTaxPeriodStatus,
-  createTaxDocument,
-  updateTaxDocument,
-  deleteTaxDocument,
-  createTaxWorkItem,
-  updateTaxWorkItem,
-  deleteTaxWorkItem,
-} from '@/api/tax'
-import { MonthlyStatus, MaterialStatus } from '@/constants/enums'
-import { MonthlyStatusLabel, MaterialStatusLabel } from '@/constants/enum-labels'
-import { useConfirm } from '@/composables/useConfirm'
-import { useLocaleFormatter } from '@/utils/locale-format'
-import type {
-  TaxPeriodDetail,
-  TaxMonthlyDocumentItem,
-  TaxMonthlyWorkItemItem,
-} from '@/types/tax'
+import { computed, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
 
-defineOptions({ name: 'PeriodDetailDialog' })
-const { t } = useI18n()
-const { formatDate } = useLocaleFormatter()
+import {
+  getTaxPeriod, updateTaxPeriodStatus,
+} from '@/api/tax'
+import { MaterialStatusLabel,MonthlyStatusLabel } from '@/constants/enum-labels'
+import { MaterialStatus,MonthlyStatus } from '@/constants/enums'
+import type { TaxPeriodDetail } from '@/types/tax'
+import { useLocaleFormatter } from '@/utils/locale-format'
+
+import PeriodDetailDocumentsSection from './PeriodDetailDocumentsSection.vue'
+import PeriodDetailWorkItemsSection from './PeriodDetailWorkItemsSection.vue'
 
 const props = defineProps<{
   modelValue: boolean
   contractId: string
   periodId: string
 }>()
-
 const emit = defineEmits<{
   (e: 'update:modelValue', v: boolean): void
   (e: 'updated'): void
 }>()
+defineOptions({ name: 'PeriodDetailDialog' })
+const { t } = useI18n()
+const { formatDate } = useLocaleFormatter()
 
-const { confirmDelete } = useConfirm()
 const loading = ref(false)
 const period = ref<TaxPeriodDetail | null>(null)
 const statusUpdating = ref(false)
-
-// ── Document form ────────────────────────────────────────
-const docFormRef = ref<FormInstance>()
-const showDocForm = ref(false)
-const docSubmitting = ref(false)
-const docForm = reactive({ documentName: '', remark: '' })
-const docFormRules: FormRules = {
-  documentName: [
-    { required: true, message: t('common.enterField', { field: t('dialogs.periodDetail.documentName') }), trigger: 'blur' },
-  ],
-}
-
-// ── Work item form ───────────────────────────────────────
-const workFormRef = ref<FormInstance>()
-const showWorkForm = ref(false)
-const workSubmitting = ref(false)
-const workForm = reactive({ itemName: '', remark: '' })
-const workFormRules: FormRules = {
-  itemName: [
-    { required: true, message: t('common.enterField', { field: t('dialogs.periodDetail.workItemName') }), trigger: 'blur' },
-  ],
-}
 
 watch(
   () => [props.modelValue, props.periodId],
@@ -117,6 +79,11 @@ const nextStatuses = computed<MonthlyStatus[]>(() => {
   return map[period.value.monthlyStatus] ?? []
 })
 
+/**
+ * 拉取当前期间详情并同步对话框内的展示数据。
+ *
+ * @returns 完成请求后刷新期间、资料和工作项状态
+ */
 async function fetchPeriod() {
   loading.value = true
   try {
@@ -127,14 +94,21 @@ async function fetchPeriod() {
   }
 }
 
+/**
+ * 关闭对话框并通知父层更新可见状态。
+ */
 function handleClose() {
   emit('update:modelValue', false)
-  showDocForm.value = false
-  showWorkForm.value = false
 }
 
 // ── Status ───────────────────────────────────────────────
 
+/**
+ * 提交期间主状态流转，并在成功后回刷当前期间详情。
+ *
+ * @param newStatus 用户选择的目标主状态
+ * @returns 完成状态更新后刷新详情并通知父层更新
+ */
 async function handleStatusChange(newStatus: MonthlyStatus) {
   statusUpdating.value = true
   try {
@@ -155,6 +129,12 @@ async function handleStatusChange(newStatus: MonthlyStatus) {
   }
 }
 
+/**
+ * 将月度主状态映射为页面标签颜色。
+ *
+ * @param status 当前期间的主状态
+ * @returns Element Plus 标签类型
+ */
 function monthlyStatusTagType(
   status: MonthlyStatus,
 ): 'info' | 'success' | 'warning' {
@@ -170,6 +150,12 @@ function monthlyStatusTagType(
   }
 }
 
+/**
+ * 将资料状态映射为页面标签颜色。
+ *
+ * @param status 当前期间的资料收集状态
+ * @returns Element Plus 标签类型
+ */
 function materialStatusTagType(
   status: MaterialStatus,
 ): 'info' | 'success' | 'warning' {
@@ -185,129 +171,14 @@ function materialStatusTagType(
   }
 }
 
-// ── Documents ────────────────────────────────────────────
-
-function openDocForm() {
-  docForm.documentName = ''
-  docForm.remark = ''
-  showDocForm.value = true
-}
-
-function cancelDocForm() {
-  showDocForm.value = false
-  docFormRef.value?.resetFields()
-}
-
-async function handleDocSubmit() {
-  const valid = await docFormRef.value?.validate().catch(() => false)
-  if (!valid) return
-
-  docSubmitting.value = true
-  try {
-    await createTaxDocument(props.contractId, props.periodId, {
-      documentName: docForm.documentName,
-      remark: docForm.remark || undefined,
-    })
-    ElMessage.success(t('dialogs.periodDetail.documentAdded'))
-    cancelDocForm()
-    await fetchPeriod()
-    emit('updated')
-  } catch {
-    // handled
-  } finally {
-    docSubmitting.value = false
-  }
-}
-
-async function toggleDocReceived(doc: TaxMonthlyDocumentItem) {
-  try {
-    await updateTaxDocument(props.contractId, props.periodId, doc.id, {
-      received: !doc.received,
-    })
-    await fetchPeriod()
-    emit('updated')
-  } catch {
-    // handled
-  }
-}
-
-async function handleDocDelete(doc: TaxMonthlyDocumentItem) {
-  const confirmed = await confirmDelete(doc.documentName)
-  if (!confirmed) return
-
-  try {
-    await deleteTaxDocument(props.contractId, props.periodId, doc.id)
-    ElMessage.success(t('dialogs.periodDetail.documentDeleted'))
-    await fetchPeriod()
-    emit('updated')
-  } catch {
-    // handled
-  }
-}
-
-// ── Work Items ───────────────────────────────────────────
-
-function openWorkForm() {
-  workForm.itemName = ''
-  workForm.remark = ''
-  showWorkForm.value = true
-}
-
-function cancelWorkForm() {
-  showWorkForm.value = false
-  workFormRef.value?.resetFields()
-}
-
-async function handleWorkSubmit() {
-  const valid = await workFormRef.value?.validate().catch(() => false)
-  if (!valid) return
-
-  workSubmitting.value = true
-  try {
-    const maxSort = period.value?.workItems.reduce(
-      (max, w) => Math.max(max, w.sortOrder),
-      0,
-    ) ?? 0
-    await createTaxWorkItem(props.contractId, props.periodId, {
-      itemName: workForm.itemName,
-      remark: workForm.remark || undefined,
-      sortOrder: maxSort + 1,
-    })
-    ElMessage.success(t('dialogs.periodDetail.workItemAdded'))
-    cancelWorkForm()
-    await fetchPeriod()
-    emit('updated')
-  } catch {
-    // handled
-  } finally {
-    workSubmitting.value = false
-  }
-}
-
-async function toggleWorkCompleted(item: TaxMonthlyWorkItemItem) {
-  try {
-    await updateTaxWorkItem(props.contractId, props.periodId, item.id, {
-      completed: !item.completed,
-    })
-    await fetchPeriod()
-    emit('updated')
-  } catch {
-    // handled
-  }
-}
-
-async function handleWorkDelete(item: TaxMonthlyWorkItemItem) {
-  const confirmed = await confirmDelete(item.itemName)
-  if (!confirmed) return
-
-  try {
-    await deleteTaxWorkItem(props.contractId, props.periodId, item.id)
-    ElMessage.success(t('dialogs.periodDetail.workItemDeleted'))
-    await fetchPeriod()
-    emit('updated')
-  } catch {
-    // handled
-  }
+/**
+ * 收口子区块变更后的刷新逻辑，保证期间详情和父层列表一起同步。
+ *
+ * @returns 先刷新当前详情，再通知父层期间列表重新拉取
+ */
+async function handleDetailUpdated() {
+  await fetchPeriod()
+  emit('updated')
 }
 </script>
 
@@ -363,146 +234,19 @@ async function handleWorkDelete(item: TaxMonthlyWorkItemItem) {
           </el-button>
         </div>
 
-        <!-- Documents Section -->
-        <div class="period-detail__section">
-          <div class="period-detail__section-header">
-            <h4>{{ t('dialogs.periodDetail.documentsTitle') }}</h4>
-            <el-button type="primary" :icon="Plus" size="small" text @click="openDocForm">
-              {{ t('dialogs.periodDetail.addDocument') }}
-            </el-button>
-          </div>
+        <PeriodDetailDocumentsSection
+          :contract-id="contractId"
+          :period-id="periodId"
+          :documents="period.documents"
+          @updated="handleDetailUpdated"
+        />
 
-          <el-card v-if="showDocForm" shadow="never" class="period-detail__inline-form">
-            <el-form
-              ref="docFormRef"
-              :model="docForm"
-              :rules="docFormRules"
-              label-position="top"
-              size="small"
-            >
-              <el-form-item :label="t('dialogs.periodDetail.documentName')" prop="documentName">
-                <el-input v-model="docForm.documentName" :placeholder="t('dialogs.periodDetail.documentName')" maxlength="200" />
-              </el-form-item>
-              <el-form-item :label="t('common.remark')" prop="remark">
-                <el-input v-model="docForm.remark" :placeholder="t('common.remark')" maxlength="500" />
-              </el-form-item>
-              <div class="period-detail__form-actions">
-                <el-button size="small" @click="cancelDocForm">{{ t('common.cancel') }}</el-button>
-                <el-button type="primary" size="small" :loading="docSubmitting" @click="handleDocSubmit">
-                  {{ t('common.create') }}
-                </el-button>
-              </div>
-            </el-form>
-          </el-card>
-
-          <div v-if="period.documents.length === 0 && !showDocForm" class="period-detail__empty">
-            {{ t('dialogs.periodDetail.noDocuments') }}
-          </div>
-
-          <div v-else class="period-detail__checklist">
-            <div
-              v-for="doc in period.documents"
-              :key="doc.id"
-              class="period-detail__check-item"
-              :class="{ 'period-detail__check-item--done': doc.received }"
-            >
-              <el-checkbox
-                :model-value="doc.received"
-                @change="toggleDocReceived(doc)"
-              >
-                <span :class="{ 'text-through': doc.received }">
-                  {{ doc.documentName }}
-                </span>
-              </el-checkbox>
-              <span v-if="doc.receivedAt" class="period-detail__check-date">
-                {{ t('dialogs.periodDetail.receivedAt', { date: formatDate(doc.receivedAt) }) }}
-              </span>
-              <span v-if="doc.remark" class="period-detail__check-remark">
-                {{ doc.remark }}
-              </span>
-              <el-button
-                :icon="Delete"
-                size="small"
-                type="danger"
-                text
-                class="period-detail__check-delete"
-                @click="handleDocDelete(doc)"
-              />
-            </div>
-          </div>
-        </div>
-
-        <!-- Work Items Section -->
-        <div class="period-detail__section">
-          <div class="period-detail__section-header">
-            <h4>{{ t('dialogs.periodDetail.workItemsTitle') }}</h4>
-            <el-button type="primary" :icon="Plus" size="small" text @click="openWorkForm">
-              {{ t('dialogs.periodDetail.addWorkItem') }}
-            </el-button>
-          </div>
-
-          <el-card v-if="showWorkForm" shadow="never" class="period-detail__inline-form">
-            <el-form
-              ref="workFormRef"
-              :model="workForm"
-              :rules="workFormRules"
-              label-position="top"
-              size="small"
-            >
-              <el-form-item :label="t('dialogs.periodDetail.workItemName')" prop="itemName">
-                <el-input v-model="workForm.itemName" :placeholder="t('dialogs.periodDetail.workItemName')" maxlength="200" />
-              </el-form-item>
-              <el-form-item :label="t('common.remark')" prop="remark">
-                <el-input v-model="workForm.remark" :placeholder="t('common.remark')" maxlength="500" />
-              </el-form-item>
-              <div class="period-detail__form-actions">
-                <el-button size="small" @click="cancelWorkForm">{{ t('common.cancel') }}</el-button>
-                <el-button type="primary" size="small" :loading="workSubmitting" @click="handleWorkSubmit">
-                  {{ t('common.create') }}
-                </el-button>
-              </div>
-            </el-form>
-          </el-card>
-
-          <div v-if="period.workItems.length === 0 && !showWorkForm" class="period-detail__empty">
-            {{ t('dialogs.periodDetail.noWorkItems') }}
-          </div>
-
-          <div v-else class="period-detail__checklist">
-            <div
-              v-for="item in period.workItems"
-              :key="item.id"
-              class="period-detail__check-item"
-              :class="{ 'period-detail__check-item--done': item.completed }"
-            >
-              <el-checkbox
-                :model-value="item.completed"
-                @change="toggleWorkCompleted(item)"
-              >
-                <span :class="{ 'text-through': item.completed }">
-                  {{ item.itemName }}
-                </span>
-              </el-checkbox>
-              <span v-if="item.completedAt" class="period-detail__check-date">
-                {{ formatDate(item.completedAt) }}
-                <template v-if="item.completedByName">
-                  ({{ item.completedByName }})
-                </template>
-              </span>
-              <span v-if="item.remark" class="period-detail__check-remark">
-                {{ item.remark }}
-              </span>
-              <el-button
-                :icon="Delete"
-                size="small"
-                type="danger"
-                text
-                class="period-detail__check-delete"
-                @click="handleWorkDelete(item)"
-              />
-            </div>
-          </div>
-        </div>
+        <PeriodDetailWorkItemsSection
+          :contract-id="contractId"
+          :period-id="periodId"
+          :work-items="period.workItems"
+          @updated="handleDetailUpdated"
+        />
       </template>
     </div>
 
@@ -523,98 +267,15 @@ async function handleWorkDelete(item: TaxMonthlyWorkItemItem) {
     align-items: center;
     gap: 8px;
     margin-bottom: 16px;
-    padding: 8px 12px;
-    background: #f5f7fa;
-    border-radius: 6px;
+    padding: var(--app-spacing-sm) var(--app-spacing-md);
+    background: var(--el-fill-color-light);
+    border-radius: var(--app-radius-base);
   }
 
   &__status-label {
     font-size: 13px;
-    color: #606266;
+    color: var(--app-text-regular);
     white-space: nowrap;
   }
-
-  &__section {
-    margin-top: 20px;
-
-    h4 {
-      margin: 0;
-      font-size: 14px;
-      font-weight: 600;
-      color: #303133;
-    }
-  }
-
-  &__section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 8px;
-  }
-
-  &__inline-form {
-    margin-bottom: 12px;
-  }
-
-  &__form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  &__empty {
-    padding: 16px 0;
-    text-align: center;
-    font-size: 13px;
-    color: #c0c4cc;
-  }
-
-  &__checklist {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-  }
-
-  &__check-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 4px;
-    transition: background-color 0.15s;
-
-    &:hover {
-      background: #f5f7fa;
-    }
-
-    &--done {
-      opacity: 0.7;
-    }
-  }
-
-  &__check-date {
-    font-size: 12px;
-    color: #909399;
-    white-space: nowrap;
-  }
-
-  &__check-remark {
-    font-size: 12px;
-    color: #a8abb2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    max-width: 200px;
-  }
-
-  &__check-delete {
-    margin-left: auto;
-    flex-shrink: 0;
-  }
-}
-
-.text-through {
-  text-decoration: line-through;
-  color: #909399;
 }
 </style>

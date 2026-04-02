@@ -1,3 +1,6 @@
+/**
+ * 定义系统用户、角色与权限管理模块使用的类型。
+ */
 import type { PaginationParams } from './api'
 
 export interface RoleRef {

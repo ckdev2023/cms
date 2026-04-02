@@ -766,4 +766,14 @@ const jaMessages = {
   },
 } as const
 
+type LocaleMessageSchema<T> = {
+  [Key in keyof T]: T[Key] extends string
+    ? string
+    : T[Key] extends Record<string, unknown>
+      ? LocaleMessageSchema<T[Key]>
+      : T[Key]
+}
+
+export type AppMessageSchema = LocaleMessageSchema<typeof jaMessages>
+
 export default jaMessages

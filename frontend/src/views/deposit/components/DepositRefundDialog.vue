@@ -1,27 +1,26 @@
 <script setup lang="ts">
-import { ref, reactive, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
+import { nextTick, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { depositRefund } from '@/api/deposit'
 import { useSubmitLock } from '@/composables/useSubmitLock'
-import { useLocaleFormatter } from '@/utils/locale-format'
 import type { CreateDepositRefundParams } from '@/types/deposit'
-
-defineOptions({ name: 'DepositRefundDialog' })
-const { t } = useI18n()
-const { formatCurrency } = useLocaleFormatter()
+import { useLocaleFormatter } from '@/utils/locale-format'
 
 const props = defineProps<{
   modelValue: boolean
   customerId: string
   balance: number
 }>()
-
 const emit = defineEmits<{
   'update:modelValue': [val: boolean]
   saved: []
 }>()
+defineOptions({ name: 'DepositRefundDialog' })
+const { t } = useI18n()
+const { formatCurrency } = useLocaleFormatter()
 
 const formRef = ref<FormInstance>()
 const { submitting, withLock } = useSubmitLock()
@@ -67,6 +66,11 @@ watch(
   },
 )
 
+/**
+ * 将退款表单值转换为预存款退款接口所需的请求体。
+ *
+ * @returns 包含客户、退款金额、退款原因与备注的请求参数
+ */
 function buildPayload(): CreateDepositRefundParams {
   return {
     customerId: props.customerId,
@@ -76,6 +80,9 @@ function buildPayload(): CreateDepositRefundParams {
   }
 }
 
+/**
+ * 校验退款表单并提交预存款退款请求。
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return
@@ -170,11 +177,11 @@ function handleClose() {
 
 <style scoped lang="scss">
 .balance-alert {
-  margin-bottom: 20px;
+  margin-bottom: var(--app-spacing-lg);
 
   strong {
-    font-size: 16px;
-    color: #e6a23c;
+    font-size: var(--app-font-size-lg);
+    color: var(--app-color-warning);
   }
 }
 </style>

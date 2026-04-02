@@ -12,12 +12,34 @@
     "test:backend": "npm test --prefix backend",
     "lint:frontend": "npm run lint --prefix frontend",
     "lint:backend": "npm run lint --prefix backend",
+    "lint:ci:backend": "npm run lint:ci --prefix backend",
+    "lint:api": "npm run lint:api --prefix frontend",
+    "lint:stores": "npm run lint:stores --prefix frontend",
+    "lint:utils": "npm run lint:utils --prefix frontend",
+    "type-check:frontend": "npm run type-check --prefix frontend",
+    "type-check:backend": "npm run type-check --prefix backend",
+    "jsdoc:check": "node scripts/check-jsdoc.mjs",
+    "verify:api": "npm run lint:api && npm run type-check:frontend && node scripts/check-jsdoc.mjs frontend/src/api/*.ts",
+    "verify:stores": "npm run lint:stores && npm run type-check:frontend && node scripts/check-jsdoc.mjs frontend/src/stores/*.ts && npm run test:stores --prefix frontend",
+    "verify:utils": "npm run lint:utils && node scripts/check-jsdoc.mjs frontend/src/utils/*.ts",
+    "verify:fast": "npm run lint:frontend && npm run lint:backend && npm run type-check:frontend && npm run type-check:backend && npm run jsdoc:check",
+    "verify": "npm run verify:fast && npm run test:frontend && npm run test:backend",
+    "verify:full": "npm run verify && npm run build:frontend && npm run build:backend",
     "deploy": "bash scripts/deploy.sh",
     "backup:db": "bash scripts/backup-db.sh",
     "backup:files": "bash scripts/backup-files.sh",
-    "restore:db": "bash scripts/restore-db.sh"
+    "restore:db": "bash scripts/restore-db.sh",
+    "prepare": "husky"
   },
-  "keywords": ["cms", "jimusho", "management"],
+  "keywords": [
+    "cms",
+    "jimusho",
+    "management"
+  ],
   "author": "",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0"
+  }
 }

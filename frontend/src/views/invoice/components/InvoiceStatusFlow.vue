@@ -1,18 +1,17 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { InvoiceStatus } from '@/constants/enums'
-import { InvoiceStatusLabel } from '@/constants/enum-labels'
+
 import {
   getInvoiceTransitions,
   updateInvoiceStatus,
   voidInvoice,
 } from '@/api/invoice'
-import { useSubmitLock } from '@/composables/useSubmitLock'
 import { useConfirm } from '@/composables/useConfirm'
-
-defineOptions({ name: 'InvoiceStatusFlow' })
+import { useSubmitLock } from '@/composables/useSubmitLock'
+import { InvoiceStatusLabel } from '@/constants/enum-labels'
+import { InvoiceStatus } from '@/constants/enums'
 
 const props = defineProps<{
   invoiceId: string
@@ -23,6 +22,8 @@ const emit = defineEmits<{
   updated: []
 }>()
 
+defineOptions({ name: 'InvoiceStatusFlow' })
+
 const transitions = ref<InvoiceStatus[]>([])
 const { submitting, withLock } = useSubmitLock()
 const { confirm } = useConfirm()
@@ -30,8 +31,17 @@ const showVoidDialog = ref(false)
 const voidReason = ref('')
 const { t } = useI18n({ useScope: 'global' })
 
-onMounted(fetchTransitions)
+watch(
+  () => [props.invoiceId, props.currentStatus],
+  () => {
+    void fetchTransitions()
+  },
+  { immediate: true },
+)
 
+/**
+ * 根据当前发票状态重新加载允许执行的下一步动作，避免状态流转按钮滞后。
+ */
 async function fetchTransitions() {
   try {
     const res = await getInvoiceTransitions(props.invoiceId)
@@ -41,6 +51,11 @@ async function fetchTransitions() {
   }
 }
 
+/**
+ * 确认后推进发票状态；如果目标状态是作废，则先打开作废原因弹窗。
+ *
+ * @param target - 用户准备切换到的目标发票状态
+ */
 async function handleTransition(target: InvoiceStatus) {
   if (target === InvoiceStatus.VOID) {
     showVoidDialog.value = true
@@ -61,17 +76,25 @@ async function handleTransition(target: InvoiceStatus) {
   })
 }
 
+function resetVoidDialog(): void {
+  showVoidDialog.value = false
+  voidReason.value = ''
+}
+
+/**
+ * 校验作废原因后提交作废请求，并在成功后关闭弹窗与通知父组件刷新。
+ */
 async function handleVoid() {
-  if (!voidReason.value.trim()) {
+  const reason = voidReason.value.trim()
+  if (!reason) {
     ElMessage.warning(t('detailViews.invoice.statusFlow.voidReasonRequired'))
     return
   }
 
   await withLock(async () => {
-    await voidInvoice(props.invoiceId, { voidReason: voidReason.value })
+    await voidInvoice(props.invoiceId, { voidReason: reason })
     ElMessage.success(t('detailViews.invoice.statusFlow.successMessage', { status: InvoiceStatusLabel[InvoiceStatus.VOID] }))
-    showVoidDialog.value = false
-    voidReason.value = ''
+    resetVoidDialog()
     emit('updated')
   })
 }
@@ -83,6 +106,12 @@ const statusSteps: InvoiceStatus[] = [
   InvoiceStatus.PAID,
 ]
 
+/**
+ * 根据当前状态计算步骤条上每个节点的展示状态。
+ *
+ * @param step - 步骤条中的目标状态节点
+ * @returns Element Plus Steps 组件需要的状态标识
+ */
 function stepStatus(step: InvoiceStatus): 'finish' | 'process' | 'wait' | 'error' {
   if (props.currentStatus === InvoiceStatus.VOID) return 'error'
   const currentIdx = statusSteps.indexOf(props.currentStatus)
@@ -92,6 +121,12 @@ function stepStatus(step: InvoiceStatus): 'finish' | 'process' | 'wait' | 'error
   return 'wait'
 }
 
+/**
+ * 为不同目标状态分配按钮色彩，突出关键动作并弱化普通流转。
+ *
+ * @param target - 即将触发的目标状态
+ * @returns 状态操作按钮对应的 Element Plus 类型
+ */
 function buttonType(target: InvoiceStatus): '' | 'success' | 'danger' | 'warning' | 'primary' {
   if (target === InvoiceStatus.VOID) return 'danger'
   if (target === InvoiceStatus.SENT) return 'primary'
@@ -119,14 +154,14 @@ function buttonType(target: InvoiceStatus): '' | 'success' | 'danger' | 'warning
     <div v-if="transitions.length > 0" class="status-actions">
       <span class="status-actions__label">{{ t('detailViews.invoice.statusFlow.actionLabel') }}</span>
       <el-button
-        v-for="t in transitions"
-        :key="t"
-        :type="buttonType(t)"
+        v-for="status in transitions"
+        :key="status"
+        :type="buttonType(status)"
         :loading="submitting"
         size="small"
-        @click="handleTransition(t)"
+        @click="handleTransition(status)"
       >
-        {{ t('detailViews.invoice.statusFlow.changeTo', { status: InvoiceStatusLabel[t] }) }}
+        {{ t('detailViews.invoice.statusFlow.changeTo', { status: InvoiceStatusLabel[status] }) }}
       </el-button>
     </div>
 
@@ -140,7 +175,7 @@ function buttonType(target: InvoiceStatus): '' | 'success' | 'danger' | 'warning
         type="warning"
         :closable="false"
         show-icon
-        style="margin-bottom: 16px"
+        style="margin-bottom: var(--app-spacing-base)"
       >
         {{ t('detailViews.invoice.statusFlow.voidIrreversible') }}
       </el-alert>
@@ -157,7 +192,7 @@ function buttonType(target: InvoiceStatus): '' | 'success' | 'danger' | 'warning
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="showVoidDialog = false">{{ t('common.cancel') }}</el-button>
+        <el-button @click="resetVoidDialog">{{ t('common.cancel') }}</el-button>
         <el-button type="danger" :loading="submitting" @click="handleVoid">
           {{ t('detailViews.invoice.statusFlow.voidAction') }}
         </el-button>
@@ -168,12 +203,12 @@ function buttonType(target: InvoiceStatus): '' | 'success' | 'danger' | 'warning
 
 <style scoped lang="scss">
 .invoice-status-flow {
-  padding: 16px 0;
+  padding: var(--app-spacing-base) 0;
 }
 
 .status-steps {
   position: relative;
-  margin-bottom: 24px;
+  margin-bottom: var(--app-spacing-xl);
 }
 
 .void-badge {
@@ -185,13 +220,13 @@ function buttonType(target: InvoiceStatus): '' | 'success' | 'danger' | 'warning
 .status-actions {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding-top: 8px;
-  border-top: 1px solid #ebeef5;
+  gap: var(--app-spacing-sm);
+  padding-top: var(--app-spacing-sm);
+  border-top: 1px solid var(--app-border-color-light);
 
   &__label {
-    font-size: 14px;
-    color: #909399;
+    font-size: var(--app-font-size-base);
+    color: var(--app-text-secondary);
     white-space: nowrap;
   }
 }

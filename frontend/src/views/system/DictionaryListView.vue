@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { getDictTypes, getDictByType } from '@/api/dictionary'
+
 import type { DictItem } from '@/api/dictionary'
+import { getDictByType, getDictTypes } from '@/api/dictionary'
+import PageList from '@/components/PageList.vue'
 
 const { t, te } = useI18n({ useScope: 'global' })
 const loading = ref(false)
@@ -20,6 +22,11 @@ const displayLabel = computed(() => {
   return selectedType.value ? getTypeLabel(selectedType.value) : ''
 })
 
+/**
+ * 加载字典类型列表，并在首次进入时默认选中首个类型。
+ *
+ * @returns 无返回值
+ */
 async function fetchTypes() {
   loading.value = true
   try {
@@ -34,6 +41,11 @@ async function fetchTypes() {
   }
 }
 
+/**
+ * 按当前选中的字典类型刷新右侧字典项列表。
+ *
+ * @returns 无返回值
+ */
 async function fetchItems() {
   if (!selectedType.value) return
   itemsLoading.value = true
@@ -54,9 +66,7 @@ onMounted(fetchTypes)
 </script>
 
 <template>
-  <div class="dictionary-page">
-    <h2 class="dictionary-page__title">{{ t('pages.dictionaries.title') }}</h2>
-
+  <PageList :title="t('pages.dictionaries.title')">
     <el-row :gutter="16">
       <el-col :xs="24" :sm="8" :md="6">
         <el-card shadow="never" class="dict-type-card">
@@ -84,25 +94,17 @@ onMounted(fetchTypes)
           <template #header>
             <span>{{ t('pages.dictionaries.dataTitle', { name: displayLabel }) }}</span>
           </template>
-          <el-table :data="dictItems" v-loading="itemsLoading" stripe border>
+          <el-table v-loading="itemsLoading" :data="dictItems" stripe border>
             <el-table-column prop="value" :label="t('pages.dictionaries.value')" min-width="200" />
             <el-table-column prop="label" :label="t('pages.dictionaries.label')" min-width="200" />
           </el-table>
         </el-card>
       </el-col>
     </el-row>
-  </div>
+  </PageList>
 </template>
 
 <style scoped lang="scss">
-.dictionary-page {
-  &__title {
-    font-size: 20px;
-    font-weight: 600;
-    margin: 0 0 16px;
-  }
-}
-
 .dict-type-card {
   :deep(.el-card__body) {
     padding: 0;
@@ -115,7 +117,7 @@ onMounted(fetchTypes)
   .el-menu-item {
     height: 40px;
     line-height: 40px;
-    font-size: 13px;
+    font-size: var(--app-font-size-sm);
   }
 }
 </style>

@@ -2,12 +2,13 @@
 import BusinessFilePanel from '@/components/BusinessFilePanel.vue'
 import { BusinessType } from '@/constants/enums'
 
-defineOptions({ name: 'TaxContractFilesTab' })
-
 defineProps<{
   contractId: string
   customerId?: string
 }>()
+
+defineOptions({ name: 'TaxContractFilesTab' })
+
 </script>
 
 <template>

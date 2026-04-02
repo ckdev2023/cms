@@ -1,0 +1,359 @@
+# Quality Gate — CI 品質門禁
+#
+# PR → main、main push 時に実行。
+# verify:full と同等のチェックを 7 並列ジョブに分割し、
+# 失敗原因を PR チェック一覧から即座に特定可能にする。
+#
+# ジョブ構成（install 以降はすべて並列）:
+#   install        → 依存関係インストール & キャッシュ
+#   code-style     → ESLint（JSDoc Layer 1 存在性検査を含む）
+#   type-check     → TypeScript 型検査（vue-tsc / tsc）
+#   jsdoc-gate     → JSDoc 内容品質検査（Layer 2）
+#   test-frontend  → Vitest
+#   test-backend   → Jest
+#   build          → 全チェック合格後のビルド検証
+#
+# 設計方針:
+#   - code-style / jsdoc-gate は独立ジョブ → PR Checks 一覧で個別に合否表示
+#   - 各ジョブ内で frontend/backend サブステップに continue-on-error を付与し、
+#     片方が失敗してももう片方の結果を必ず表示する
+#   - GITHUB_STEP_SUMMARY で各ジョブに Markdown テーブルを出力し、
+#     PR の "Summary" タブから構造化された結果を確認可能にする
+#   - check-jsdoc.mjs は CI 環境で ::error 注釈を出力し、
+#     PR diff 上に違反箇所をインライン表示する
+#
+# ローカル等価コマンド: npm run verify:full
+
+name: Quality Gate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: quality-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+
+jobs:
+  # ── Dependency Installation & Cache ──────────────────────────
+  install:
+    name: Install Dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Cache node_modules
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            frontend/node_modules
+            backend/node_modules
+          key: modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'frontend/package-lock.json', 'backend/package-lock.json') }}
+
+      - name: Install root
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+      - name: Install frontend
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci --prefix frontend
+
+      - name: Install backend
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci --prefix backend
+
+  # ── Code Style (ESLint) ─────────────────────────────────────
+  # Includes JSDoc Layer 1 (existence & structure) via eslint-plugin-jsdoc.
+  # Both frontend and backend always execute; continue-on-error ensures
+  # a failure in one does not suppress the other's result.
+  code-style:
+    name: Code Style (ESLint)
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            frontend/node_modules
+            backend/node_modules
+          key: modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'frontend/package-lock.json', 'backend/package-lock.json') }}
+
+      - name: "Frontend: ESLint"
+        id: fe-lint
+        continue-on-error: true
+        run: npm run lint:frontend
+
+      - name: "Backend: ESLint"
+        id: be-lint
+        continue-on-error: true
+        run: npm run lint:backend
+
+      - name: Aggregate code-style results
+        if: always()
+        run: |
+          FE="${{ steps.fe-lint.outcome }}"
+          BE="${{ steps.be-lint.outcome }}"
+
+          echo "## Code Style (ESLint)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Target | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|--------|" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$FE" = "success" ]; then
+            echo "| Frontend | :white_check_mark: Pass |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Frontend | :x: **Fail** |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$BE" = "success" ]; then
+            echo "| Backend | :white_check_mark: Pass |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Backend | :x: **Fail** |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$FE" != "success" ] || [ "$BE" != "success" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "> ESLint 違反を修正してから再度 push してください。" >> "$GITHUB_STEP_SUMMARY"
+            echo "> ローカル確認: \`npm run lint:frontend\` / \`npm run lint:backend\`" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+  # ── Type Check (TypeScript) ─────────────────────────────────
+  # Same continue-on-error pattern as code-style.
+  type-check:
+    name: Type Check (TypeScript)
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            frontend/node_modules
+            backend/node_modules
+          key: modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'frontend/package-lock.json', 'backend/package-lock.json') }}
+
+      - name: "Frontend: vue-tsc --noEmit"
+        id: fe-tsc
+        continue-on-error: true
+        run: npm run type-check:frontend
+
+      - name: "Backend: tsc --noEmit"
+        id: be-tsc
+        continue-on-error: true
+        run: npm run type-check:backend
+
+      - name: Aggregate type-check results
+        if: always()
+        run: |
+          FE="${{ steps.fe-tsc.outcome }}"
+          BE="${{ steps.be-tsc.outcome }}"
+
+          echo "## Type Check (TypeScript)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Target | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|--------|" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$FE" = "success" ]; then
+            echo "| Frontend (vue-tsc) | :white_check_mark: Pass |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Frontend (vue-tsc) | :x: **Fail** |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$BE" = "success" ]; then
+            echo "| Backend (tsc) | :white_check_mark: Pass |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Backend (tsc) | :x: **Fail** |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$FE" != "success" ] || [ "$BE" != "success" ]; then
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "> 型エラーを修正してから再度 push してください。" >> "$GITHUB_STEP_SUMMARY"
+            echo "> ローカル確認: \`npm run type-check:frontend\` / \`npm run type-check:backend\`" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+  # ── JSDoc Quality Gate (Layer 2) ────────────────────────────
+  # Layer 1 (structural) runs inside ESLint in code-style above.
+  # Layer 2 checks content quality: banned phrases, minimum
+  # description length, @throws coverage.
+  # In CI, check-jsdoc.mjs emits ::error annotations so violations
+  # appear inline on the PR diff.
+  jsdoc-gate:
+    name: JSDoc Quality Gate
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            frontend/node_modules
+            backend/node_modules
+          key: modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'frontend/package-lock.json', 'backend/package-lock.json') }}
+
+      - name: "JSDoc: Content quality (Layer 2)"
+        id: jsdoc
+        run: npm run jsdoc:check
+
+      - name: JSDoc summary
+        if: always()
+        run: |
+          RESULT="${{ steps.jsdoc.outcome }}"
+
+          echo "## JSDoc Quality Gate (Layer 2)" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$RESULT" = "success" ]; then
+            echo ":white_check_mark: JSDoc 内容品質検査に合格しました。" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo ":x: JSDoc 内容品質検査に失敗しました。" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "検査対象:" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 空泛語（「処理」「获取」等）の検出" >> "$GITHUB_STEP_SUMMARY"
+            echo "- 記述の最小文字数（8 文字以上）" >> "$GITHUB_STEP_SUMMARY"
+            echo "- \`throw new\` を含む関数の \`@throws\` 記載漏れ" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "> ローカル確認: \`npm run jsdoc:check\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "> 書き方の参照: \`docs/s06_jsdoc_standard.md\`" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  # ── Tests ───────────────────────────────────────────────────
+  test-frontend:
+    name: Test Frontend (Vitest)
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            frontend/node_modules
+            backend/node_modules
+          key: modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'frontend/package-lock.json', 'backend/package-lock.json') }}
+
+      - name: Run Vitest
+        run: npm run test:frontend
+
+  test-backend:
+    name: Test Backend (Jest)
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            frontend/node_modules
+            backend/node_modules
+          key: modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'frontend/package-lock.json', 'backend/package-lock.json') }}
+
+      - name: Run Jest
+        run: npm run test:backend
+
+  # ── Build Verification ──────────────────────────────────────
+  # Runs only after all checks pass — equivalent to the final
+  # step of `npm run verify:full`.
+  build:
+    name: Build Verification
+    needs: [code-style, type-check, jsdoc-gate, test-frontend, test-backend]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Restore node_modules
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            node_modules
+            frontend/node_modules
+            backend/node_modules
+          key: modules-${{ runner.os }}-node${{ env.NODE_VERSION }}-${{ hashFiles('package-lock.json', 'frontend/package-lock.json', 'backend/package-lock.json') }}
+
+      - name: "Frontend: vue-tsc -b && vite build"
+        id: fe-build
+        continue-on-error: true
+        run: npm run build:frontend
+
+      - name: "Backend: nest build"
+        id: be-build
+        continue-on-error: true
+        run: npm run build:backend
+
+      - name: Aggregate build results
+        if: always()
+        run: |
+          FE="${{ steps.fe-build.outcome }}"
+          BE="${{ steps.be-build.outcome }}"
+
+          echo "## Build Verification" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Target | Result |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|--------|" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$FE" = "success" ]; then
+            echo "| Frontend (vite build) | :white_check_mark: Pass |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Frontend (vite build) | :x: **Fail** |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$BE" = "success" ]; then
+            echo "| Backend (nest build) | :white_check_mark: Pass |" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "| Backend (nest build) | :x: **Fail** |" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          if [ "$FE" != "success" ] || [ "$BE" != "success" ]; then
+            exit 1
+          fi

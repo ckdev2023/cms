@@ -1,20 +1,21 @@
 <script setup lang="ts">
-import { computed, ref, reactive } from 'vue'
-import { Search, Refresh, View } from '@element-plus/icons-vue'
+import { Refresh, Search, View } from '@element-plus/icons-vue'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { getAuditLogs } from '@/api/log'
 import PageList from '@/components/PageList.vue'
 import ProTable from '@/components/ProTable.vue'
-import { getAuditLogs } from '@/api/log'
 import { useProTable } from '@/composables/useProTable'
-import { AuditActionType, AuditTargetType, OperationResult } from '@/constants/enums'
 import {
   AuditActionTypeLabel,
   AuditTargetTypeLabel,
   OperationResultLabel,
 } from '@/constants/enum-labels'
-import { useLocaleFormatter } from '@/utils/locale-format'
+import { AuditActionType, AuditTargetType, OperationResult } from '@/constants/enums'
 import type { ProTableColumn } from '@/types/components'
 import type { AuditLogItem, AuditLogQueryParams } from '@/types/log'
+import { useLocaleFormatter } from '@/utils/locale-format'
 
 defineOptions({ name: 'AuditLogListView' })
 
@@ -62,8 +63,13 @@ function showDetail(row: AuditLogItem) {
   detailVisible.value = true
 }
 
+/**
+ * 汇总筛选表单与时间范围，触发审计日志检索。
+ *
+ * @returns 无返回值
+ */
 function doSearch() {
-  const params: Record<string, any> = {}
+  const params: Record<string, unknown> = {}
   if (searchForm.keyword) params.keyword = searchForm.keyword
   if (searchForm.actionType) params.actionType = searchForm.actionType
   if (searchForm.targetType) params.targetType = searchForm.targetType
@@ -73,6 +79,11 @@ function doSearch() {
   handleSearch(params)
 }
 
+/**
+ * 清空当前审计日志筛选条件，并恢复默认列表状态。
+ *
+ * @returns 无返回值
+ */
 function doReset() {
   searchForm.keyword = ''
   searchForm.actionType = undefined
@@ -82,8 +93,16 @@ function doReset() {
   handleReset()
 }
 
+/**
+ * 根据表格排序事件同步审计日志列表的排序字段。
+ *
+ * @param sort - 当前表格返回的排序字段与方向
+ * @param sort.prop - 后端排序使用的字段名
+ * @param sort.order - Element Plus 返回的排序方向
+ * @returns 无返回值
+ */
 function handleSortChange(sort: { prop: string; order: string }) {
-  const params: Record<string, any> = {}
+  const params: Record<string, unknown> = {}
   if (sort.prop && sort.order) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'
@@ -304,17 +323,3 @@ const actionTagType: Record<string, 'primary' | 'success' | 'warning' | 'danger'
   </PageList>
 </template>
 
-<style scoped lang="scss">
-.log-json {
-  max-height: 200px;
-  overflow: auto;
-  font-size: 12px;
-  line-height: 1.4;
-  background: #f5f7fa;
-  padding: 8px;
-  border-radius: 4px;
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-</style>
