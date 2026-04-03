@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import ElementPlus from 'element-plus'
 import { createPinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 
@@ -17,7 +18,7 @@ describe('App', () => {
 
     const wrapper = mount(App, {
       global: {
-        plugins: [pinia, i18n],
+        plugins: [pinia, i18n, ElementPlus],
         stubs: ['router-view'],
       },
     })
