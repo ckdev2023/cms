@@ -208,7 +208,7 @@ const actionTagType: Record<string, 'primary' | 'success' | 'warning' | 'danger'
           />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :icon="Search" @click="doSearch">{{ t('common.search') }}</el-button>
+          <el-button type="primary" :icon="Search" :loading="loading" @click="doSearch">{{ t('common.search') }}</el-button>
           <el-button :icon="Refresh" @click="doReset">{{ t('common.reset') }}</el-button>
         </el-form-item>
       </el-form>

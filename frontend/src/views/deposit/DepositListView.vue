@@ -192,7 +192,7 @@ function handleRowClick(row: DepositAccountListItem) {
           <el-switch v-model="searchForm.hasBalance" />
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :icon="Search" @click="doSearch">
+          <el-button type="primary" :icon="Search" :loading="loading" @click="doSearch">
             {{ t('common.search') }}
           </el-button>
           <el-button :icon="Refresh" @click="doReset">{{ t('common.reset') }}</el-button>

@@ -287,7 +287,7 @@ function isContractExpired(dateStr: string | null): boolean {
           </el-select>
         </el-form-item>
         <el-form-item>
-          <el-button type="primary" :icon="Search" @click="doSearch">
+          <el-button type="primary" :icon="Search" :loading="loading" @click="doSearch">
             {{ t('common.search') }}
           </el-button>
           <el-button :icon="Refresh" @click="doReset">
