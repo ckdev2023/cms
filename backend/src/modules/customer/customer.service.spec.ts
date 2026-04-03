@@ -164,6 +164,13 @@ function registerCreateSuccessTests(context: CustomerServiceTestContext): void {
 }
 
 function registerCreateGuardTests(context: CustomerServiceTestContext): void {
+  registerCreateCodeGuardTests(context);
+  registerCreateRelationPayloadTests(context);
+}
+
+function registerCreateCodeGuardTests(
+  context: CustomerServiceTestContext,
+): void {
   it('should auto-generate customer code with incrementing numbers', async () => {
     const lastCust = createMockCustomer({ customerCode: 'C00005' });
     context.setupCodeGenQueryBuilder(lastCust);
@@ -200,7 +207,11 @@ function registerCreateGuardTests(context: CustomerServiceTestContext): void {
       ),
     ).rejects.toThrow(ConflictException);
   });
+}
 
+function registerCreateRelationPayloadTests(
+  context: CustomerServiceTestContext,
+): void {
   it('should create companyInfo when company payload has content even if customerType is personal', async () => {
     context.setupCodeGenQueryBuilder(null);
     context.setupFindOneAfterCreate(createMockPersonalCustomer());
