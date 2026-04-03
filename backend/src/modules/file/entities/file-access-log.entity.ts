@@ -1,43 +1,47 @@
 import {
-  Entity,
   Column,
-  ManyToOne,
-  JoinColumn,
-  PrimaryGeneratedColumn,
   CreateDateColumn,
+  Entity,
   Index,
-} from 'typeorm'
-import { FileAccessAction } from '../../../common/constants/enums'
-import { FileEntity } from './file.entity'
-import { User } from '../../auth/entities/user.entity'
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
+import { FileAccessAction } from '../../../common/constants/enums';
+import { User } from '../../auth/entities/user.entity';
+import { FileEntity } from './file.entity';
+
+/**
+ * 记录文件访问审计流水，并关联访问动作、操作者与来源信息。
+ */
 @Entity('file_access_logs')
 export class FileAccessLog {
   @PrimaryGeneratedColumn('uuid')
-  id: string
+  id: string;
 
   @Index()
   @Column({ type: 'uuid' })
-  fileId: string
+  fileId: string;
 
   @Index()
   @Column({ type: 'uuid', nullable: true })
-  userId: string | null
+  userId: string | null;
 
   @Column({ type: 'varchar', length: 20 })
-  action: FileAccessAction
+  action: FileAccessAction;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  ipAddress: string | null
+  ipAddress: string | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date
+  createdAt: Date;
 
   @ManyToOne(() => FileEntity, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'file_id' })
-  file: FileEntity
+  file: FileEntity;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'user_id' })
-  user: User | null
+  user: User | null;
 }
