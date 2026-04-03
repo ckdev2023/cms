@@ -5,12 +5,20 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Brackets, DataSource, EntityManager, Repository } from 'typeorm';
+import { DataSource, EntityManager, Repository } from 'typeorm';
 
 import {
   DepositTransactionType,
   InvoiceStatus,
 } from '../../common/constants/enums';
+import {
+  findDepositAccountByCustomer,
+  findDepositAccountById,
+  findDepositAccounts,
+  findDepositTransactionById,
+  findDepositTransactions,
+  getDepositAccountSummary,
+} from './deposit.service.queries';
 import { CreateDepositAdjustmentDto } from './dto/create-deposit-adjustment.dto';
 import { CreateDepositOffsetDto } from './dto/create-deposit-offset.dto';
 import { CreateDepositRechargeDto } from './dto/create-deposit-recharge.dto';
@@ -24,7 +32,6 @@ import {
   DepositAccountListItem,
   DepositAccountSummary,
   DepositTransactionListItem,
-  EMPTY_DEPOSIT_ACCOUNT_SUMMARY,
   PaginatedResult,
   PostgresErrorLike,
 } from './finance.types';
@@ -59,54 +66,7 @@ export class DepositService {
   async findAllAccounts(
     query: QueryDepositAccountDto,
   ): Promise<PaginatedResult<DepositAccountListItem>> {
-    const {
-      page = 1,
-      pageSize = 20,
-      keyword,
-      sortBy,
-      sortOrder = 'DESC',
-    } = query;
-
-    const qb = this.accountRepo
-      .createQueryBuilder('da')
-      .leftJoinAndSelect('da.customer', 'customer')
-      .loadRelationCountAndMap('da.transactionCount', 'da.transactions');
-
-    if (keyword) {
-      qb.andWhere(
-        new Brackets((sub) => {
-          sub
-            .where('customer.customerName ILIKE :kw', { kw: `%${keyword}%` })
-            .orWhere('customer.customerCode ILIKE :kw', { kw: `%${keyword}%` });
-        }),
-      );
-    }
-
-    if (query.customerId) {
-      qb.andWhere('da.customerId = :customerId', {
-        customerId: query.customerId,
-      });
-    }
-
-    if (query.hasBalance) {
-      qb.andWhere('da.balance > 0');
-    }
-
-    const allowedSortFields = ['balance', 'createdAt', 'updatedAt'];
-    const orderField =
-      sortBy && allowedSortFields.includes(sortBy) ? sortBy : 'updatedAt';
-    qb.orderBy(`da.${orderField}`, sortOrder);
-
-    qb.skip((page - 1) * pageSize).take(pageSize);
-
-    const [items, total] = await qb.getManyAndCount();
-
-    return {
-      items: items.map((a) => this.toAccountListDto(a)),
-      total,
-      page,
-      pageSize,
-    };
+    return findDepositAccounts(this.accountRepo, query);
   }
 
   /**
@@ -117,14 +77,7 @@ export class DepositService {
    * @throws {NotFoundException} 账户不存在时
    */
   async findAccountById(id: string): Promise<DepositAccount> {
-    const account = await this.accountRepo.findOne({
-      where: { id },
-      relations: ['customer'],
-    });
-    if (!account) {
-      throw new NotFoundException('預り金アカウントが見つかりません');
-    }
-    return account;
+    return findDepositAccountById(this.accountRepo, id);
   }
 
   /**
@@ -136,10 +89,7 @@ export class DepositService {
   async findAccountByCustomer(
     customerId: string,
   ): Promise<DepositAccount | null> {
-    return this.accountRepo.findOne({
-      where: { customerId },
-      relations: ['customer'],
-    });
+    return findDepositAccountByCustomer(this.accountRepo, customerId);
   }
 
   /**
@@ -148,13 +98,7 @@ export class DepositService {
    * @returns 按字符串字段返回的聚合结果，兼容 TypeORM 原始查询输出
    */
   async getAccountSummary(): Promise<DepositAccountSummary> {
-    const result = await this.accountRepo
-      .createQueryBuilder('da')
-      .select('COUNT(*)', 'totalAccounts')
-      .addSelect('COALESCE(SUM(da.balance), 0)', 'totalBalance')
-      .addSelect('COUNT(CASE WHEN da.balance > 0 THEN 1 END)', 'activeAccounts')
-      .getRawOne<DepositAccountSummary>();
-    return result ?? EMPTY_DEPOSIT_ACCOUNT_SUMMARY;
+    return getDepositAccountSummary(this.accountRepo);
   }
 
   /* ──────── Transaction Queries ──────── */
@@ -168,80 +112,7 @@ export class DepositService {
   async findAllTransactions(
     query: QueryDepositTransactionDto,
   ): Promise<PaginatedResult<DepositTransactionListItem>> {
-    const {
-      page = 1,
-      pageSize = 20,
-      keyword,
-      sortBy,
-      sortOrder = 'DESC',
-    } = query;
-
-    const qb = this.txnRepo
-      .createQueryBuilder('dt')
-      .leftJoinAndSelect('dt.depositAccount', 'da')
-      .leftJoinAndSelect('da.customer', 'customer')
-      .leftJoinAndSelect('dt.relatedInvoice', 'invoice');
-
-    if (keyword) {
-      qb.andWhere(
-        new Brackets((sub) => {
-          sub
-            .where('customer.customerName ILIKE :kw', { kw: `%${keyword}%` })
-            .orWhere('invoice.invoiceNo ILIKE :kw', { kw: `%${keyword}%` })
-            .orWhere('dt.remark ILIKE :kw', { kw: `%${keyword}%` });
-        }),
-      );
-    }
-
-    if (query.depositAccountId) {
-      qb.andWhere('dt.depositAccountId = :depositAccountId', {
-        depositAccountId: query.depositAccountId,
-      });
-    }
-
-    if (query.customerId) {
-      qb.andWhere('da.customerId = :customerId', {
-        customerId: query.customerId,
-      });
-    }
-
-    if (query.transactionType) {
-      qb.andWhere('dt.transactionType = :transactionType', {
-        transactionType: query.transactionType,
-      });
-    }
-
-    if (query.relatedInvoiceId) {
-      qb.andWhere('dt.relatedInvoiceId = :relatedInvoiceId', {
-        relatedInvoiceId: query.relatedInvoiceId,
-      });
-    }
-
-    if (query.createdFrom) {
-      qb.andWhere('dt.createdAt >= :createdFrom', {
-        createdFrom: query.createdFrom,
-      });
-    }
-
-    if (query.createdTo) {
-      qb.andWhere('dt.createdAt <= :createdTo', { createdTo: query.createdTo });
-    }
-
-    const allowedSortFields = ['amount', 'balanceAfter', 'createdAt'];
-    const orderField =
-      sortBy && allowedSortFields.includes(sortBy) ? sortBy : 'createdAt';
-    qb.orderBy(`dt.${orderField}`, sortOrder);
-
-    qb.skip((page - 1) * pageSize).take(pageSize);
-
-    const [items, total] = await qb.getManyAndCount();
-
-    return {
-      items: items.map((t) => this.toTransactionListDto(t)),
-      total,
-      page,
-      pageSize,
-    };
+    return findDepositTransactions(this.txnRepo, query);
   }
 
   /**
@@ -632,16 +503,7 @@ export class DepositService {
    * @throws {NotFoundException} 交易不存在时
    */
   private async findTransactionById(id: string): Promise<DepositTransaction> {
-    const txn = await this.txnRepo.findOne({
-      where: { id },
-      relations: [
-        'depositAccount',
-        'depositAccount.customer',
-        'relatedInvoice',
-      ],
-    });
-    if (!txn) throw new NotFoundException('取引が見つかりません');
-    return txn;
+    return findDepositTransactionById(this.txnRepo, id);
   }
 
   /**
@@ -652,51 +514,5 @@ export class DepositService {
    */
   private round(val: number): number {
     return Math.round(val * 100) / 100;
-  }
-
-  /**
-   * 将账户实体转换为列表页所需的扁平概要结构。
-   *
-   * @param account - 已加载客户关系与交易数量映射的账户实体
-   * @returns 账户列表展示用的扁平对象
-   */
-  private toAccountListDto(
-    account: DepositAccount & { transactionCount?: number },
-  ): DepositAccountListItem {
-    return {
-      id: account.id,
-      customerId: account.customerId,
-      customerName: account.customer?.customerName ?? null,
-      customerCode: account.customer?.customerCode ?? null,
-      balance: account.balance,
-      transactionCount: account.transactionCount ?? 0,
-      createdAt: account.createdAt,
-      updatedAt: account.updatedAt,
-    };
-  }
-
-  /**
-   * 将交易实体转换为列表页所需的扁平概要结构。
-   *
-   * @param txn - 已加载账户、客户与关联请求书的交易实体
-   * @returns 交易列表展示用的扁平对象
-   */
-  private toTransactionListDto(
-    txn: DepositTransaction,
-  ): DepositTransactionListItem {
-    return {
-      id: txn.id,
-      depositAccountId: txn.depositAccountId,
-      customerId: txn.depositAccount?.customerId ?? null,
-      customerName: txn.depositAccount?.customer?.customerName ?? null,
-      transactionType: txn.transactionType,
-      amount: txn.amount,
-      balanceAfter: txn.balanceAfter,
-      relatedInvoiceId: txn.relatedInvoiceId,
-      relatedInvoiceNo: txn.relatedInvoice?.invoiceNo ?? null,
-      remark: txn.remark,
-      createdBy: txn.createdBy,
-      createdAt: txn.createdAt,
-    };
   }
 }
