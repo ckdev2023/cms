@@ -2,12 +2,15 @@ import {
   Column,
   CreateDateColumn,
   Entity,
+  Index,
   JoinColumn,
+  ManyToOne,
   OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 
+import { FamilyRelation } from '../../../common/constants/enums';
 import { Customer } from './customer.entity';
 
 /**
@@ -27,8 +30,23 @@ export class PersonInfo {
   @Column({ type: 'varchar', length: 100, nullable: true })
   residenceStatus: string | null;
 
+  @Index('IDX_person_info_residence_expire_date', {
+    where: '"residence_expire_date" IS NOT NULL',
+  })
   @Column({ type: 'date', nullable: true })
   residenceExpireDate: Date | null;
+
+  @Column({ type: 'boolean', default: false })
+  isFamilyMember: boolean;
+
+  @Column({ type: 'varchar', length: 30, nullable: true })
+  familyRelation: FamilyRelation | null;
+
+  @Column({ type: 'uuid', nullable: true })
+  primaryCustomerId: string | null;
+
+  @Column({ type: 'int', nullable: true })
+  remindDaysBefore: number | null;
 
   @CreateDateColumn({ type: 'timestamptz' })
   createdAt: Date;
@@ -41,4 +59,8 @@ export class PersonInfo {
   })
   @JoinColumn({ name: 'customer_id' })
   customer: Customer;
+
+  @ManyToOne(() => Customer, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'primary_customer_id' })
+  primaryCustomer: Customer | null;
 }

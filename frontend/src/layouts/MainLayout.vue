@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import {
+  Bell,
   Document,
   Expand,
   Fold,
@@ -59,6 +60,12 @@ useIdleTimeout()
 const allMenuItems: Readonly<MenuItem[]> = [
   { path: '/dashboard', titleKey: 'routes.dashboard', icon: Monitor, permissions: [P.DASHBOARD_VIEW] },
   { path: '/customers', titleKey: 'routes.customers', icon: User, permissions: [P.CUSTOMER_LIST] },
+  {
+    path: '/customers/residence-reminders',
+    titleKey: 'routes.residenceReminders',
+    icon: Bell,
+    permissions: [P.CUSTOMER_LIST],
+  },
   { path: '/admin-cases', titleKey: 'routes.adminCases', icon: Document, permissions: [P.ADMIN_CASE_LIST] },
   { path: '/tax-contracts', titleKey: 'routes.taxContracts', icon: Tickets, permissions: [P.TAX_LIST] },
   {

@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import {
+  IsBoolean,
   IsDateString,
   IsEmail,
   IsEnum,
@@ -12,10 +13,15 @@ import {
   Max,
   MaxLength,
   Min,
+  ValidateIf,
   ValidateNested,
 } from 'class-validator';
 
-import { CustomerType, ServiceType } from '../../../common/constants/enums';
+import {
+  CustomerType,
+  FamilyRelation,
+  ServiceType,
+} from '../../../common/constants/enums';
 
 /**
  * 定义客户新增请求中的公司补充信息，统一约束法人编号、决算月与代表者姓名等字段。
@@ -42,7 +48,7 @@ export class CompanyInfoDto {
 }
 
 /**
- * 定义个人客户的补充身份信息，统一约束国籍、在留资格与在留期限字段。
+ * 定义个人客户的补充身份信息，统一约束国籍、在留资格、在留期限与家族成员字段。
  */
 export class PersonInfoDto {
   @ApiPropertyOptional({ maxLength: 80 })
@@ -61,6 +67,36 @@ export class PersonInfoDto {
   @IsOptional()
   @IsDateString({}, { message: '在留期限日の形式が無効です' })
   residenceExpireDate?: string;
+
+  @ApiPropertyOptional({ description: '家族成員フラグ' })
+  @IsOptional()
+  @IsBoolean()
+  isFamilyMember?: boolean;
+
+  @ApiPropertyOptional({
+    enum: FamilyRelation,
+    description: '家族関係（isFamilyMember=true 時必須）',
+  })
+  @ValidateIf((o: { isFamilyMember?: boolean }) => o.isFamilyMember === true)
+  @IsNotEmpty({ message: '家族関係は家族成員の場合に必須です' })
+  @IsEnum(FamilyRelation, { message: '家族関係の値が無効です' })
+  @IsOptional()
+  familyRelation?: FamilyRelation;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description: '主顧客ID（家族成員の場合に参照先）',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: '主顧客IDの形式が無効です' })
+  primaryCustomerId?: string;
+
+  @ApiPropertyOptional({ description: '事前通知日数（本期統一90日）' })
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  @Max(365)
+  remindDaysBefore?: number;
 }
 
 /**

@@ -1,7 +1,7 @@
 /**
  * 定义客户档案、备注与客户补充信息的声明类型。
  */
-import type { CustomerStatus, CustomerType, NoteType, ServiceType } from '@/constants/enums'
+import type { CustomerStatus, CustomerType, FamilyRelation, NoteType, ServiceType, VisaAlertLevel } from '@/constants/enums'
 
 export interface CompanyInfoData {
   id?: string
@@ -15,6 +15,12 @@ export interface PersonInfoData {
   nationality: string | null
   residenceStatus: string | null
   residenceExpireDate: string | null
+  isFamilyMember: boolean
+  familyRelation: FamilyRelation | null
+  primaryCustomerId: string | null
+  remindDaysBefore: number | null
+  daysLeft: number | null
+  alertLevel: VisaAlertLevel | null
 }
 
 export interface CustomerItem {
@@ -61,6 +67,10 @@ export interface CreateCustomerParams {
     nationality?: string
     residenceStatus?: string
     residenceExpireDate?: string
+    isFamilyMember?: boolean
+    familyRelation?: FamilyRelation
+    primaryCustomerId?: string
+    remindDaysBefore?: number
   }
 }
 
@@ -76,6 +86,20 @@ export interface CustomerQueryParams {
   ownerUserId?: string
   sortBy?: string
   sortOrder?: 'ASC' | 'DESC'
+}
+
+export interface ResidenceExpiryReminderItem {
+  customerId: string
+  customerName: string
+  familyRelation: FamilyRelation | null
+  visaExpireDate: string
+  daysLeft: number
+  alertLevel: VisaAlertLevel
+}
+
+export interface ReminderQueryParams {
+  page?: number
+  pageSize?: number
 }
 
 export interface NoteItem {

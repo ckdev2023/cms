@@ -1,4 +1,4 @@
-import { ConflictException, NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
@@ -8,275 +8,16 @@ import {
   ServiceType,
 } from '../../common/constants/enums';
 import { CustomerService } from './customer.service';
+import { registerCreateTests } from './customer.service.spec.create';
+import {
+  createFindAllQueryBuilder,
+  createMockCustomer,
+  createMockPersonalCustomer,
+  type CustomerServiceTestContext,
+} from './customer.service.spec.mocks';
 import { CompanyInfo } from './entities/company-info.entity';
 import { Customer } from './entities/customer.entity';
 import { PersonInfo } from './entities/person-info.entity';
-
-function createMockCustomer(overrides: Partial<Customer> = {}): Customer {
-  return {
-    id: 'cust-1',
-    customerCode: 'C00001',
-    customerType: CustomerType.COMPANY,
-    customerName: 'テスト株式会社',
-    phone: '03-1234-5678',
-    email: 'test@example.com',
-    address: '東京都千代田区',
-    serviceType: ServiceType.BOTH,
-    ownerUserId: 'user-1',
-    status: CustomerStatus.ACTIVE,
-    createdBy: 'user-1',
-    updatedBy: 'user-1',
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    deletedAt: null,
-    owner: {
-      id: 'user-1',
-      displayName: 'テスト太郎',
-    } as Customer['owner'],
-    companyInfo: {
-      id: 'ci-1',
-      customerId: 'cust-1',
-      corporationNumber: '1234567890123',
-      fiscalMonth: 3,
-      representativeName: '代表太郎',
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as CompanyInfo,
-    personInfo: null,
-    notes: [],
-    staffRelations: [],
-    ...overrides,
-  } as Customer;
-}
-
-function createMockPersonalCustomer(
-  overrides: Partial<Customer> = {},
-): Customer {
-  return createMockCustomer({
-    id: 'cust-2',
-    customerCode: 'P00001',
-    customerType: CustomerType.PERSONAL,
-    customerName: '田中一郎',
-    companyInfo: null,
-    personInfo: {
-      id: 'pi-1',
-      customerId: 'cust-2',
-      nationality: '日本',
-      residenceStatus: '永住者',
-      residenceExpireDate: new Date('2028-12-31'),
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as PersonInfo,
-    ...overrides,
-  });
-}
-
-type CustomerServiceTestContext = {
-  getService: () => CustomerService;
-  getCustomerRepo: () => Record<string, jest.Mock>;
-  getCompanyInfoRepo: () => Record<string, jest.Mock>;
-  getPersonInfoRepo: () => Record<string, jest.Mock>;
-  setupCodeGenQueryBuilder: (lastCustomer: Customer | null) => void;
-  setupFindOneAfterCreate: (customer: Customer) => void;
-};
-
-function createFindAllQueryBuilder(result: [Customer[], number]) {
-  return {
-    leftJoinAndSelect: jest.fn().mockReturnThis(),
-    andWhere: jest.fn().mockReturnThis(),
-    orderBy: jest.fn().mockReturnThis(),
-    skip: jest.fn().mockReturnThis(),
-    take: jest.fn().mockReturnThis(),
-    getManyAndCount: jest.fn().mockResolvedValue(result),
-  };
-}
-
-function registerCreateSuccessTests(context: CustomerServiceTestContext): void {
-  it('should create a company customer with companyInfo', async () => {
-    const mockCreated = createMockCustomer();
-    context.setupCodeGenQueryBuilder(null);
-    context.setupFindOneAfterCreate(mockCreated);
-
-    const result = await context.getService().create(
-      {
-        customerType: CustomerType.COMPANY,
-        customerName: 'テスト株式会社',
-        serviceType: ServiceType.BOTH,
-        companyInfo: {
-          corporationNumber: '1234567890123',
-          fiscalMonth: 3,
-          representativeName: '代表太郎',
-        },
-      },
-      'user-1',
-    );
-
-    expect(context.getCustomerRepo().create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        customerType: CustomerType.COMPANY,
-        customerName: 'テスト株式会社',
-        customerCode: 'C00001',
-      }),
-    );
-    expect(context.getCustomerRepo().save).toHaveBeenCalled();
-    expect(context.getCompanyInfoRepo().create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        corporationNumber: '1234567890123',
-        fiscalMonth: 3,
-      }),
-    );
-    expect(context.getCompanyInfoRepo().save).toHaveBeenCalled();
-    expect(result).toBeDefined();
-  });
-
-  it('should create a personal customer with personInfo', async () => {
-    const mockCreated = createMockPersonalCustomer();
-    context.setupCodeGenQueryBuilder(null);
-    context.setupFindOneAfterCreate(mockCreated);
-
-    const result = await context.getService().create(
-      {
-        customerType: CustomerType.PERSONAL,
-        customerName: '田中一郎',
-        serviceType: ServiceType.ADMIN,
-        personInfo: {
-          nationality: '日本',
-          residenceStatus: '永住者',
-          residenceExpireDate: '2028-12-31',
-        },
-      },
-      'user-1',
-    );
-
-    expect(context.getCustomerRepo().create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        customerType: CustomerType.PERSONAL,
-        customerCode: 'P00001',
-      }),
-    );
-    expect(context.getPersonInfoRepo().create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        nationality: '日本',
-      }),
-    );
-    expect(result).toBeDefined();
-  });
-}
-
-function registerCreateGuardTests(context: CustomerServiceTestContext): void {
-  registerCreateCodeGuardTests(context);
-  registerCreateRelationPayloadTests(context);
-}
-
-function registerCreateCodeGuardTests(
-  context: CustomerServiceTestContext,
-): void {
-  it('should auto-generate customer code with incrementing numbers', async () => {
-    const lastCust = createMockCustomer({ customerCode: 'C00005' });
-    context.setupCodeGenQueryBuilder(lastCust);
-    context.setupFindOneAfterCreate(
-      createMockCustomer({ customerCode: 'C00006' }),
-    );
-
-    await context.getService().create(
-      {
-        customerType: CustomerType.COMPANY,
-        customerName: 'テスト2',
-        serviceType: ServiceType.TAX,
-      },
-      'user-1',
-    );
-
-    expect(context.getCustomerRepo().create).toHaveBeenCalledWith(
-      expect.objectContaining({ customerCode: 'C00006' }),
-    );
-  });
-
-  it('should throw ConflictException for duplicate customer code', async () => {
-    context.setupCodeGenQueryBuilder(null);
-    context.getCustomerRepo().count.mockResolvedValue(1);
-
-    await expect(
-      context.getService().create(
-        {
-          customerType: CustomerType.COMPANY,
-          customerName: '重複テスト',
-          serviceType: ServiceType.ADMIN,
-        },
-        'user-1',
-      ),
-    ).rejects.toThrow(ConflictException);
-  });
-}
-
-function registerCreateRelationPayloadTests(
-  context: CustomerServiceTestContext,
-): void {
-  it('should create companyInfo when company payload has content even if customerType is personal', async () => {
-    context.setupCodeGenQueryBuilder(null);
-    context.setupFindOneAfterCreate(createMockPersonalCustomer());
-
-    await context.getService().create(
-      {
-        customerType: CustomerType.PERSONAL,
-        customerName: '個人テスト',
-        serviceType: ServiceType.ADMIN,
-        companyInfo: { corporationNumber: '1234567890123' },
-      },
-      'user-1',
-    );
-
-    expect(context.getCompanyInfoRepo().create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        corporationNumber: '1234567890123',
-      }),
-    );
-    expect(context.getCompanyInfoRepo().save).toHaveBeenCalled();
-  });
-
-  it('should create both companyInfo and personInfo when both payloads have content', async () => {
-    const mockCreated = createMockCustomer({
-      personInfo: { id: 'pi-2', customerId: 'cust-new' } as PersonInfo,
-    });
-    context.setupCodeGenQueryBuilder(null);
-    context.setupFindOneAfterCreate(mockCreated);
-
-    await context.getService().create(
-      {
-        customerType: CustomerType.COMPANY,
-        customerName: '代表兼法人',
-        serviceType: ServiceType.BOTH,
-        companyInfo: {
-          corporationNumber: '1234567890123',
-          fiscalMonth: 3,
-          representativeName: '代表太郎',
-        },
-        personInfo: {
-          nationality: '中国',
-          residenceStatus: '技術・人文知識・国際業務',
-          residenceExpireDate: '2030-01-01',
-        },
-      },
-      'user-1',
-    );
-
-    expect(context.getCompanyInfoRepo().create).toHaveBeenCalled();
-    expect(context.getCompanyInfoRepo().save).toHaveBeenCalled();
-    expect(context.getPersonInfoRepo().create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        nationality: '中国',
-      }),
-    );
-    expect(context.getPersonInfoRepo().save).toHaveBeenCalled();
-  });
-}
-
-function registerCreateTests(context: CustomerServiceTestContext): void {
-  describe('create', () => {
-    registerCreateSuccessTests(context);
-    registerCreateGuardTests(context);
-  });
-}
 
 function registerFindOneTests(context: CustomerServiceTestContext): void {
   describe('findOne', () => {
@@ -415,6 +156,57 @@ function registerUpdateTests(context: CustomerServiceTestContext): void {
         expect.objectContaining({ nationality: '日本' }),
       );
     });
+
+    it('should reject update when primaryCustomerId equals current customer id', async () => {
+      const mockCustomer = createMockPersonalCustomer();
+      context.getCustomerRepo().findOne.mockResolvedValue(mockCustomer);
+
+      await expect(
+        context
+          .getService()
+          .update(
+            'cust-2',
+            { personInfo: { primaryCustomerId: 'cust-2' } },
+            'user-1',
+          ),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+}
+
+function registerResidenceReminderTests(
+  context: CustomerServiceTestContext,
+): void {
+  describe('findResidenceExpiryReminders', () => {
+    it('filters non-null expire dates and applies local-calendar 90-day cutoff', async () => {
+      jest.useFakeTimers();
+      jest.setSystemTime(new Date(2026, 5, 15, 12, 0, 0));
+
+      const qb = {
+        innerJoinAndSelect: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        skip: jest.fn().mockReturnThis(),
+        take: jest.fn().mockReturnThis(),
+        getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
+      };
+      context.getPersonInfoRepo().createQueryBuilder = jest
+        .fn()
+        .mockReturnValue(qb);
+
+      await context.getService().findResidenceExpiryReminders(1, 20);
+
+      expect(qb.where).toHaveBeenCalledWith(
+        'pi.residenceExpireDate IS NOT NULL',
+      );
+      expect(qb.andWhere).toHaveBeenCalledWith(
+        'pi.residenceExpireDate <= :cutoff',
+        { cutoff: '2026-09-13' },
+      );
+
+      jest.useRealTimers();
+    });
   });
 }
 
@@ -525,6 +317,7 @@ describe('CustomerService', () => {
         ),
       save: jest.fn().mockResolvedValue(undefined),
       remove: jest.fn().mockResolvedValue(undefined),
+      createQueryBuilder: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -565,6 +358,7 @@ describe('CustomerService', () => {
   registerCreateTests(context);
   registerFindOneTests(context);
   registerFindAllTests(context);
+  registerResidenceReminderTests(context);
   registerUpdateTests(context);
   registerRemoveTests(context);
   registerRestoreTests(context);

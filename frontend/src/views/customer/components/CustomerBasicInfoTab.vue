@@ -2,8 +2,22 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { CustomerStatusLabel, CustomerTypeLabel, ServiceTypeLabel, StaffRelationTypeLabel } from '@/constants/enum-labels'
-import type { CustomerStatus, CustomerType, ServiceType, StaffRelationType } from '@/constants/enums'
+import {
+  CustomerStatusLabel,
+  CustomerTypeLabel,
+  FamilyRelationLabel,
+  ServiceTypeLabel,
+  StaffRelationTypeLabel,
+  VisaAlertLevelLabel,
+} from '@/constants/enum-labels'
+import {
+  type CustomerStatus,
+  type CustomerType,
+  type FamilyRelation,
+  type ServiceType,
+  type StaffRelationType,
+  VisaAlertLevel,
+} from '@/constants/enums'
 import type { CustomerDetail } from '@/types/customer'
 
 const props = defineProps<{
@@ -20,6 +34,12 @@ const { t } = useI18n({ useScope: 'global' })
 const hasCompanyInfo = computed(() => !!props.customer.companyInfo)
 const hasPersonInfo = computed(() => !!props.customer.personInfo)
 const hasStaffRelations = computed(() => props.customer.staffRelations?.length > 0)
+
+const visaAlertElTagType: Partial<Record<VisaAlertLevel, 'danger' | 'warning'>> = {
+  [VisaAlertLevel.EXPIRED]: 'danger',
+  [VisaAlertLevel.URGENT]: 'danger',
+  [VisaAlertLevel.HIGH]: 'warning',
+}
 </script>
 
 <template>
@@ -100,8 +120,62 @@ const hasStaffRelations = computed(() => props.customer.staffRelations?.length >
         <el-descriptions-item :label="t('detailViews.customer.basicFields.residenceStatus')">
           {{ customer.personInfo!.residenceStatus ?? '-' }}
         </el-descriptions-item>
+      </el-descriptions>
+
+      <h4 class="basic-info-tab__sub-title">{{ t('dialogs.customerForm.familyInfoTitle') }}</h4>
+      <el-descriptions :column="2" border>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.isFamilyMember')">
+          {{ customer.personInfo!.isFamilyMember ? t('common.yes') : t('common.no') }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.familyRelation')">
+          <template v-if="customer.personInfo!.isFamilyMember && customer.personInfo!.familyRelation">
+            <el-tag size="small" type="info">
+              {{ FamilyRelationLabel[customer.personInfo!.familyRelation as FamilyRelation] }}
+            </el-tag>
+          </template>
+          <template v-else>-</template>
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.primaryCustomer')" :span="2">
+          <router-link
+            v-if="customer.personInfo!.primaryCustomerId"
+            :to="`/customers/${customer.personInfo!.primaryCustomerId}`"
+            class="basic-info-tab__primary-link"
+          >
+            {{ t('common.detail') }}
+          </router-link>
+          <template v-else>-</template>
+        </el-descriptions-item>
+      </el-descriptions>
+
+      <h4 class="basic-info-tab__sub-title">{{ t('dialogs.customerForm.visaInfoTitle') }}</h4>
+      <el-descriptions :column="2" border>
         <el-descriptions-item :label="t('detailViews.customer.basicFields.residenceExpireDate')">
           {{ customer.personInfo!.residenceExpireDate ?? '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.remindDaysBefore')">
+          {{ customer.personInfo!.remindDaysBefore ?? '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.daysLeft')">
+          {{ customer.personInfo!.daysLeft ?? '-' }}
+        </el-descriptions-item>
+        <el-descriptions-item :label="t('detailViews.customer.basicFields.alertLevel')">
+          <template v-if="customer.personInfo!.alertLevel">
+            <el-tag
+              v-if="customer.personInfo!.alertLevel === VisaAlertLevel.NORMAL"
+              size="small"
+              class="visa-alert-tag visa-alert-tag--normal"
+            >
+              {{ VisaAlertLevelLabel[customer.personInfo!.alertLevel as VisaAlertLevel] }}
+            </el-tag>
+            <el-tag
+              v-else
+              size="small"
+              :type="visaAlertElTagType[customer.personInfo!.alertLevel as VisaAlertLevel] ?? 'info'"
+            >
+              {{ VisaAlertLevelLabel[customer.personInfo!.alertLevel as VisaAlertLevel] }}
+            </el-tag>
+          </template>
+          <template v-else>-</template>
         </el-descriptions-item>
       </el-descriptions>
     </template>
@@ -142,5 +216,20 @@ const hasStaffRelations = computed(() => props.customer.staffRelations?.length >
     font-size: var(--app-font-size-md);
     color: var(--app-text-primary);
   }
+
+  &__primary-link {
+    color: var(--el-color-primary);
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.visa-alert-tag--normal {
+  --el-tag-bg-color: #fef9c3;
+  --el-tag-border-color: #fde047;
+  --el-tag-text-color: #854d0e;
 }
 </style>

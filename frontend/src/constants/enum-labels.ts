@@ -9,6 +9,7 @@ import type {
   CustomerStatus,
   CustomerType,
   DepositTransactionType,
+  FamilyRelation,
   FileAccessAction,
   InvoiceStatus,
   InvoiceType,
@@ -25,6 +26,7 @@ import type {
   TaskStatus,
   TaxContractStatus,
   UserStatus,
+  VisaAlertLevel,
 } from './enums'
 
 /**
@@ -428,5 +430,35 @@ export const LoginTypeLabel = createLocalizedLabelMap<LoginType>(
   {
     LOGIN: "登录",
     LOGOUT: "登出",
+  },
+);
+
+export const FamilyRelationLabel = createLocalizedLabelMap<FamilyRelation>(
+  {
+    SPOUSE: "配偶者",
+    CHILD: "子",
+    PARENT: "親",
+    OTHER: "その他",
+  },
+  {
+    SPOUSE: "配偶",
+    CHILD: "子女",
+    PARENT: "父母",
+    OTHER: "其他",
+  },
+);
+
+export const VisaAlertLevelLabel = createLocalizedLabelMap<VisaAlertLevel>(
+  {
+    EXPIRED: "期限切れ",
+    URGENT: "緊急（7日以内）",
+    HIGH: "高優先",
+    NORMAL: "通常",
+  },
+  {
+    EXPIRED: "已过期",
+    URGENT: "紧急（7天内）",
+    HIGH: "高优先",
+    NORMAL: "普通",
   },
 );

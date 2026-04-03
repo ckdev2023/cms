@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   Logger,
@@ -7,7 +8,11 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 
-import { CustomerType } from '../../common/constants/enums';
+import {
+  CustomerType,
+  FamilyRelation,
+  VisaAlertLevel,
+} from '../../common/constants/enums';
 import {
   CompanyInfoDto,
   CreateCustomerDto,
@@ -18,6 +23,25 @@ import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { CompanyInfo } from './entities/company-info.entity';
 import { Customer } from './entities/customer.entity';
 import { PersonInfo } from './entities/person-info.entity';
+import {
+  addCalendarDaysLocal,
+  calendarDaysLeft,
+  formatLocalDateOnly,
+  resolveVisaAlertLevel,
+} from './visa-alert.util';
+
+type PersonInfoResponseDto = {
+  id: string;
+  nationality: string | null;
+  residenceStatus: string | null;
+  residenceExpireDate: Date | null;
+  isFamilyMember: boolean;
+  familyRelation: FamilyRelation | null;
+  primaryCustomerId: string | null;
+  remindDaysBefore: number | null;
+  daysLeft: number | null;
+  alertLevel: VisaAlertLevel | null;
+};
 
 type CustomerResponseDto = {
   id: string;
@@ -37,18 +61,29 @@ type CustomerResponseDto = {
     fiscalMonth: number | null;
     representativeName: string | null;
   } | null;
-  personInfo: {
-    id: string;
-    nationality: string | null;
-    residenceStatus: string | null;
-    residenceExpireDate: Date | null;
-  } | null;
+  personInfo: PersonInfoResponseDto | null;
   createdAt: Date;
   updatedAt: Date;
 };
 
 type CustomerListResponse = {
   items: CustomerResponseDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export type ResidenceExpiryReminderItem = {
+  customerId: string;
+  customerName: string;
+  familyRelation: FamilyRelation | null;
+  visaExpireDate: Date;
+  daysLeft: number;
+  alertLevel: VisaAlertLevel;
+};
+
+type ReminderListResponse = {
+  items: ResidenceExpiryReminderItem[];
   total: number;
   page: number;
   pageSize: number;
@@ -256,6 +291,49 @@ export class CustomerService {
     await this.customerRepo.recover(customer);
     this.logger.log(`Customer "${customer.customerCode}" restored`);
     return this.findOne(id);
+  }
+
+  /**
+   * 查询在留期限 90 天内到期（含已过期）的客户分页列表。
+   *
+   * @param page - 页码，默认 1
+   * @param pageSize - 每页条数，默认 20
+   * @returns 按到期日升序排列的提醒列表与分页信息
+   */
+  async findResidenceExpiryReminders(
+    page = 1,
+    pageSize = 20,
+  ): Promise<ReminderListResponse> {
+    const today = new Date();
+    const cutoffStr = formatLocalDateOnly(addCalendarDaysLocal(today, 90));
+
+    const qb = this.personInfoRepo
+      .createQueryBuilder('pi')
+      .innerJoinAndSelect('pi.customer', 'c')
+      .where('pi.residenceExpireDate IS NOT NULL')
+      .andWhere('pi.residenceExpireDate <= :cutoff', {
+        cutoff: cutoffStr,
+      })
+      .andWhere('c.deletedAt IS NULL')
+      .orderBy('pi.residenceExpireDate', 'ASC')
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
+
+    const [rows, total] = await qb.getManyAndCount();
+
+    const items: ResidenceExpiryReminderItem[] = rows.map((pi) => {
+      const days = calendarDaysLeft(pi.residenceExpireDate!);
+      return {
+        customerId: pi.customerId,
+        customerName: pi.customer.customerName,
+        familyRelation: pi.familyRelation,
+        visaExpireDate: pi.residenceExpireDate!,
+        daysLeft: days,
+        alertLevel: resolveVisaAlertLevel(days)!,
+      };
+    });
+
+    return { items, total, page, pageSize };
   }
 
   /**
@@ -513,6 +591,13 @@ export class CustomerService {
       return;
     }
 
+    if (personInfo.primaryCustomerId) {
+      await this.ensurePrimaryCustomerRefValid(
+        customerId,
+        personInfo.primaryCustomerId,
+      );
+    }
+
     const createdPersonInfo = this.personInfoRepo.create({
       customerId,
       nationality: personInfo.nationality ?? null,
@@ -520,6 +605,10 @@ export class CustomerService {
       residenceExpireDate: this.parseResidenceExpireDate(
         personInfo.residenceExpireDate,
       ),
+      isFamilyMember: personInfo.isFamilyMember ?? false,
+      familyRelation: personInfo.familyRelation ?? null,
+      primaryCustomerId: personInfo.primaryCustomerId ?? null,
+      remindDaysBefore: personInfo.remindDaysBefore ?? null,
     });
     await this.personInfoRepo.save(createdPersonInfo);
   }
@@ -556,7 +645,11 @@ export class CustomerService {
     return Boolean(
       info.nationality?.trim() ||
       info.residenceStatus?.trim() ||
-      info.residenceExpireDate,
+      info.residenceExpireDate ||
+      info.isFamilyMember !== undefined ||
+      info.familyRelation ||
+      info.primaryCustomerId ||
+      info.remindDaysBefore !== undefined,
     );
   }
 
@@ -611,7 +704,7 @@ export class CustomerService {
   }
 
   /**
-   * 对个人附属资料执行更新或补建，并统一处理日期字段转换。
+   * 对个人附属资料执行更新或补建，并统一处理日期字段与家族字段转换。
    *
    * @param customerId - 客户主键 ID
    * @param existingPersonInfo - 当前已存在的个人档案
@@ -627,6 +720,16 @@ export class CustomerService {
       return;
     }
 
+    if (
+      personInfo.primaryCustomerId !== undefined &&
+      personInfo.primaryCustomerId !== null
+    ) {
+      await this.ensurePrimaryCustomerRefValid(
+        customerId,
+        personInfo.primaryCustomerId,
+      );
+    }
+
     Object.assign(existingPersonInfo, {
       nationality: personInfo.nationality ?? existingPersonInfo.nationality,
       residenceStatus:
@@ -634,6 +737,14 @@ export class CustomerService {
       residenceExpireDate:
         this.parseResidenceExpireDate(personInfo.residenceExpireDate) ??
         existingPersonInfo.residenceExpireDate,
+      isFamilyMember:
+        personInfo.isFamilyMember ?? existingPersonInfo.isFamilyMember,
+      familyRelation:
+        personInfo.familyRelation ?? existingPersonInfo.familyRelation,
+      primaryCustomerId:
+        personInfo.primaryCustomerId ?? existingPersonInfo.primaryCustomerId,
+      remindDaysBefore:
+        personInfo.remindDaysBefore ?? existingPersonInfo.remindDaysBefore,
     });
     await this.personInfoRepo.save(existingPersonInfo);
   }
@@ -646,6 +757,59 @@ export class CustomerService {
    */
   private parseResidenceExpireDate(residenceExpireDate?: string): Date | null {
     return residenceExpireDate ? new Date(residenceExpireDate) : null;
+  }
+
+  /**
+   * 校验主客户引用不得指向当前客户本人，且主客户记录须存在。
+   *
+   * @param currentCustomerId - 当前正在写入个人档案的客户主键
+   * @param primaryCustomerId - 请求体中的主客户 ID
+   * @throws {BadRequestException} 自指或主客户不存在时
+   */
+  private async ensurePrimaryCustomerRefValid(
+    currentCustomerId: string,
+    primaryCustomerId: string,
+  ): Promise<void> {
+    if (primaryCustomerId === currentCustomerId) {
+      throw new BadRequestException(
+        '主顧客に本人（同一顧客）を指定することはできません',
+      );
+    }
+    const primary = await this.customerRepo.findOne({
+      where: { id: primaryCustomerId },
+    });
+    if (!primary) {
+      throw new BadRequestException('指定された主顧客が存在しません');
+    }
+  }
+
+  /**
+   * 为个人档案计算并附加在留期限提醒字段。
+   *
+   * @param pi - 个人档案实体
+   * @returns 包含 daysLeft 与 alertLevel 的响应结构
+   */
+  private toPersonInfoResponseDto(pi: PersonInfo): PersonInfoResponseDto {
+    let daysLeft: number | null = null;
+    let alertLevel: VisaAlertLevel | null = null;
+
+    if (pi.residenceExpireDate) {
+      daysLeft = calendarDaysLeft(pi.residenceExpireDate);
+      alertLevel = resolveVisaAlertLevel(daysLeft);
+    }
+
+    return {
+      id: pi.id,
+      nationality: pi.nationality,
+      residenceStatus: pi.residenceStatus,
+      residenceExpireDate: pi.residenceExpireDate,
+      isFamilyMember: pi.isFamilyMember,
+      familyRelation: pi.familyRelation,
+      primaryCustomerId: pi.primaryCustomerId,
+      remindDaysBefore: pi.remindDaysBefore,
+      daysLeft,
+      alertLevel,
+    };
   }
 
   /**
@@ -676,12 +840,7 @@ export class CustomerService {
           }
         : null,
       personInfo: customer.personInfo
-        ? {
-            id: customer.personInfo.id,
-            nationality: customer.personInfo.nationality,
-            residenceStatus: customer.personInfo.residenceStatus,
-            residenceExpireDate: customer.personInfo.residenceExpireDate,
-          }
+        ? this.toPersonInfoResponseDto(customer.personInfo)
         : null,
       createdAt: customer.createdAt,
       updatedAt: customer.updatedAt,

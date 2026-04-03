@@ -131,6 +131,20 @@ export enum StaffRelationType {
   SUPPORT = 'SUPPORT',
 }
 
+export enum FamilyRelation {
+  SPOUSE = 'SPOUSE',
+  CHILD = 'CHILD',
+  PARENT = 'PARENT',
+  OTHER = 'OTHER',
+}
+
+export enum VisaAlertLevel {
+  EXPIRED = 'EXPIRED',
+  URGENT = 'URGENT',
+  HIGH = 'HIGH',
+  NORMAL = 'NORMAL',
+}
+
 export enum InvoiceType {
   ADMIN = 'ADMIN',
   TAX = 'TAX',

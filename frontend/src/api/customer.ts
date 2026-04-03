@@ -7,6 +7,8 @@ import type {
   CustomerQueryParams,
   NoteItem,
   NoteQueryParams,
+  ReminderQueryParams,
+  ResidenceExpiryReminderItem,
   UpdateCustomerParams,
   UpdateNoteParams,
 } from '@/types/customer'
@@ -85,6 +87,22 @@ export function deleteCustomer(id: string): Promise<ApiResponse<void>> {
   return request<void>({
     url: `/customers/${id}`,
     method: 'DELETE',
+  })
+}
+
+/**
+ * 分页获取 90 天内在留期限到期的客户提醒列表。
+ *
+ * @param params - 分页参数
+ * @returns 按到期日升序排列的提醒分页列表
+ */
+export function getResidenceExpiryReminders(
+  params: ReminderQueryParams,
+): Promise<ApiResponse<PaginatedResponse<ResidenceExpiryReminderItem>>> {
+  return request<PaginatedResponse<ResidenceExpiryReminderItem>>({
+    url: '/customers/residence-expiry-reminders',
+    method: 'GET',
+    params,
   })
 }
 

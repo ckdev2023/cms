@@ -39,6 +39,12 @@ export const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routes.customers', permissions: [P.CUSTOMER_LIST] },
       },
       {
+        path: 'customers/residence-reminders',
+        name: 'ResidenceReminderList',
+        component: () => import('@/views/customer/ResidenceReminderListView.vue'),
+        meta: { titleKey: 'routes.residenceReminders', permissions: [P.CUSTOMER_LIST] },
+      },
+      {
         path: 'customers/:id',
         name: 'CustomerDetail',
         component: () => import('@/views/customer/CustomerDetailView.vue'),

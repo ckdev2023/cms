@@ -17,6 +17,7 @@ import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
+  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -69,6 +70,34 @@ export class CustomerController {
   @ApiOperation({ summary: '顧客一覧取得' })
   async findAll(@Query() query: QueryCustomerDto) {
     const result = await this.customerService.findAll(query);
+    return ApiResponse.paginated(
+      result.items,
+      result.total,
+      result.page,
+      result.pageSize,
+    );
+  }
+
+  /**
+   * 查询 90 天内在留期限到期的客户提醒列表。
+   *
+   * @param page - 页码
+   * @param pageSize - 每页条数
+   * @returns 按到期日升序排列的提醒分页列表
+   */
+  @Get('residence-expiry-reminders')
+  @Permissions(PermissionCodes.CUSTOMER_LIST)
+  @ApiOperation({ summary: '在留期限提醒一覧' })
+  @ApiQuery({ name: 'page', required: false, type: Number })
+  @ApiQuery({ name: 'pageSize', required: false, type: Number })
+  async findResidenceExpiryReminders(
+    @Query('page') page?: number,
+    @Query('pageSize') pageSize?: number,
+  ) {
+    const result = await this.customerService.findResidenceExpiryReminders(
+      page ? Number(page) : 1,
+      pageSize ? Number(pageSize) : 20,
+    );
     return ApiResponse.paginated(
       result.items,
       result.total,
