@@ -25,11 +25,15 @@ const { confirmDelete } = useConfirm()
 const { t } = useI18n({ useScope: 'global' })
 const { formatDate } = useLocaleFormatter()
 
-type SortOrder = 'ascending' | 'descending' | null
+type SortOrder = 'ascending' | 'descending'
 
 interface AdminCaseSortChange {
   prop: string | null
-  order: SortOrder
+  order: string | null
+}
+
+function isSortOrder(order: string | null): order is SortOrder {
+  return order === 'ascending' || order === 'descending'
 }
 
 const columns = computed<ProTableColumn[]>(() => [
@@ -131,7 +135,7 @@ function doReset() {
  */
 function handleSortChange(sort: AdminCaseSortChange) {
   const params = buildSearchParams()
-  if (sort.prop && sort.order) {
+  if (sort.prop && isSortOrder(sort.order)) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'
   }

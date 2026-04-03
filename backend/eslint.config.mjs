@@ -76,17 +76,126 @@ export default tseslint.config(
     },
   },
 
+  // ── Declaration layer gate (error) — common dto / entities + selected module contracts ──
+  // Declaration-centric DTO / Entity files require stable imports and class-level docs.
+  {
+    files: [
+      'src/common/dto/**/*.ts',
+      'src/common/entities/**/*.ts',
+      'src/modules/admin-case/dto/**/*.ts',
+      'src/modules/finance/entities/**/*.ts',
+      'src/modules/system/dto/**/*.ts',
+      'src/modules/system/entities/**/*.ts',
+      'src/modules/tax/dto/**/*.ts',
+    ],
+    ignores: ['**/index.ts'],
+    plugins: {
+      jsdoc: jsdocPlugin,
+    },
+    settings: {
+      jsdoc: { mode: 'typescript' },
+    },
+    rules: {
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+      'jsdoc/require-jsdoc': ['error', {
+        require: {
+          ClassDeclaration: true,
+          FunctionDeclaration: false,
+          MethodDefinition: false,
+        },
+      }],
+      'jsdoc/match-description': ['error', {
+        matchDescription: '[\\u4e00-\\u9fff]',
+        message: 'JSDoc 描述须包含中文（S06 标准）',
+      }],
+    },
+  },
+
+  // ── Common foundation gate (error) — helpers / interceptors / filters ──
+  // Shared backend infrastructure should fail fast on missing docs and unstable imports.
+  {
+    files: [
+      'src/common/helpers/**/*.ts',
+      'src/common/interceptors/**/*.ts',
+      'src/common/filters/*.ts',
+    ],
+    ignores: ['**/index.ts'],
+    plugins: { jsdoc: jsdocPlugin },
+    settings: { jsdoc: { mode: 'typescript' } },
+    rules: {
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+      'jsdoc/require-jsdoc': ['error', {
+        require: {
+          FunctionDeclaration: true,
+          MethodDefinition: true,
+          ClassDeclaration: true,
+        },
+        checkConstructors: false,
+        checkGetters: false,
+        checkSetters: false,
+        minLineCount: 2,
+      }],
+      'jsdoc/require-param': 'error',
+      'jsdoc/require-param-description': 'error',
+      'jsdoc/require-returns': 'error',
+      'jsdoc/require-returns-description': 'error',
+      'jsdoc/match-description': ['error', {
+        matchDescription: '[\\u4e00-\\u9fff]',
+        message: 'JSDoc 描述须包含中文（S06 标准）',
+      }],
+    },
+  },
+
+  // ── Contract declaration gate (error) — common interfaces ──
+  // Interface files are cross-module contracts; keep imports stable and let Layer 2 enforce file overview docs.
+  {
+    files: ['src/common/interfaces/**/*.ts'],
+    ignores: ['**/index.ts'],
+    rules: {
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+    },
+  },
+
+  // ── Migration gate (error) — src/migrations ──
+  // Generated SQL migrations should keep semantic docs/import order strict
+  // while opting out of noisy formatting and complexity guards.
+  {
+    files: ['src/migrations/**/*.ts'],
+    plugins: { jsdoc: jsdocPlugin },
+    settings: { jsdoc: { mode: 'typescript' } },
+    rules: {
+      'simple-import-sort/imports': 'error',
+      'simple-import-sort/exports': 'error',
+      'jsdoc/require-jsdoc': ['error', {
+        require: {
+          ClassDeclaration: true,
+          FunctionDeclaration: false,
+          MethodDefinition: false,
+        },
+      }],
+      'jsdoc/match-description': ['error', {
+        matchDescription: '[\\u4e00-\\u9fff]',
+        message: 'JSDoc 描述须包含中文（S06 标准）',
+      }],
+      complexity: 'off',
+      'max-depth': 'off',
+      'max-lines': 'off',
+      'max-lines-per-function': 'off',
+      'prettier/prettier': 'off',
+    },
+  },
+
   // ── JSDoc gate (Layer 1) — S06/S07 ──
-  // Targets: services, controllers, guards, interceptors, helpers, filters (S06 mandatory scope)
+  // Targets: services, controllers, guards (S06 mandatory scope)
   // warn level — graduated adoption per S05/S19
   {
     files: [
       'src/modules/**/*.service.ts',
       'src/modules/**/*.controller.ts',
       'src/modules/auth/guards/*.ts',
-      'src/common/interceptors/*.ts',
-      'src/common/helpers/*.ts',
-      'src/common/filters/*.ts',
     ],
     ignores: ['**/index.ts'],
     plugins: { jsdoc: jsdocPlugin },

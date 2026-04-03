@@ -8,6 +8,7 @@
  *   1. 描述不得为空泛词黑名单中的词汇（S06 §质量判断标准）
  *   2. 描述有效字符不少于 8 个（S06 §通过条件 #2）
  *   3. 含 throw new 的函数须标注 @throws（S06 §通过条件 #5）
+ *   4. 类型文件 / 后端常量文件须提供合格的顶部说明注释
  *
  * 用法：
  *   node scripts/check-jsdoc.mjs            # 扫描全部强制目录
@@ -40,11 +41,23 @@ const BACKEND_DIRS = [
   'backend/src/common/filters',
   'backend/src/modules/auth/guards',
 ]
+const BACKEND_INTERFACES_DIR = 'backend/src/common/interfaces'
+const BACKEND_CONSTANTS_DIR = 'backend/src/common/constants'
+const BACKEND_MIGRATIONS_DIR = 'backend/src/migrations'
+const BACKEND_DECLARATION_DIRS = [
+  'backend/src/common/dto',
+  'backend/src/common/entities',
+  'backend/src/modules/admin-case/dto',
+]
+const BACKEND_MODULE_ENTITY_DIRS = [
+  'backend/src/modules/admin-case/entities',
+  'backend/src/modules/system/entities',
+]
 
 const BACKEND_MODULES_DIR = 'backend/src/modules'
 const BACKEND_MODULE_RE = /\.(service|controller)\.ts$/
 const SKIP_FILE_RE = /(?:\.d\.ts|\.spec\.ts|\.test\.ts)$/
-const TYPE_FILE_EXEMPT_RE = /(?:^|\/)index\.ts$/
+const FILE_OVERVIEW_EXEMPT_RE = /(?:^|\/)index\.ts$/
 
 // ── Quality rules (from S06) ─────────────────────────────────────────
 
@@ -81,6 +94,11 @@ function collectTargetFiles() {
   for (const d of FRONTEND_DIRS) files.push(...walk(join(ROOT, d), tsOnly))
   files.push(...walk(join(ROOT, FRONTEND_TYPES_DIR), tsOnly))
   for (const d of BACKEND_DIRS) files.push(...walk(join(ROOT, d), tsOnly))
+  files.push(...walk(join(ROOT, BACKEND_INTERFACES_DIR), tsOnly))
+  files.push(...walk(join(ROOT, BACKEND_CONSTANTS_DIR), tsOnly))
+  files.push(...walk(join(ROOT, BACKEND_MIGRATIONS_DIR), tsOnly))
+  for (const d of BACKEND_DECLARATION_DIRS) files.push(...walk(join(ROOT, d), tsOnly))
+  for (const d of BACKEND_MODULE_ENTITY_DIRS) files.push(...walk(join(ROOT, d), tsOnly))
 
   const modDir = join(ROOT, BACKEND_MODULES_DIR)
   if (existsSync(modDir)) {
@@ -92,7 +110,16 @@ function collectTargetFiles() {
 
 function isTargetFile(absPath) {
   const rel = relative(ROOT, absPath)
-  const allDirs = [...FRONTEND_DIRS, FRONTEND_TYPES_DIR, ...BACKEND_DIRS]
+  const allDirs = [
+    ...FRONTEND_DIRS,
+    FRONTEND_TYPES_DIR,
+    ...BACKEND_DIRS,
+    BACKEND_INTERFACES_DIR,
+    BACKEND_CONSTANTS_DIR,
+    BACKEND_MIGRATIONS_DIR,
+    ...BACKEND_DECLARATION_DIRS,
+    ...BACKEND_MODULE_ENTITY_DIRS,
+  ]
   if (allDirs.some((d) => rel.startsWith(d)) && !SKIP_FILE_RE.test(rel)) return true
   if (rel.startsWith(BACKEND_MODULES_DIR) && BACKEND_MODULE_RE.test(rel)) return true
   return false
@@ -104,6 +131,8 @@ const FUNC_RE =
   /^\s*(?:export\s+)?(?:default\s+)?(?:async\s+)?function\s+(\w+)\s*\(/
 const METHOD_RE =
   /^\s*(?:(?:public|private|protected)\s+)?(?:static\s+)?(?:async\s+)?(\w+)\s*\(/
+const CLASS_RE =
+  /^\s*export\s+(?:abstract\s+)?class\s+(\w+)/
 const SKIP_NAMES = new Set([
   'if', 'for', 'while', 'switch', 'catch', 'return', 'import', 'from',
   'new', 'class', 'interface', 'type', 'enum', 'const', 'let', 'var',
@@ -141,6 +170,20 @@ function extractEntries(source) {
 
     if (inJsdoc) continue
 
+    const classMatch = line.match(CLASS_RE)
+    if (classMatch) {
+      const name = classMatch[1]
+      const hasDoc = ln - jsdocEnd <= MAX_JSDOC_GAP
+      entries.push({
+        kind: 'class',
+        name,
+        line: ln,
+        hasDoc,
+        jsdoc: hasDoc ? jsdocText : null,
+      })
+      continue
+    }
+
     const m = line.match(FUNC_RE) || line.match(METHOD_RE)
     if (!m) continue
     if (SKIP_LINE_RE.test(line)) continue
@@ -150,6 +193,7 @@ function extractEntries(source) {
 
     const hasDoc = ln - jsdocEnd <= MAX_JSDOC_GAP
     entries.push({
+      kind: 'callable',
       name,
       line: ln,
       hasDoc,
@@ -210,14 +254,47 @@ function hasThrowInBody(lines, funcLineIdx) {
 }
 
 const EXPORTED_TYPE_RE = /^\s*export\s+(?:interface|type|enum)\s+\w+/m
+const EXPORTED_INTERFACE_RE = /^\s*export\s+(?:interface|type)\s+\w+/m
+const EXPORTED_CONSTANT_RE = /^\s*export\s+(?:const|enum)\s+\w+/m
+const MIGRATION_CLASS_RE = /implements\s+MigrationInterface/
 const MODULE_AUGMENT_RE = /^\s*declare\s+module\s+['"][^'"]+['"]\s*\{/m
 
-function needsTypeOverview(source, filePath) {
-  return (
-    filePath.startsWith(join(ROOT, FRONTEND_TYPES_DIR)) &&
-    !TYPE_FILE_EXEMPT_RE.test(relative(ROOT, filePath)) &&
+function getFileOverviewKind(source, filePath) {
+  const rel = relative(ROOT, filePath)
+
+  if (
+    rel.startsWith(FRONTEND_TYPES_DIR) &&
+    !FILE_OVERVIEW_EXEMPT_RE.test(rel) &&
     (EXPORTED_TYPE_RE.test(source) || MODULE_AUGMENT_RE.test(source))
-  )
+  ) {
+    return 'type'
+  }
+
+  if (
+    rel.startsWith(BACKEND_INTERFACES_DIR) &&
+    !FILE_OVERVIEW_EXEMPT_RE.test(rel) &&
+    EXPORTED_INTERFACE_RE.test(source)
+  ) {
+    return 'interface'
+  }
+
+  if (
+    rel.startsWith(BACKEND_CONSTANTS_DIR) &&
+    !FILE_OVERVIEW_EXEMPT_RE.test(rel) &&
+    EXPORTED_CONSTANT_RE.test(source)
+  ) {
+    return 'constant'
+  }
+
+  if (
+    rel.startsWith(BACKEND_MIGRATIONS_DIR) &&
+    !FILE_OVERVIEW_EXEMPT_RE.test(rel) &&
+    MIGRATION_CLASS_RE.test(source)
+  ) {
+    return 'migration'
+  }
+
+  return null
 }
 
 function extractFileOverview(source) {
@@ -247,6 +324,7 @@ function checkFile(filePath) {
     }
 
     if (
+      entry.kind === 'callable' &&
       !/@throws\b/.test(entry.jsdoc) &&
       hasThrowInBody(lines, entry.line - 1)
     ) {
@@ -258,14 +336,23 @@ function checkFile(filePath) {
     }
   }
 
-  if (needsTypeOverview(source, filePath)) {
+  const overviewKind = getFileOverviewKind(source, filePath)
+
+  if (overviewKind) {
     const overview = extractFileOverview(source)
+    const overviewLabel = overviewKind === 'type'
+      ? '类型文件'
+      : overviewKind === 'interface'
+        ? '接口契约文件'
+        : overviewKind === 'constant'
+          ? '常量文件'
+          : '迁移文件'
 
     if (!overview) {
       violations.push({
         line: 1,
         name: 'fileoverview',
-        msg: '类型文件缺少顶部说明注释',
+        msg: `${overviewLabel}缺少顶部说明注释`,
       })
     } else {
       const desc = extractDescription(overview)
@@ -276,7 +363,7 @@ function checkFile(filePath) {
         violations.push({
           line: 1,
           name: 'fileoverview',
-          msg: '类型文件说明须包含中文描述',
+          msg: `${overviewLabel}说明须包含中文描述`,
         })
       }
     }

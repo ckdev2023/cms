@@ -1,18 +1,16 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import PageDetail from '@/components/PageDetail.vue'
-import PaymentReversalDialog from './components/PaymentReversalDialog.vue'
+import { useRoute, useRouter } from 'vue-router'
+
 import { getPayment } from '@/api/payment'
-import { PaymentStatus, PaymentMethod, InvoiceStatus } from '@/constants/enums'
-import {
-  PaymentStatusLabel,
-  PaymentMethodLabel,
-  InvoiceStatusLabel,
-} from '@/constants/enum-labels'
-import { useLocaleFormatter } from '@/utils/locale-format'
+import PageDetail from '@/components/PageDetail.vue'
+import { InvoiceStatusLabel, PaymentMethodLabel, PaymentStatusLabel } from '@/constants/enum-labels'
+import { InvoiceStatus, PaymentMethod, PaymentStatus } from '@/constants/enums'
 import type { PaymentDetail } from '@/types/payment'
+import { useLocaleFormatter } from '@/utils/locale-format'
+
+import PaymentReversalDialog from './components/PaymentReversalDialog.vue'
 
 defineOptions({ name: 'PaymentDetailView' })
 
@@ -27,7 +25,7 @@ const showReversalDialog = ref(false)
 const paymentId = computed(() => route.params.id as string)
 const canReverse = computed(
   () =>
-    payment.value != null &&
+    payment.value !== null &&
     payment.value.status !== PaymentStatus.REVERSED,
 )
 
@@ -35,6 +33,9 @@ onMounted(() => {
   fetchPayment()
 })
 
+/**
+ * 拉取当前收款记录详情并刷新页面状态。
+ */
 async function fetchPayment() {
   loading.value = true
   try {

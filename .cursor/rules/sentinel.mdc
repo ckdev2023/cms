@@ -1,0 +1,29 @@
+---
+description: 哨兵层（Tier 0）——本仓库常驻最小内核。三闸门优先，小步变更，交付前必须过校验。
+alwaysApply: true
+---
+
+# 项目哨兵规则（Tier 0 常驻内核）
+
+> 核心原则：先确认边界，再改代码；先走脚本闸门，再口头说明完成。
+
+## 1. 三闸门执行纪律
+- 入场先读 `AGENTS.md`，按任务补读 `docs/16_AI执行总入口与任务拆解.md`、`docs/09_详细开发执行步骤.md`、`docs/15_单人并行开发编排与依赖关系.md`；需要快速自检时先跑 `bash scripts/ai-gatekeeper.sh --brief`
+- 首次写代码前先跑 `bash scripts/ai-plan.sh`；小改动可显式声明 `S`，若脚本建议 `M/L`，先缩小范围或先给计划，不要直接跨模块硬改
+- 交付前必须运行与范围匹配的校验：日常改动 `npm run verify:fast`，功能完成 `npm run verify`，发布前 `npm run verify:full`；需要结构化输出时用 `bash scripts/ai-deliver.sh [--fast|--standard|--full]`
+- 在校验命令 `exit 0` 前，禁止宣称“已完成”
+
+## 2. Default-Deny 编辑边界
+- 只修改当前任务明确授权的文件；发现脏工作区中的无关改动，不覆盖、不回退、不顺手整理
+- 涉及公共基础文件时默认视为高风险：`backend/src/main.ts`、`backend/src/app.module.ts`、`backend/src/data-source.ts`、`frontend/src/main.ts`、路由、全局样式、`backend/src/common/`；修改前先说明原因并尽量缩成小步
+- 关键业务口径不明确时立即停下确认，不靠猜测补完需求
+
+## 3. 项目技术红线
+- 前端统一使用 Vue 3 + TypeScript + Composition API + `<script setup>`；状态管理使用 Pinia；优先复用 Element Plus
+- 后端统一使用 NestJS 模块化结构 + TypeORM + PostgreSQL；公共能力优先放在 `backend/src/common/` 的既有约定内
+- 不引入未经讨论的新依赖，不留下临时开关、假数据、无说明 `TODO`
+
+## 4. 质量与文档红线
+- 新增代码至少满足 `verify:fast` 通过
+- 严格目录必须满足 JSDoc 门禁：前端 `stores/`、`utils/`、`api/`；后端 `backend/src/common/dto/`、`backend/src/common/entities/`、`backend/src/common/helpers/`、`backend/src/common/interceptors/`、`backend/src/common/filters/`
+- 涉及业务逻辑时优先补针对性测试，不做低价值“复述实现”的测试

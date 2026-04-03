@@ -24,7 +24,7 @@
 │  ✓ 描述有效字符 ≥ 8（去除标点空格后）                    │
 │  ✓ 描述不得为空泛词黑名单中的词汇                       │
 │  ✓ 含 throw new 的函数须标注 @throws                  │
-│  ✓ types 文件顶部说明注释存在且质量达标                │
+│  ✓ types / 后端常量文件顶部说明注释存在且质量达标      │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -36,7 +36,7 @@
 
 ### 规则配置
 
-以下规则以 `warn` 级别应用于强制目录，遵循 S05 渐进启用策略：
+以下规则默认以 `warn` 级别应用于方法级强制目录；`backend/src/common/dto/`、`backend/src/common/entities/`、`backend/src/modules/admin-case/dto/`、`backend/src/modules/system/entities/` 与 `backend/src/common/helpers/`、`backend/src/common/interceptors/`、`backend/src/common/filters/` 作为后端声明 / 基础目录，采用单独的 `error` 级门禁。
 
 | 规则 | 作用 | 对应 S06 条款 |
 |------|------|--------------|
@@ -70,18 +70,28 @@ src/router/**/*.ts
 **后端**（`backend/eslint.config.mjs`）：
 
 ```
+src/common/dto/**/*.ts
+src/common/entities/**/*.ts
+src/modules/admin-case/dto/**/*.ts
+src/modules/system/entities/**/*.ts
+src/common/interfaces/**/*.ts
 src/modules/**/*.service.ts
 src/modules/**/*.controller.ts
 src/modules/auth/guards/*.ts
 src/common/interceptors/*.ts
 src/common/helpers/*.ts
 src/common/filters/*.ts
+src/migrations/**/*.ts
 ```
 
 排除 `**/index.ts`（re-export 文件，S06 豁免项）。
 
 规则选项：
-- `FunctionDeclaration: true` + `MethodDefinition: true` — 覆盖类方法
+- `src/common/dto/**/*.ts`、`src/common/entities/**/*.ts`、`src/modules/admin-case/dto/**/*.ts`、`src/modules/system/entities/**/*.ts`：`ClassDeclaration: true`，等级 **error**
+- `src/common/interfaces/**/*.ts`：通过 Layer 2 检查文件顶部说明，`simple-import-sort` 为 **error**
+- `src/common/helpers/**/*.ts`、`src/common/interceptors/*.ts`、`src/common/filters/*.ts`：`ClassDeclaration: true` + `FunctionDeclaration: true` + `MethodDefinition: true`，等级 **error**
+- `src/migrations/**/*.ts`：`ClassDeclaration: true`，等级 **error**；同时关闭 `prettier/prettier` 与复杂度类规则，避免长 SQL 字符串产生低价值噪音
+- 其余后端目录：`FunctionDeclaration: true` + `MethodDefinition: true`，等级 **warn**
 - `checkConstructors: false` — 排除空构造函数（S06 豁免项）
 - `checkGetters: false` / `checkSetters: false` — 排除简单访问器
 - `minLineCount: 2` — 豁免单行方法
@@ -107,7 +117,11 @@ jsdoc 规则作为 ESLint 配置的一部分，已自动包含在以下命令中
 | 描述最小长度 | 有效字符（去除标点空格）≥ 8 | §通过条件 #2（摘要有效） |
 | 空泛词拦截 | 描述全文匹配黑名单即失败 | §空泛词黑名单 |
 | @throws 覆盖 | 函数体含 `throw new` 时须有 `@throws` | §通过条件 #5（异常覆盖） |
+| DTO / Entity 类摘要质量 | `common/dto`、`common/entities`、`modules/admin-case/dto` 与 `modules/system/entities` 中类级 JSDoc 摘要须满足最小长度与非空泛描述 | §声明类摘要有效 |
 | types 文件顶部说明 | `frontend/src/types/*.ts` 须在文件顶部提供中文说明注释 | §类型文件顶部说明 |
+| 后端接口契约文件顶部说明 | `backend/src/common/interfaces/*.ts` 须在文件顶部提供中文说明注释 | §后端接口契约文件顶部说明 |
+| 后端常量文件顶部说明 | `backend/src/common/constants/*.ts` 须在文件顶部提供中文说明注释 | §后端常量文件顶部说明 |
+| 后端迁移文件顶部说明 | `backend/src/migrations/*.ts` 须在文件顶部提供中文说明注释 | §后端迁移文件顶部说明 |
 
 ### 空泛词黑名单
 
@@ -132,7 +146,7 @@ node scripts/check-jsdoc.mjs frontend/src/stores/user.ts backend/src/modules/aut
 
 传入文件路径时，脚本自动过滤非目标目录的文件。
 
-其中 `frontend/src/types/index.ts` 这类纯 re-export 文件自动豁免，不纳入顶部说明检查。
+其中 `frontend/src/types/index.ts`、`backend/src/common/constants/index.ts` 这类纯 re-export 文件自动豁免，不纳入顶部说明检查。
 
 ### @throws 检测策略
 
@@ -204,12 +218,12 @@ npm run jsdoc:check || { echo "❌ JSDoc 质量检查失败"; exit 1; }
 
 | 层 | 严重等级 | 行为 |
 |----|---------|------|
-| Layer 1（ESLint） | warn | lint 正常退出，不阻断；lint:ci（--max-warnings 0）可选阻断 |
+| Layer 1（ESLint） | mixed | `common/dto`、`common/entities`、`modules/system/entities`、`common/helpers`、`common/interceptors`、`common/filters`、`common/interfaces`（import sort）与 `migrations` 为 error；其余强制目录为 warn |
 | Layer 2（脚本） | error | 发现违规时退出码 1，阻断 verify:fast |
 
-Layer 2 的阻断行为在当前阶段不会触发（现有代码无 JSDoc 块，脚本无检查对象）。随着新代码添加 JSDoc，Layer 2 确保质量从一开始就达标。
+Layer 2 当前同时承担两类阻断职责：一类是函数/方法 JSDoc 的质量检查，另一类是类型文件、后端接口契约文件与后端常量文件的顶部说明检查。即使文件内没有函数，顶部说明不合格也会阻断 `verify:fast`。
 
-Layer 1 从 warn 升级为 error 的具体时间点见 `docs/s19_rollout_order.md` Wave 5。
+除上述已提前升级的后端公共基础目录外，剩余 Layer 1 从 warn 升级为 error 的具体时间点见 `docs/s19_rollout_order.md` Wave 5。
 
 ## 与后续任务的衔接
 
@@ -229,7 +243,7 @@ ESLint Layer 1 检查覆盖 8 个目录（stores / composables / directives / ut
 
 ### 后端
 
-ESLint Layer 1 检查覆盖 service / controller / guard / interceptor / helper / filter 文件，共约 38 个 .ts 文件。预计新增 warn 数量约 150–200 个（混入现有 Prettier warn 中）。
+ESLint Layer 1 检查覆盖 service / controller / guard 文件，以及 `common/dto` / `common/entities` / `modules/system/entities` 声明类、`common/helpers` / `common/interceptors` / `common/filters` 基础设施文件。业务模块目录维持 warn，后端公共基础目录采用 error 级门禁。
 
 ### Layer 2 脚本
 

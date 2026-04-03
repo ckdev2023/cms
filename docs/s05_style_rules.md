@@ -124,6 +124,67 @@
 
 > 这三个目录是前端最核心的公共基础：`stores/` 管理全局状态、`utils/` 提供通用工具、`api/` 定义后端契约。它们的代码质量直接影响所有页面和组件，因此率先从 warn 升级为 error。
 
+## 后端声明目录专有规则（`backend/src/common/dto/`、`backend/src/modules/admin-case/dto/`、`backend/src/modules/system/entities/`、`backend/src/common/entities/`、`backend/src/common/interfaces/`）
+
+这些目录承载后端公共契约声明，以及行政案件模块入参与系统模块实体等声明语义优先的契约层，其中 DTO / Entity 以类声明为主，`interfaces/` 以导出接口和类型别名为主，因此采用单独的声明层规则。
+
+| 规则 | 等级 | 说明 |
+|------|------|------|
+| `simple-import-sort/imports` | error | DTO / Entity 的 import 顺序必须稳定，避免声明文件产生噪音 diff |
+| `simple-import-sort/exports` | error | 聚合导出顺序必须稳定 |
+| `jsdoc/require-jsdoc` | error | 类声明必须有 JSDoc，说明该 DTO / Entity 承载的业务含义 |
+| `jsdoc/match-description` | error | 类描述须包含中文，避免空泛英文占位注释 |
+| Layer 2 文件顶部说明 | error | `common/interfaces/` 中的接口契约文件须提供中文顶部说明，写明复用边界与同步约束 |
+
+> `common/dto/`、`common/entities/`、`common/interfaces/`、`modules/admin-case/dto/` 与 `modules/system/entities/` 都属于声明语义优先的契约层。这里优先要求“声明语义清晰 + import 顺序稳定”，避免 DTO / Entity 在评审中退化成只能靠字段名猜意图的黑盒。
+
+## 后端公共基础目录专有规则（`backend/src/common/helpers/`、`backend/src/common/interceptors/`）
+
+这两个目录直接影响全局响应结构、请求拦截与横切能力，属于后端公共基础设施；一旦缺少文档或 import 顺序漂移，影响面会快速扩散到多个模块，因此率先从 warn 升级为 error。
+
+| 规则 | 等级 | 说明 |
+|------|------|------|
+| `simple-import-sort/imports` | error | 公共基础文件的 import 顺序必须稳定，减少横切能力代码的噪音 diff |
+| `simple-import-sort/exports` | error | 导出顺序必须稳定 |
+| `jsdoc/require-jsdoc` | error | Helper / Interceptor 的类声明与方法必须有 JSDoc，说明业务目的与副作用 |
+| `jsdoc/require-param` | error | 参数须有 `@param` |
+| `jsdoc/require-param-description` | error | `@param` 须有业务描述 |
+| `jsdoc/require-returns` | error | 非 void 返回须有 `@returns` |
+| `jsdoc/require-returns-description` | error | `@returns` 须说明返回结果含义 |
+| `jsdoc/match-description` | error | 描述须包含中文 |
+
+## 后端迁移目录专有规则（`backend/src/migrations/`）
+
+迁移文件以 TypeORM 生成的 SQL 语句为主，若直接套用通用格式化和复杂度规则，会把长 SQL 字符串误报成低价值噪音；因此采用“语义说明从严、格式约束按目录放宽”的专用策略。
+
+| 规则 | 等级 | 说明 |
+|------|------|------|
+| `simple-import-sort/imports` | error | 迁移文件的 import 顺序必须稳定，避免生成后再手改时出现噪音 diff |
+| `simple-import-sort/exports` | error | 迁移类导出顺序保持稳定 |
+| `jsdoc/require-jsdoc` | error | 迁移类声明必须有中文 JSDoc，说明本次 schema 变更范围 |
+| `jsdoc/match-description` | error | 迁移类描述须包含中文，避免 `Initial migration` 之类低信息量占位注释 |
+| `prettier/prettier` | off | 保留 TypeORM 生成的长 SQL 字符串原样，避免一次格式化产生大规模无意义 diff |
+| `complexity` / `max-depth` / `max-lines` / `max-lines-per-function` | off | 迁移的 `up` / `down` 方法天然偏长，关闭复杂度噪音告警 |
+
+> 迁移目录的目标不是“把生成 SQL 格式化得很漂亮”，而是确保每个迁移都能清楚说明变更意图，并避免通用规则干扰自动生成内容。
+
+## 后端基础设施目录专有规则（`backend/src/common/helpers/`、`backend/src/common/interceptors/`、`backend/src/common/filters/`）
+
+这三个目录承载跨模块复用的底层行为，任何改动都会影响异常处理、响应拦截和通用辅助逻辑，因此比普通业务模块更早升级为阻断级门禁。
+
+| 规则 | 等级 | 说明 |
+|------|------|------|
+| `simple-import-sort/imports` | error | 公共基础设施的 import 顺序必须稳定，减少噪音 diff |
+| `simple-import-sort/exports` | error | 聚合导出顺序必须稳定 |
+| `jsdoc/require-jsdoc` | error | 类声明与 2 行以上的方法必须有 JSDoc，说明行为边界与用途 |
+| `jsdoc/require-param` | error | 参数须有 `@param` |
+| `jsdoc/require-param-description` | error | `@param` 须有描述 |
+| `jsdoc/require-returns` | error | 非 void 须有 `@returns` |
+| `jsdoc/require-returns-description` | error | `@returns` 须有描述 |
+| `jsdoc/match-description` | error | 描述须包含中文，避免英文占位或空泛摘要 |
+
+> `common/helpers/`、`common/interceptors/`、`common/filters/` 属于后端共享基础设施层。这里要求“导入稳定 + 类/方法语义清晰”，避免异常出口与拦截链路退化成只能靠读实现理解的黑盒。
+
 ### 通用 JSDoc gate（warn 级别）
 
 除上述三个严格目录外，以下目录受通用 JSDoc gate 覆盖，当前等级为 **warn**：
@@ -151,9 +212,17 @@
 |------|------|------|
 | `@typescript-eslint/no-floating-promises` | warn | 未处理的 Promise 应 await 或 void |
 | `@typescript-eslint/no-unsafe-argument` | warn | 不安全的参数传递提示 |
-| `prettier/prettier` | error | 格式统一由 Prettier 驱动 |
+| `prettier/prettier` | error | 格式统一由 Prettier 驱动（迁移目录按专用覆盖关闭） |
 
-后端使用 `tseslint.configs.recommendedTypeChecked` 预设，已包含类型感知规则（`no-implied-eval`、`no-misused-promises`、`require-await` 等），无需重复声明。
+后端使用 `tseslint.configs.recommendedTypeChecked` 预设，已包含类型感知规则（`no-implied-eval`、`no-misused-promises`、`require-await` 等），无需重复声明。`backend/src/migrations/` 作为生成型目录按专用覆盖关闭 `prettier/prettier` 与复杂度类规则。
+
+### 后端契约型常量文件
+
+`backend/src/common/constants/` 主要承载枚举、错误码和权限码等跨模块契约。该目录当前不适合套用函数级 JSDoc gate，因此改由 Layer 2 文件级门禁要求非 `index.ts` 文件提供中文顶部说明，并在说明中写明必要的同步约束（如种子数据、冻结文档、前端映射）。
+
+### 后端接口契约文件
+
+`backend/src/common/interfaces/` 主要承载响应体、分页结果等跨模块复用的接口契约。该目录采用“Layer 2 顶部说明 + import sort error”组合门禁：非 `index.ts` 文件必须提供中文顶部说明，并写明契约服务的调用边界或同步约束。
 
 ## 预设来源汇总
 

@@ -1,40 +1,64 @@
-import { IsOptional, IsString, IsUUID, IsDateString } from 'class-validator'
-import { ApiPropertyOptional } from '@nestjs/swagger'
-import { PaginationDto } from '../../../common/dto/pagination.dto'
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import { IsDateString, IsEnum, IsOptional, IsUUID } from 'class-validator';
 
+import {
+  AuditActionType,
+  AuditTargetType,
+  OperationResult,
+} from '../../../common/constants/enums';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
+
+/**
+ * 定义审计日志列表查询支持的筛选入参，统一约束操作人、动作类型、目标对象与时间范围。
+ */
 export class QueryAuditLogDto extends PaginationDto {
-  @ApiPropertyOptional({ description: '操作ユーザーID' })
+  @ApiPropertyOptional({ format: 'uuid', description: '操作ユーザーID' })
   @IsOptional()
-  @IsUUID()
-  userId?: string
+  @IsUUID('4')
+  userId?: string;
 
-  @ApiPropertyOptional({ description: '操作タイプ (CREATE, UPDATE, DELETE, ...)' })
+  @ApiPropertyOptional({
+    enum: AuditActionType,
+    description: '操作タイプ',
+  })
   @IsOptional()
-  @IsString()
-  actionType?: string
+  @IsEnum(AuditActionType)
+  actionType?: AuditActionType;
 
-  @ApiPropertyOptional({ description: '対象タイプ (CUSTOMER, ADMIN_CASE, ...)' })
+  @ApiPropertyOptional({
+    enum: AuditTargetType,
+    description: '対象タイプ',
+  })
   @IsOptional()
-  @IsString()
-  targetType?: string
+  @IsEnum(AuditTargetType)
+  targetType?: AuditTargetType;
 
-  @ApiPropertyOptional({ description: '対象エンティティID' })
+  @ApiPropertyOptional({ format: 'uuid', description: '対象エンティティID' })
   @IsOptional()
-  @IsUUID()
-  targetId?: string
+  @IsUUID('4')
+  targetId?: string;
 
-  @ApiPropertyOptional({ description: '開始日時 (ISO8601)' })
+  @ApiPropertyOptional({
+    example: '2026-01-01T00:00:00.000Z',
+    description: '開始日時 (ISO8601)',
+  })
   @IsOptional()
   @IsDateString()
-  startDate?: string
+  startDate?: string;
 
-  @ApiPropertyOptional({ description: '終了日時 (ISO8601)' })
+  @ApiPropertyOptional({
+    example: '2026-12-31T23:59:59.999Z',
+    description: '終了日時 (ISO8601)',
+  })
   @IsOptional()
   @IsDateString()
-  endDate?: string
+  endDate?: string;
 
-  @ApiPropertyOptional({ description: '操作結果 (SUCCESS, FAILURE)' })
+  @ApiPropertyOptional({
+    enum: OperationResult,
+    description: '操作結果',
+  })
   @IsOptional()
-  @IsString()
-  result?: string
+  @IsEnum(OperationResult)
+  result?: OperationResult;
 }

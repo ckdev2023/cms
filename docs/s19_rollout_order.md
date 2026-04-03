@@ -38,7 +38,7 @@
 
 ### JSDoc Layer 2（`check-jsdoc.mjs`）
 
-当前现有代码几乎无 JSDoc，脚本"无检查对象"不会报错。随着新代码添加 JSDoc，Layer 2 确保质量从一开始就达标。现有代码暂不受影响。
+Layer 2 除了检查函数/方法 JSDoc 质量，还会阻断 `frontend/src/types/`、`backend/src/common/interfaces/` 与 `backend/src/common/constants/` 的顶部说明缺失或质量不达标问题。新增或改动这些契约文件时，现有代码会立即受到约束。
 
 ---
 
@@ -81,11 +81,18 @@
 - `vue/block-order`、`vue/component-api-style`、`vue/define-macros-order`、`vue/no-mutating-props`
 - 后端 `prettier/prettier`
 - JSDoc Layer 2 内容质量（对已有 JSDoc 的质量检查）
+- `frontend/src/types/`、`backend/src/common/constants/` 顶部说明质量
 
 **已提前升级为 error 的前端严格目录**：
 - `stores/`、`utils/`、`api/`：JSDoc Layer 1 全部规则、`explicit-function-return-type`、`simple-import-sort` 均已为 error。
 - `types/`：`consistent-type-imports`、`no-explicit-any`、`simple-import-sort` 均已为 error。
 - 其余 JSDoc 强制目录（`composables/`、`directives/`、`constants/`、`i18n/`、`router/`）仍为 warn。
+
+**已提前升级为 error 的后端公共基础目录**：
+- `backend/src/common/dto/`、`backend/src/common/entities/`、`backend/src/modules/system/entities/`：类级 JSDoc gate 与 `simple-import-sort` 已为 error。
+- `backend/src/common/interfaces/`：文件顶部说明检查（Layer 2）与 `simple-import-sort` 已为 error。
+- `backend/src/common/helpers/`、`backend/src/common/interceptors/`、`backend/src/common/filters/`：类 / 方法级 JSDoc gate 与 `simple-import-sort` 已为 error。
+- 其余后端 JSDoc 目录（service / controller / guard）仍为 warn。
 
 ---
 
@@ -177,6 +184,8 @@ npm run type-check:backend   # 0 errors（已通过）
 
 **交付节奏**：每次业务开发迭代时，若修改了强制目录中的文件，顺带为该文件的所有方法补写 JSDoc（"摸到即补"原则）。
 
+若修改了 `frontend/src/types/`、`backend/src/common/interfaces/` 或 `backend/src/common/constants/` 中的契约文件，同轮补齐顶部说明注释与同步约束说明。
+
 ---
 
 ### Wave 4 — warn → error 首批升级（Wave 2 完成后 1 周）
@@ -210,7 +219,7 @@ npm run verify:fast     # 通过
 
 **前提条件**：前端强制目录 P0/P1 文件已全部补写 JSDoc，后端 P0/P1 service 已全部补写。
 
-> **注意**：前端 `stores/`、`utils/`、`api/` 已在 Wave 0 阶段提前升级为 error。本 Wave 的升级对象为前端剩余 warn 目录（`composables/`、`directives/`、`constants/`、`i18n/`、`router/`）和后端全部 JSDoc 目录。
+> **注意**：前端 `stores/`、`utils/`、`api/` 与后端 `common/dto`、`common/entities`、`modules/system/entities`、`common/helpers`、`common/interceptors`、`common/filters` 已在 Wave 0 阶段提前升级为 error。本 Wave 的升级对象为前端剩余 warn 目录（`composables/`、`directives/`、`constants/`、`i18n/`、`router/`）和后端其余 JSDoc 目录。
 
 **升级规则**：
 

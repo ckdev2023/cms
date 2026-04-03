@@ -1,13 +1,15 @@
-import { createApp } from 'vue'
-import { createPinia } from 'pinia'
-import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
+import './styles/global.scss'
+import './types/router'
+
+import ElementPlus from 'element-plus'
+import { createPinia } from 'pinia'
+import { createApp } from 'vue'
+
 import App from './App.vue'
-import router from './router'
 import { permissionDirective } from './directives/permission'
 import { i18n } from './i18n'
-import './types/router'
-import './styles/global.scss'
+import router from './router'
 
 const app = createApp(App)
 

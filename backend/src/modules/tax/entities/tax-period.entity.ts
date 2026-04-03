@@ -1,58 +1,59 @@
 import {
-  Entity,
   Column,
+  Entity,
   Index,
+  JoinColumn,
   ManyToOne,
   OneToMany,
-  JoinColumn,
-} from 'typeorm'
-import { BaseEntity } from '../../../common/entities/base.entity'
-import {
-  MonthlyStatus,
-  MaterialStatus,
-} from '../../../common/constants/enums'
-import { Customer } from '../../customer/entities/customer.entity'
-import { TaxContract } from './tax-contract.entity'
-import { TaxMonthlyDocument } from './tax-monthly-document.entity'
-import { TaxMonthlyWorkItem } from './tax-monthly-work-item.entity'
+} from 'typeorm';
 
+import { MaterialStatus, MonthlyStatus } from '../../../common/constants/enums';
+import { BaseEntity } from '../../../common/entities/base.entity';
+import { Customer } from '../../customer/entities/customer.entity';
+import { TaxContract } from './tax-contract.entity';
+import { TaxMonthlyDocument } from './tax-monthly-document.entity';
+import { TaxMonthlyWorkItem } from './tax-monthly-work-item.entity';
+
+/**
+ * 表示税务合同下某一申报月份的执行周期及资料/作业进度快照。
+ */
 @Entity('tax_periods')
 export class TaxPeriod extends BaseEntity {
   @Index()
   @Column({ type: 'uuid' })
-  taxContractId: string
+  taxContractId: string;
 
   @Index()
   @Column({ type: 'uuid' })
-  customerId: string
+  customerId: string;
 
   @Column({ type: 'varchar', length: 7 })
-  periodYm: string
+  periodYm: string;
 
   @Column({ type: 'date', nullable: true })
-  declarationDeadline: Date | null
+  declarationDeadline: Date | null;
 
   @Index()
   @Column({ type: 'varchar', length: 30, default: MonthlyStatus.NOT_STARTED })
-  monthlyStatus: MonthlyStatus
+  monthlyStatus: MonthlyStatus;
 
   @Column({ type: 'varchar', length: 30, default: MaterialStatus.NOT_RECEIVED })
-  materialStatus: MaterialStatus
+  materialStatus: MaterialStatus;
 
   @Column({ type: 'uuid', nullable: true })
-  createdBy: string | null
+  createdBy: string | null;
 
   @ManyToOne(() => TaxContract, (tc) => tc.periods, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'tax_contract_id' })
-  taxContract: TaxContract
+  taxContract: TaxContract;
 
   @ManyToOne(() => Customer)
   @JoinColumn({ name: 'customer_id' })
-  customer: Customer
+  customer: Customer;
 
   @OneToMany(() => TaxMonthlyDocument, (d) => d.taxPeriod)
-  documents: TaxMonthlyDocument[]
+  documents: TaxMonthlyDocument[];
 
   @OneToMany(() => TaxMonthlyWorkItem, (w) => w.taxPeriod)
-  workItems: TaxMonthlyWorkItem[]
+  workItems: TaxMonthlyWorkItem[];
 }

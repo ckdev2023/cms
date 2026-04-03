@@ -1,5 +1,14 @@
+/**
+ * 建立一期业务后台的初始数据库结构迁移。
+ *
+ * 该版本作为全新环境初始化 schema 的基线，覆盖权限、用户、客户、税务、
+ * 文件、开票收款、押金与行政案件等核心业务表及其外键索引。
+ */
 import { MigrationInterface, QueryRunner } from "typeorm";
 
+/**
+ * 初始化系统首版 PostgreSQL 表结构与关联约束。
+ */
 export class InitialSchema1773930803582 implements MigrationInterface {
     name = 'InitialSchema1773930803582'
 

@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import { Plus, Refresh,Search } from '@element-plus/icons-vue'
+import { Plus, Refresh, Search } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { computed, reactive,ref } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 
-import { deleteCustomer,getCustomers } from '@/api/customer'
+import { deleteCustomer, getCustomers } from '@/api/customer'
 import PageList from '@/components/PageList.vue'
 import ProTable from '@/components/ProTable.vue'
 import { useConfirm } from '@/composables/useConfirm'
@@ -15,7 +15,7 @@ import {
   CustomerTypeLabel,
   ServiceTypeLabel,
 } from '@/constants/enum-labels'
-import { CustomerStatus,CustomerType, ServiceType } from '@/constants/enums'
+import { CustomerStatus, CustomerType, ServiceType } from '@/constants/enums'
 import { useAppStore } from '@/stores/app'
 import type { ProTableColumn } from '@/types/components'
 import type { CustomerItem, CustomerQueryParams } from '@/types/customer'
@@ -73,6 +73,11 @@ function handleEdit(row: CustomerItem) {
   dialogVisible.value = true
 }
 
+/**
+ * 确认后删除客户记录，并在成功后刷新列表。
+ *
+ * @param row - 当前选中的客户行数据
+ */
 async function handleDelete(row: CustomerItem) {
   const ok = await confirmDelete(row.customerName)
   if (!ok) return
@@ -111,6 +116,9 @@ function doSearch() {
   handleSearch(buildSearchParams())
 }
 
+/**
+ * 清空当前客户筛选条件并恢复默认列表。
+ */
 function doReset() {
   searchForm.keyword = ''
   searchForm.customerType = undefined
@@ -119,6 +127,13 @@ function doReset() {
   handleReset()
 }
 
+/**
+ * 同步表格排序状态到客户列表查询参数。
+ *
+ * @param sort - 表格组件返回的排序字段与方向
+ * @param sort.prop - 当前生效的排序字段
+ * @param sort.order - 当前生效的排序方向
+ */
 function handleSortChange(sort: { prop: string; order: string }) {
   const params = buildSearchParams()
   if (sort.prop && sort.order) {

@@ -1,53 +1,54 @@
 import {
-  Entity,
   Column,
-  PrimaryGeneratedColumn,
+  Entity,
   Index,
-  ManyToOne,
   JoinColumn,
-} from 'typeorm'
-import { User } from '../../auth/entities/user.entity'
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
+
+import { User } from '../../auth/entities/user.entity';
 
 @Entity('audit_logs')
 export class AuditLog {
   @PrimaryGeneratedColumn('uuid')
-  id: string
+  id: string;
 
   @Index()
   @Column({ type: 'uuid', nullable: true })
-  userId: string | null
+  userId: string | null;
 
   @Index()
   @Column({ type: 'varchar', length: 50 })
-  actionType: string
+  actionType: string;
 
   @Index()
   @Column({ type: 'varchar', length: 50, nullable: true })
-  targetType: string | null
+  targetType: string | null;
 
   @Column({ type: 'uuid', nullable: true })
-  targetId: string | null
+  targetId: string | null;
 
   @Column({ type: 'jsonb', nullable: true })
-  beforeValue: Record<string, unknown> | null
+  beforeValue: Record<string, unknown> | null;
 
   @Column({ type: 'jsonb', nullable: true })
-  afterValue: Record<string, unknown> | null
+  afterValue: Record<string, unknown> | null;
 
   @Column({ type: 'varchar', length: 50, nullable: true })
-  ipAddress: string | null
+  ipAddress: string | null;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  deviceInfo: string | null
+  deviceInfo: string | null;
 
   @Column({ type: 'varchar', length: 20, nullable: true })
-  result: string | null
+  result: string | null;
 
   @Index()
   @Column({ type: 'timestamptz', default: () => 'NOW()' })
-  occurredAt: Date
+  occurredAt: Date;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'user_id' })
-  user: User | null
+  user: User | null;
 }

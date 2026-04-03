@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, reactive, watch, nextTick } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
+import { nextTick, reactive, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import { reversePayment } from '@/api/payment'
 import { useSubmitLock } from '@/composables/useSubmitLock'
 
@@ -44,6 +45,9 @@ watch(
   },
 )
 
+/**
+ * 校验冲正原因并提交收款冲正请求。
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return

@@ -1,38 +1,57 @@
 import {
-  Injectable,
-  NotFoundException,
   BadRequestException,
+  Injectable,
   Logger,
-} from '@nestjs/common'
-import { InjectRepository } from '@nestjs/typeorm'
-import { Repository, Brackets } from 'typeorm'
-import { AdminCase } from './entities/admin-case.entity'
-import { AdminCaseInterview } from './entities/admin-case-interview.entity'
-import { AdminCaseDocument } from './entities/admin-case-document.entity'
-import { CreateAdminCaseDto } from './dto/create-admin-case.dto'
-import { UpdateAdminCaseDto } from './dto/update-admin-case.dto'
-import { QueryAdminCaseDto } from './dto/query-admin-case.dto'
-import { CreateInterviewDto } from './dto/create-interview.dto'
-import { UpdateInterviewDto } from './dto/update-interview.dto'
-import { QueryInterviewDto } from './dto/query-interview.dto'
-import { CreateAdminCaseDocumentDto } from './dto/create-document.dto'
-import { UpdateAdminCaseDocumentDto } from './dto/update-document.dto'
-import { AdminCaseStatus } from '../../common/constants/enums'
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
-const STATUS_TRANSITIONS: Record<AdminCaseStatus, AdminCaseStatus[]> = {
-  [AdminCaseStatus.DRAFT]: [AdminCaseStatus.ACCEPTED, AdminCaseStatus.CANCELLED],
-  [AdminCaseStatus.ACCEPTED]: [AdminCaseStatus.MATERIAL_PENDING, AdminCaseStatus.CANCELLED],
-  [AdminCaseStatus.MATERIAL_PENDING]: [AdminCaseStatus.SUBMITTED, AdminCaseStatus.CANCELLED],
-  [AdminCaseStatus.SUBMITTED]: [AdminCaseStatus.APPROVED, AdminCaseStatus.REJECTED],
-  [AdminCaseStatus.APPROVED]: [AdminCaseStatus.COMPLETED],
-  [AdminCaseStatus.REJECTED]: [AdminCaseStatus.MATERIAL_PENDING, AdminCaseStatus.CANCELLED],
-  [AdminCaseStatus.COMPLETED]: [],
-  [AdminCaseStatus.CANCELLED]: [],
-}
+import { AdminCaseStatus } from '../../common/constants/enums';
+import type { PaginatedResult } from '../../common/interfaces/paginated-result.interface';
+import {
+  type AdminCaseDocumentDto,
+  type AdminCaseInterviewDto,
+  type AdminCaseListItemDto,
+  applyAdminCaseDocumentUpdateDto,
+  applyAdminCaseUpdateDto,
+  applyInterviewUpdateDto,
+  mapAdminCaseDocumentToDto,
+  mapAdminCaseInterviewToDto,
+  mapAdminCaseToListItemDto,
+  mapCreateAdminCaseDocumentDtoToEntityInput,
+  mapCreateAdminCaseDtoToEntityInput,
+  mapCreateInterviewDtoToEntityInput,
+} from './admin-case.mapper';
+import {
+  applyAdminCaseInterviewQueryOptions,
+  applyAdminCaseListQueryOptions,
+} from './admin-case.query-helper';
+import {
+  assertAdminCaseStatusTransition,
+  getAdminCaseAvailableTransitions,
+} from './admin-case-status-flow';
+import { CreateAdminCaseDto } from './dto/create-admin-case.dto';
+import { CreateAdminCaseDocumentDto } from './dto/create-document.dto';
+import { CreateInterviewDto } from './dto/create-interview.dto';
+import { QueryAdminCaseDto } from './dto/query-admin-case.dto';
+import { QueryInterviewDto } from './dto/query-interview.dto';
+import { UpdateAdminCaseDto } from './dto/update-admin-case.dto';
+import { UpdateAdminCaseDocumentDto } from './dto/update-document.dto';
+import { UpdateInterviewDto } from './dto/update-interview.dto';
+import { AdminCase } from './entities/admin-case.entity';
+import { AdminCaseDocument } from './entities/admin-case-document.entity';
+import { AdminCaseInterview } from './entities/admin-case-interview.entity';
 
+/**
+ * 提供行政案件、面谈记录与案件资料的统一领域服务。
+ *
+ * 该服务负责维护案件状态流转、分页查询和关联资料映射逻辑，
+ * 供控制器在不感知持久化细节的前提下复用。
+ */
 @Injectable()
 export class AdminCaseService {
-  private readonly logger = new Logger(AdminCaseService.name)
+  private readonly logger = new Logger(AdminCaseService.name);
 
   constructor(
     @InjectRepository(AdminCase)
@@ -43,367 +62,389 @@ export class AdminCaseService {
     private readonly documentRepo: Repository<AdminCaseDocument>,
   ) {}
 
-  // ── Cases ─────────────────────────────────────────────
-
+  /**
+   * 创建新的行政案件，并补齐默认状态与审计字段。
+   *
+   * @param dto - 行政案件创建入参，包含客户、案件名称和可选负责人信息
+   * @param userId - 当前执行创建操作的用户 ID；省略时审计字段写入 null
+   * @returns 包含客户、负责人和面谈关联信息的最新案件实体
+   */
   async create(dto: CreateAdminCaseDto, userId?: string): Promise<AdminCase> {
-    const adminCase = this.caseRepo.create({
-      customerId: dto.customerId,
-      caseName: dto.caseName,
-      applicantName: dto.applicantName ?? null,
-      residenceStatus: dto.residenceStatus ?? null,
-      status: dto.status ?? AdminCaseStatus.DRAFT,
-      expireDate: dto.expireDate ? new Date(dto.expireDate) : null,
-      ownerUserId: dto.ownerUserId ?? null,
-      createdBy: userId ?? null,
-      updatedBy: userId ?? null,
-    })
+    const adminCase = this.caseRepo.create(
+      mapCreateAdminCaseDtoToEntityInput(dto, userId),
+    );
 
-    const saved = await this.caseRepo.save(adminCase)
-    this.logger.log(`AdminCase "${saved.id}" created by user ${userId}`)
-    return this.findOne(saved.id)
+    const saved = await this.caseRepo.save(adminCase);
+    this.logger.log(`AdminCase "${saved.id}" created by user ${userId}`);
+    return this.findOne(saved.id);
   }
 
-  async findAll(query: QueryAdminCaseDto) {
-    const { page = 1, pageSize = 20, keyword, sortBy, sortOrder = 'DESC' } = query
+  /**
+   * 按筛选条件分页查询行政案件列表，并映射为前端列表页所需结构。
+   *
+   * @param query - 案件列表的分页、关键字、负责人和状态筛选条件
+   * @returns 供案件列表页消费的分页结果与摘要字段集合
+   */
+  async findAll(
+    query: QueryAdminCaseDto,
+  ): Promise<PaginatedResult<AdminCaseListItemDto>> {
+    const { page = 1, pageSize = 20 } = query;
 
     const qb = this.caseRepo
       .createQueryBuilder('ac')
       .leftJoinAndSelect('ac.customer', 'customer')
-      .leftJoinAndSelect('ac.owner', 'owner')
+      .leftJoinAndSelect('ac.owner', 'owner');
 
-    if (keyword) {
-      qb.andWhere(
-        new Brackets((sub) => {
-          sub
-            .where('ac.caseName ILIKE :kw', { kw: `%${keyword}%` })
-            .orWhere('ac.applicantName ILIKE :kw', { kw: `%${keyword}%` })
-            .orWhere('customer.customerName ILIKE :kw', { kw: `%${keyword}%` })
-        }),
-      )
-    }
+    applyAdminCaseListQueryOptions(qb, query);
 
-    if (query.status) {
-      qb.andWhere('ac.status = :status', { status: query.status })
-    }
-
-    if (query.customerId) {
-      qb.andWhere('ac.customerId = :customerId', { customerId: query.customerId })
-    }
-
-    if (query.ownerUserId) {
-      qb.andWhere('ac.ownerUserId = :ownerUserId', { ownerUserId: query.ownerUserId })
-    }
-
-    if (query.expireDateFrom) {
-      qb.andWhere('ac.expireDate >= :from', { from: query.expireDateFrom })
-    }
-
-    if (query.expireDateTo) {
-      qb.andWhere('ac.expireDate <= :to', { to: query.expireDateTo })
-    }
-
-    const allowedSortFields = [
-      'caseName',
-      'status',
-      'expireDate',
-      'createdAt',
-      'updatedAt',
-    ]
-    const orderField = sortBy && allowedSortFields.includes(sortBy) ? sortBy : 'createdAt'
-    qb.orderBy(`ac.${orderField}`, sortOrder)
-
-    qb.skip((page - 1) * pageSize).take(pageSize)
-
-    const [items, total] = await qb.getManyAndCount()
+    const [items, total] = await qb.getManyAndCount();
 
     return {
-      items: items.map((c) => this.toCaseListDto(c)),
+      items: items.map(mapAdminCaseToListItemDto),
       total,
       page,
       pageSize,
-    }
+    };
   }
 
+  /**
+   * 查询单个行政案件详情，并带出客户、负责人和面谈关联数据。
+   *
+   * @param id - 目标案件 ID
+   * @returns 完整的案件详情实体
+   * @throws {NotFoundException} 对应案件不存在时
+   */
   async findOne(id: string): Promise<AdminCase> {
     const adminCase = await this.caseRepo.findOne({
       where: { id },
       relations: ['customer', 'owner', 'interviews', 'interviews.creator'],
-    })
+    });
 
     if (!adminCase) {
-      throw new NotFoundException('案件が見つかりません')
+      throw new NotFoundException('案件が見つかりません');
     }
 
-    return adminCase
+    return adminCase;
   }
 
-  async update(id: string, dto: UpdateAdminCaseDto, userId?: string): Promise<AdminCase> {
-    const adminCase = await this.findOne(id)
+  /**
+   * 更新行政案件的基础信息，并回写最后修改人。
+   *
+   * @param id - 目标案件 ID
+   * @param dto - 允许局部更新的案件字段集合
+   * @param userId - 当前执行更新操作的用户 ID；省略时清空 updatedBy
+   * @returns 更新后的案件详情实体
+   * @throws {NotFoundException} 对应案件不存在时
+   */
+  async update(
+    id: string,
+    dto: UpdateAdminCaseDto,
+    userId?: string,
+  ): Promise<AdminCase> {
+    const adminCase = await this.findOne(id);
+    applyAdminCaseUpdateDto(adminCase, dto, userId);
 
-    if (dto.caseName !== undefined) adminCase.caseName = dto.caseName
-    if (dto.applicantName !== undefined) adminCase.applicantName = dto.applicantName ?? null
-    if (dto.residenceStatus !== undefined) adminCase.residenceStatus = dto.residenceStatus ?? null
-    if (dto.expireDate !== undefined) adminCase.expireDate = dto.expireDate ? new Date(dto.expireDate) : null
-    if (dto.ownerUserId !== undefined) adminCase.ownerUserId = dto.ownerUserId ?? null
-    if (dto.customerId !== undefined) adminCase.customerId = dto.customerId
-    adminCase.updatedBy = userId ?? null
-
-    await this.caseRepo.save(adminCase)
-    this.logger.log(`AdminCase "${id}" updated by user ${userId}`)
-    return this.findOne(id)
+    await this.caseRepo.save(adminCase);
+    this.logger.log(`AdminCase "${id}" updated by user ${userId}`);
+    return this.findOne(id);
   }
 
+  /**
+   * 校验状态流转规则后更新行政案件状态。
+   *
+   * @param id - 目标案件 ID
+   * @param newStatus - 期望切换到的新状态
+   * @param userId - 当前执行状态变更的用户 ID；省略时清空 updatedBy
+   * @returns 完成状态变更后的案件详情实体
+   * @throws {NotFoundException} 目标案件不存在时
+   * @throws {BadRequestException} 当前状态不允许切换到目标状态时
+   */
   async updateStatus(
     id: string,
     newStatus: AdminCaseStatus,
     userId?: string,
   ): Promise<AdminCase> {
-    const adminCase = await this.findOne(id)
-    const allowed = STATUS_TRANSITIONS[adminCase.status]
+    const adminCase = await this.findOne(id);
+    assertAdminCaseStatusTransition(adminCase.status, newStatus);
 
-    if (!allowed.includes(newStatus)) {
-      throw new BadRequestException(
-        `ステータスを「${adminCase.status}」から「${newStatus}」に変更できません`,
-      )
-    }
+    adminCase.status = newStatus;
+    adminCase.updatedBy = userId ?? null;
+    await this.caseRepo.save(adminCase);
 
-    adminCase.status = newStatus
-    adminCase.updatedBy = userId ?? null
-    await this.caseRepo.save(adminCase)
-
-    this.logger.log(`AdminCase "${id}" status changed to ${newStatus} by user ${userId}`)
-    return this.findOne(id)
+    this.logger.log(
+      `AdminCase "${id}" status changed to ${newStatus} by user ${userId}`,
+    );
+    return this.findOne(id);
   }
 
+  /**
+   * 逻辑删除行政案件，保留历史记录以便后续恢复。
+   *
+   * @param id - 目标案件 ID
+   * @throws {NotFoundException} 目标案件不存在时
+   */
   async remove(id: string): Promise<void> {
-    const adminCase = await this.findOne(id)
-    await this.caseRepo.softRemove(adminCase)
-    this.logger.log(`AdminCase "${id}" soft-deleted`)
+    const adminCase = await this.findOne(id);
+    await this.caseRepo.softRemove(adminCase);
+    this.logger.log(`AdminCase "${id}" soft-deleted`);
   }
 
-  async restore(id: string) {
+  /**
+   * 恢复已被逻辑删除的行政案件。
+   *
+   * @param id - 目标案件 ID
+   * @returns 恢复后的案件详情实体
+   * @throws {NotFoundException} 目标案件不存在时
+   * @throws {BadRequestException} 目标案件尚未被删除时
+   */
+  async restore(id: string): Promise<AdminCase> {
     const adminCase = await this.caseRepo.findOne({
       where: { id },
       withDeleted: true,
-    })
-    if (!adminCase) throw new NotFoundException('案件が見つかりません')
-    if (!adminCase.deletedAt) throw new BadRequestException('この案件は削除されていません')
-    await this.caseRepo.recover(adminCase)
-    this.logger.log(`AdminCase "${id}" restored`)
-    return this.findOne(id)
+    });
+    if (!adminCase) throw new NotFoundException('案件が見つかりません');
+    if (!adminCase.deletedAt)
+      throw new BadRequestException('この案件は削除されていません');
+    await this.caseRepo.recover(adminCase);
+    this.logger.log(`AdminCase "${id}" restored`);
+    return this.findOne(id);
   }
 
+  /**
+   * 返回指定案件状态当前允许切换的下一步状态集合。
+   *
+   * @param status - 当前案件状态
+   * @returns 可供前端状态下拉框展示的目标状态列表
+   */
   getAvailableTransitions(status: AdminCaseStatus): AdminCaseStatus[] {
-    return STATUS_TRANSITIONS[status] ?? []
+    return getAdminCaseAvailableTransitions(status);
   }
 
-  async findByCustomer(customerId: string, query: QueryAdminCaseDto) {
-    return this.findAll({ ...query, customerId })
+  /**
+   * 按客户维度分页查询其名下的行政案件列表。
+   *
+   * @param customerId - 目标客户 ID
+   * @param query - 列表查询参数，内部会强制附加客户筛选条件
+   * @returns 仅包含该客户案件的分页结果
+   */
+  async findByCustomer(
+    customerId: string,
+    query: QueryAdminCaseDto,
+  ): Promise<PaginatedResult<AdminCaseListItemDto>> {
+    return this.findAll({ ...query, customerId });
   }
 
-  // ── Interviews ────────────────────────────────────────
-
+  /**
+   * 为指定案件新增一条面谈记录。
+   *
+   * @param caseId - 所属行政案件 ID
+   * @param dto - 面谈日期、地点和内容等入参
+   * @param userId - 当前创建面谈记录的用户 ID；省略时 createdBy 写入 null
+   * @returns 带有创建人关联信息的面谈记录实体
+   * @throws {NotFoundException} 所属案件不存在时
+   */
   async createInterview(
     caseId: string,
     dto: CreateInterviewDto,
     userId?: string,
   ): Promise<AdminCaseInterview> {
-    const adminCase = await this.findOne(caseId)
+    const adminCase = await this.findOne(caseId);
+    const interview = this.interviewRepo.create(
+      mapCreateInterviewDtoToEntityInput(
+        caseId,
+        dto.customerId ?? adminCase.customerId,
+        dto,
+        userId,
+      ),
+    );
 
-    const interview = this.interviewRepo.create({
-      adminCaseId: caseId,
-      customerId: dto.customerId ?? adminCase.customerId,
-      interviewDate: new Date(dto.interviewDate),
-      interviewLocation: dto.interviewLocation ?? null,
-      content: dto.content,
-      createdBy: userId ?? null,
-    })
-
-    const saved = await this.interviewRepo.save(interview)
-    this.logger.log(`Interview "${saved.id}" created for case "${caseId}" by user ${userId}`)
-    return this.findInterview(saved.id)
+    const saved = await this.interviewRepo.save(interview);
+    this.logger.log(
+      `Interview "${saved.id}" created for case "${caseId}" by user ${userId}`,
+    );
+    return this.findInterview(saved.id);
   }
 
-  async findInterviews(caseId: string, query: QueryInterviewDto) {
-    const { page = 1, pageSize = 20, sortOrder = 'DESC' } = query
+  /**
+   * 分页查询指定案件下的面谈记录，并映射为列表展示结构。
+   *
+   * @param caseId - 所属行政案件 ID
+   * @param query - 面谈记录的分页与日期区间筛选条件
+   * @returns 面谈记录分页结果
+   */
+  async findInterviews(
+    caseId: string,
+    query: QueryInterviewDto,
+  ): Promise<PaginatedResult<AdminCaseInterviewDto>> {
+    const { page = 1, pageSize = 20 } = query;
 
     const qb = this.interviewRepo
       .createQueryBuilder('iv')
       .leftJoinAndSelect('iv.creator', 'creator')
-      .where('iv.adminCaseId = :caseId', { caseId })
+      .where('iv.adminCaseId = :caseId', { caseId });
 
-    if (query.dateFrom) {
-      qb.andWhere('iv.interviewDate >= :dateFrom', { dateFrom: query.dateFrom })
-    }
+    applyAdminCaseInterviewQueryOptions(qb, query);
 
-    if (query.dateTo) {
-      qb.andWhere('iv.interviewDate <= :dateTo', { dateTo: query.dateTo })
-    }
-
-    qb.orderBy('iv.interviewDate', sortOrder)
-
-    qb.skip((page - 1) * pageSize).take(pageSize)
-
-    const [items, total] = await qb.getManyAndCount()
+    const [items, total] = await qb.getManyAndCount();
 
     return {
-      items: items.map((iv) => this.toInterviewDto(iv)),
+      items: items.map(mapAdminCaseInterviewToDto),
       total,
       page,
       pageSize,
-    }
+    };
   }
 
+  /**
+   * 查询单条面谈记录详情，并带出创建人信息。
+   *
+   * @param id - 面谈记录 ID
+   * @returns 面谈记录实体
+   * @throws {NotFoundException} 面谈记录不存在时
+   */
   async findInterview(id: string): Promise<AdminCaseInterview> {
     const interview = await this.interviewRepo.findOne({
       where: { id },
       relations: ['creator'],
-    })
+    });
 
     if (!interview) {
-      throw new NotFoundException('面談記録が見つかりません')
+      throw new NotFoundException('面談記録が見つかりません');
     }
 
-    return interview
+    return interview;
   }
 
+  /**
+   * 更新指定面谈记录的日期、地点、内容与客户绑定信息。
+   *
+   * @param id - 面谈记录 ID
+   * @param dto - 允许局部更新的面谈字段
+   * @param userId - 当前执行更新的用户 ID，仅用于审计日志输出
+   * @returns 更新后的面谈记录实体
+   * @throws {NotFoundException} 面谈记录不存在时
+   */
   async updateInterview(
     id: string,
     dto: UpdateInterviewDto,
     userId?: string,
   ): Promise<AdminCaseInterview> {
-    const interview = await this.findInterview(id)
+    const interview = await this.findInterview(id);
+    applyInterviewUpdateDto(interview, dto);
 
-    if (dto.interviewDate !== undefined) interview.interviewDate = new Date(dto.interviewDate)
-    if (dto.interviewLocation !== undefined) interview.interviewLocation = dto.interviewLocation ?? null
-    if (dto.content !== undefined) interview.content = dto.content
-    if (dto.customerId !== undefined) interview.customerId = dto.customerId
-
-    await this.interviewRepo.save(interview)
-    this.logger.log(`Interview "${id}" updated by user ${userId}`)
-    return this.findInterview(id)
+    await this.interviewRepo.save(interview);
+    this.logger.log(`Interview "${id}" updated by user ${userId}`);
+    return this.findInterview(id);
   }
 
+  /**
+   * 逻辑删除指定面谈记录。
+   *
+   * @param id - 面谈记录 ID
+   * @throws {NotFoundException} 面谈记录不存在时
+   */
   async removeInterview(id: string): Promise<void> {
-    const interview = await this.findInterview(id)
-    await this.interviewRepo.softRemove(interview)
-    this.logger.log(`Interview "${id}" soft-deleted`)
+    const interview = await this.findInterview(id);
+    await this.interviewRepo.softRemove(interview);
+    this.logger.log(`Interview "${id}" soft-deleted`);
   }
 
-  // ── Documents ────────────────────────────────────────
-
+  /**
+   * 查询指定案件已绑定的全部资料记录。
+   *
+   * @param caseId - 所属行政案件 ID
+   * @returns 按创建时间倒序排列的资料实体列表
+   * @throws {NotFoundException} 所属案件不存在时
+   */
   async findDocuments(caseId: string): Promise<AdminCaseDocument[]> {
-    await this.findOne(caseId)
+    await this.findOne(caseId);
     return this.documentRepo.find({
       where: { adminCaseId: caseId },
       relations: ['file', 'file.uploader'],
       order: { createdAt: 'DESC' },
-    })
+    });
   }
 
+  /**
+   * 为指定案件新增一条资料绑定记录。
+   *
+   * @param caseId - 所属行政案件 ID
+   * @param dto - 文件 ID、资料类型和备注等入参
+   * @returns 带有文件关联信息的资料实体
+   * @throws {NotFoundException} 所属案件不存在时
+   */
   async createDocument(
     caseId: string,
     dto: CreateAdminCaseDocumentDto,
   ): Promise<AdminCaseDocument> {
-    await this.findOne(caseId)
+    await this.findOne(caseId);
+    const doc = this.documentRepo.create(
+      mapCreateAdminCaseDocumentDtoToEntityInput(caseId, dto),
+    );
 
-    const doc = this.documentRepo.create({
-      adminCaseId: caseId,
-      fileId: dto.fileId,
-      documentType: dto.documentType ?? null,
-      remark: dto.remark ?? null,
-    })
-
-    const saved = await this.documentRepo.save(doc)
-    this.logger.log(`AdminCaseDocument "${saved.id}" created for case "${caseId}"`)
-    return this.findDocument(saved.id)
+    const saved = await this.documentRepo.save(doc);
+    this.logger.log(
+      `AdminCaseDocument "${saved.id}" created for case "${caseId}"`,
+    );
+    return this.findDocument(saved.id);
   }
 
+  /**
+   * 查询单条案件资料记录，并带出上传文件信息。
+   *
+   * @param docId - 资料记录 ID
+   * @returns 资料实体及其文件关联信息
+   * @throws {NotFoundException} 资料记录不存在时
+   */
   async findDocument(docId: string): Promise<AdminCaseDocument> {
     const doc = await this.documentRepo.findOne({
       where: { id: docId },
       relations: ['file', 'file.uploader'],
-    })
+    });
     if (!doc) {
-      throw new NotFoundException('書類が見つかりません')
+      throw new NotFoundException('書類が見つかりません');
     }
-    return doc
+    return doc;
   }
 
+  /**
+   * 更新案件资料的资料类型与备注信息。
+   *
+   * @param docId - 资料记录 ID
+   * @param dto - 允许局部更新的资料字段
+   * @returns 更新后的资料实体
+   * @throws {NotFoundException} 资料记录不存在时
+   */
   async updateDocument(
     docId: string,
     dto: UpdateAdminCaseDocumentDto,
   ): Promise<AdminCaseDocument> {
-    const doc = await this.findDocument(docId)
-    if (dto.documentType !== undefined) doc.documentType = dto.documentType ?? null
-    if (dto.remark !== undefined) doc.remark = dto.remark ?? null
-    await this.documentRepo.save(doc)
-    this.logger.log(`AdminCaseDocument "${docId}" updated`)
-    return this.findDocument(docId)
+    const doc = await this.findDocument(docId);
+    applyAdminCaseDocumentUpdateDto(doc, dto);
+    await this.documentRepo.save(doc);
+    this.logger.log(`AdminCaseDocument "${docId}" updated`);
+    return this.findDocument(docId);
   }
 
+  /**
+   * 删除指定案件资料记录。
+   *
+   * @param docId - 资料记录 ID
+   * @throws {NotFoundException} 资料记录不存在时
+   */
   async removeDocument(docId: string): Promise<void> {
-    const doc = await this.findDocument(docId)
-    await this.documentRepo.remove(doc)
-    this.logger.log(`AdminCaseDocument "${docId}" removed`)
+    const doc = await this.findDocument(docId);
+    await this.documentRepo.remove(doc);
+    this.logger.log(`AdminCaseDocument "${docId}" removed`);
   }
 
-  // ── Response Mappers ──────────────────────────────────
-
-  private toCaseListDto(ac: AdminCase) {
-    return {
-      id: ac.id,
-      customerId: ac.customerId,
-      customerName: ac.customer?.customerName ?? null,
-      caseName: ac.caseName,
-      applicantName: ac.applicantName,
-      residenceStatus: ac.residenceStatus,
-      status: ac.status,
-      expireDate: ac.expireDate,
-      ownerUserId: ac.ownerUserId,
-      ownerName: ac.owner?.displayName ?? null,
-      createdBy: ac.createdBy,
-      updatedBy: ac.updatedBy,
-      createdAt: ac.createdAt,
-      updatedAt: ac.updatedAt,
-    }
-  }
-
-  private toInterviewDto(iv: AdminCaseInterview) {
-    return {
-      id: iv.id,
-      adminCaseId: iv.adminCaseId,
-      customerId: iv.customerId,
-      interviewDate: iv.interviewDate,
-      interviewLocation: iv.interviewLocation,
-      content: iv.content,
-      createdBy: iv.createdBy,
-      creatorName: iv.creator?.displayName ?? null,
-      createdAt: iv.createdAt,
-      updatedAt: iv.updatedAt,
-    }
-  }
-
-  toDocumentDto(doc: AdminCaseDocument) {
-    return {
-      id: doc.id,
-      adminCaseId: doc.adminCaseId,
-      fileId: doc.fileId,
-      documentType: doc.documentType,
-      remark: doc.remark,
-      createdAt: doc.createdAt,
-      file: doc.file
-        ? {
-            id: doc.file.id,
-            fileName: doc.file.fileName,
-            fileExt: doc.file.fileExt,
-            fileSize: doc.file.fileSize ? Number(doc.file.fileSize) : null,
-            mimeType: doc.file.mimeType,
-            description: doc.file.description,
-            uploaderName: doc.file.uploader?.displayName ?? null,
-            createdAt: doc.file.createdAt,
-          }
-        : null,
-    }
+  /**
+   * 将案件资料实体映射为接口返回结构，并展开文件摘要信息。
+   *
+   * @param doc - 已附带文件与上传人关联信息的资料实体
+   * @returns 供前端资料面板消费的资料 DTO
+   */
+  toDocumentDto(doc: AdminCaseDocument): AdminCaseDocumentDto {
+    return mapAdminCaseDocumentToDto(doc);
   }
 }

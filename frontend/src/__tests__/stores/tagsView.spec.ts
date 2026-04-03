@@ -1,6 +1,7 @@
 import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { RouteLocationNormalized } from 'vue-router'
+
 import { useTagsViewStore } from '@/stores/tagsView'
 
 function createRoute(

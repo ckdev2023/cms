@@ -39,6 +39,11 @@ function handleClick(view: TagView) {
   router.push({ path: view.path, query: view.query })
 }
 
+/**
+ * 关闭指定标签页，并在关闭当前页后跳转到最近访问页。
+ *
+ * @param view - 需要关闭的标签页对象
+ */
 function handleClose(view: TagView) {
   store.removeView(view.path)
   if (isActive(view)) {
@@ -51,6 +56,11 @@ function toLastView() {
   router.push(last ? { path: last.path, query: last.query } : '/dashboard')
 }
 
+/**
+ * 执行标签页批量关闭命令。
+ *
+ * @param cmd - 下拉菜单返回的关闭动作标识
+ */
 function handleCommand(cmd: string) {
   if (cmd === 'closeOthers') {
     store.removeOtherViews(route.path)

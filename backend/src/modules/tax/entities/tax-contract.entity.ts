@@ -1,63 +1,67 @@
 import {
-  Entity,
   Column,
+  Entity,
   Index,
+  JoinColumn,
   ManyToOne,
   OneToMany,
-  JoinColumn,
-} from 'typeorm'
-import { BaseEntity } from '../../../common/entities/base.entity'
-import {
-  TaxContractStatus,
-  BillingCycle,
-} from '../../../common/constants/enums'
-import { Customer } from '../../customer/entities/customer.entity'
-import { User } from '../../auth/entities/user.entity'
-import { TaxPeriod } from './tax-period.entity'
+} from 'typeorm';
 
+import {
+  BillingCycle,
+  TaxContractStatus,
+} from '../../../common/constants/enums';
+import { BaseEntity } from '../../../common/entities/base.entity';
+import { User } from '../../auth/entities/user.entity';
+import { Customer } from '../../customer/entities/customer.entity';
+import { TaxPeriod } from './tax-period.entity';
+
+/**
+ * 定义税务合同主档，并维护客户、负责人及月次期间的聚合关系。
+ */
 @Entity('tax_contracts')
 export class TaxContract extends BaseEntity {
   @Index()
   @Column({ type: 'uuid' })
-  customerId: string
+  customerId: string;
 
   @Column({ type: 'varchar', length: 200 })
-  contractName: string
+  contractName: string;
 
   @Index()
   @Column({ type: 'varchar', length: 30, default: TaxContractStatus.ACTIVE })
-  contractStatus: TaxContractStatus
+  contractStatus: TaxContractStatus;
 
   @Column({ type: 'varchar', length: 20, default: BillingCycle.MONTHLY })
-  billingCycle: BillingCycle
+  billingCycle: BillingCycle;
 
   @Column({ type: 'date' })
-  startDate: Date
+  startDate: Date;
 
   @Column({ type: 'date', nullable: true })
-  endDate: Date | null
+  endDate: Date | null;
 
   @Column({ type: 'decimal', precision: 18, scale: 2, default: 0 })
-  monthlyFee: number
+  monthlyFee: number;
 
   @Index()
   @Column({ type: 'uuid', nullable: true })
-  ownerUserId: string | null
+  ownerUserId: string | null;
 
   @Column({ type: 'uuid', nullable: true })
-  createdBy: string | null
+  createdBy: string | null;
 
   @Column({ type: 'uuid', nullable: true })
-  updatedBy: string | null
+  updatedBy: string | null;
 
   @ManyToOne(() => Customer)
   @JoinColumn({ name: 'customer_id' })
-  customer: Customer
+  customer: Customer;
 
   @ManyToOne(() => User, { nullable: true })
   @JoinColumn({ name: 'owner_user_id' })
-  owner: User | null
+  owner: User | null;
 
   @OneToMany(() => TaxPeriod, (tp) => tp.taxContract)
-  periods: TaxPeriod[]
+  periods: TaxPeriod[];
 }

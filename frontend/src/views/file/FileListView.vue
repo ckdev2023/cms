@@ -26,6 +26,8 @@ type FileSortChange = {
   order: string | null
 }
 
+type FileListSearchParams = Partial<FileQueryParams> & Record<string, unknown>
+
 const { confirmDelete } = useConfirm()
 const appStore = useAppStore()
 const { t } = useI18n({ useScope: 'global' })
@@ -57,7 +59,7 @@ const {
   handleSizeChange,
   handleSearch,
   handleReset,
-} = useProTable<FileItem>(getFiles)
+} = useProTable<FileItem, FileListSearchParams>(getFiles)
 
 const uploadVisible = ref(false)
 const editVisible = ref(false)
@@ -133,8 +135,8 @@ function handleSaved() {
  *
  * @returns 可直接传给 `handleSearch` 的文件列表查询参数
  */
-function buildSearchParams(): FileQueryParams {
-  const params: FileQueryParams = {}
+function buildSearchParams(): FileListSearchParams {
+  const params: FileListSearchParams = {}
   if (searchForm.keyword) params.keyword = searchForm.keyword
   if (searchForm.businessType) params.businessType = searchForm.businessType
   if (searchForm.fileExt) params.fileExt = searchForm.fileExt

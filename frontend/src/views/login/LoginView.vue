@@ -1,12 +1,13 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
-import { useUserStore } from '@/stores/user'
-import { useAppStore } from '@/stores/app'
-import type { AppLocale } from '@/i18n'
-import { User, Lock } from '@element-plus/icons-vue'
+import { Lock, User } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
+
+import type { AppLocale } from '@/i18n'
+import { useAppStore } from '@/stores/app'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const route = useRoute()
@@ -34,6 +35,9 @@ const localeOptions = computed(() => [
   { value: 'ja' as AppLocale, label: t('locale.ja') },
 ])
 
+/**
+ * 校验登录表单并在成功后跳转到目标页面。
+ */
 async function handleLogin() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return

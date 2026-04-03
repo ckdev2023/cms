@@ -134,11 +134,11 @@ function doReset() {
  * @param sort.order - 当前排序方向，未排序时为 null
  */
 function handleSortChange(sort: {
-  prop: string
-  order: 'ascending' | 'descending' | null
+  prop: string | null
+  order: string | null
 }) {
   const params: DepositListSearchParams = {}
-  if (sort.prop && sort.order) {
+  if (sort.prop && (sort.order === 'ascending' || sort.order === 'descending')) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'
   }

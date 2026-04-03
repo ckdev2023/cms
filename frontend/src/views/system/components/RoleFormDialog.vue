@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ElTree, FormInstance, FormRules } from 'element-plus'
+import type { CheckboxValueType, ElTree, FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -201,11 +201,12 @@ function handleClose() {
 /**
  * 根据全选状态批量勾选或清空所有角色权限。
  *
- * @param checked - 全选复选框当前是否选中
+ * @param checkedValue - 全选复选框当前返回的值
  * @returns 无返回值
  */
-function handleCheckAll(checked: boolean) {
+function handleCheckAll(checkedValue: CheckboxValueType) {
   if (!treeRef.value) return
+  const checked = checkedValue === true
   if (checked) {
     const allLeafIds = permissionGroups.value.flatMap((g) =>
       g.children.map((c) => c.id),

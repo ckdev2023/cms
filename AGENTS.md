@@ -176,6 +176,19 @@ pre-push
 - `api/` 额外要求 `import type`（`consistent-type-imports`）。
 - `types/` 目录要求 `import type`、禁止 `any`、导入排序均为 error。
 
+### 阻断级（error）— 后端严格目录
+
+`backend/src/common/dto/`、`backend/src/common/entities/` 两个声明目录在通用规则基础上追加 error 级别覆盖：
+
+- 导入排序（`simple-import-sort`）为 error（通用为 warn）。
+- 类声明必须有中文 JSDoc，说明 DTO / Entity 的业务语义。
+
+`backend/src/common/helpers/`、`backend/src/common/interceptors/`、`backend/src/common/filters/` 三个基础设施目录在通用规则基础上追加 error 级别覆盖：
+
+- 导入排序（`simple-import-sort`）为 error（通用为 warn）。
+- 类声明与 2 行以上的方法必须有中文 JSDoc，缺失即阻断提交。
+- `@param`、`@returns` 描述须完整，避免公共基础设施出现“能跑但不可读”的黑盒实现。
+
 ### 渐进级（warn）
 
 - `no-console`：允许 `console.warn` / `console.error`，前端应使用业务日志封装。
@@ -199,7 +212,13 @@ pre-push
 
 **前端（warn — 自动门禁提示，保守策略）**：`.vue` 组件内 6 行以上的具名函数声明（箭头函数、生命周期回调、5 行以下短函数豁免）。
 
-**后端（warn — 自动门禁提示）**：`*.service.ts`、`*.controller.ts`、`guards/`、`interceptors/`、`helpers/`、`filters/`。
+**后端（error — 自动门禁阻断，声明层）**：`backend/src/common/dto/`、`backend/src/common/entities/` 的类声明。
+
+**后端（error — 自动门禁阻断，基础设施层）**：`backend/src/common/helpers/`、`backend/src/common/interceptors/`、`backend/src/common/filters/` 的类声明与 2 行以上方法。
+
+**后端（warn — 自动门禁提示，方法层）**：`*.service.ts`、`*.controller.ts`、`guards/`。
+
+**后端（error — Layer 2 文件级门禁）**：`backend/src/common/constants/` 中非 `index.ts` 常量文件的顶部说明注释。
 
 ### 必填字段
 
@@ -218,8 +237,8 @@ pre-push
 
 ### 两层自动检查
 
-- **Layer 1**（ESLint `eslint-plugin-jsdoc`）：随 `npm run lint` 执行，检查存在性与结构。覆盖 `.ts` 强制目录和 `.vue` 文件（`.vue` 仅检查 6 行以上具名函数声明，等级 warn）。
-- **Layer 2**（`scripts/check-jsdoc.mjs`）：随 `npm run jsdoc:check` 执行，检查内容质量（空泛词、最小长度、@throws 覆盖）。仅覆盖 `.ts` 文件，`.vue` 暂不纳入。
+- **Layer 1**（ESLint `eslint-plugin-jsdoc`）：随 `npm run lint` 执行，检查存在性与结构。覆盖 `.ts` 强制目录和 `.vue` 文件（`.vue` 仅检查 6 行以上具名函数声明，等级 warn）。其中 `backend/src/common/dto/`、`backend/src/common/entities/` 对类声明直接按 error 门禁执行，`backend/src/common/helpers/`、`backend/src/common/interceptors/`、`backend/src/common/filters/` 对类和方法按 error 门禁执行。
+- **Layer 2**（`scripts/check-jsdoc.mjs`）：随 `npm run jsdoc:check` 执行，检查内容质量（空泛词、最小长度、@throws 覆盖）。仅覆盖 `.ts` 文件，`.vue` 暂不纳入；同时校验 `backend/src/common/dto/`、`backend/src/common/entities/` 中类级 JSDoc 的描述质量，以及 `backend/src/common/constants/` 中常量契约文件的顶部说明。
 
 ---
 
@@ -272,7 +291,7 @@ cms/
 │       └── views/         ← 页面视图（按模块分目录，.vue JSDoc warn 级门禁）
 ├── backend/
 │   └── src/
-│       ├── common/        ← 拦截器、过滤器、帮助类（JSDoc warn 级门禁）
+│       ├── common/        ← dto/entities 为 JSDoc error 级声明门禁；helpers/interceptors/filters 为 JSDoc error 级基础设施门禁；constants 为 Layer 2 文件门禁
 │       ├── modules/       ← 业务模块（service/controller JSDoc warn 级门禁）
 │       └── migrations/    ← 数据库迁移
 ├── scripts/               ← 部署、备份、JSDoc 检查等脚本

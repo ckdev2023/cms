@@ -1,35 +1,58 @@
-import { IsOptional, IsString, IsUUID, IsDateString } from 'class-validator'
-import { ApiPropertyOptional } from '@nestjs/swagger'
-import { PaginationDto } from '../../../common/dto/pagination.dto'
+import { ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 
+import { LoginType, OperationResult } from '../../../common/constants/enums';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
+
+/**
+ * 定义登录日志列表查询支持的筛选入参，覆盖登录人、登录动作、结果与发生时间范围。
+ */
 export class QueryLoginLogDto extends PaginationDto {
-  @ApiPropertyOptional({ description: 'ユーザーID' })
+  @ApiPropertyOptional({ format: 'uuid', description: 'ユーザーID' })
   @IsOptional()
-  @IsUUID()
-  userId?: string
+  @IsUUID('4')
+  userId?: string;
 
   @ApiPropertyOptional({ description: 'ユーザー名' })
   @IsOptional()
   @IsString()
-  username?: string
+  username?: string;
 
-  @ApiPropertyOptional({ description: 'ログインタイプ (LOGIN, LOGOUT)' })
+  @ApiPropertyOptional({
+    enum: LoginType,
+    description: 'ログインタイプ',
+  })
   @IsOptional()
-  @IsString()
-  loginType?: string
+  @IsEnum(LoginType)
+  loginType?: LoginType;
 
-  @ApiPropertyOptional({ description: '操作結果 (SUCCESS, FAILURE)' })
+  @ApiPropertyOptional({
+    enum: OperationResult,
+    description: '操作結果',
+  })
   @IsOptional()
-  @IsString()
-  result?: string
+  @IsEnum(OperationResult)
+  result?: OperationResult;
 
-  @ApiPropertyOptional({ description: '開始日時 (ISO8601)' })
+  @ApiPropertyOptional({
+    example: '2026-01-01T00:00:00.000Z',
+    description: '開始日時 (ISO8601)',
+  })
   @IsOptional()
   @IsDateString()
-  startDate?: string
+  startDate?: string;
 
-  @ApiPropertyOptional({ description: '終了日時 (ISO8601)' })
+  @ApiPropertyOptional({
+    example: '2026-12-31T23:59:59.999Z',
+    description: '終了日時 (ISO8601)',
+  })
   @IsOptional()
   @IsDateString()
-  endDate?: string
+  endDate?: string;
 }

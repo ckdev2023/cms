@@ -1,42 +1,48 @@
 import {
-  Entity,
   Column,
-  Index,
-  ManyToOne,
-  JoinColumn,
-  PrimaryGeneratedColumn,
   CreateDateColumn,
-} from 'typeorm'
-import { Payment } from './payment.entity'
-import { Invoice } from './invoice.entity'
+  Entity,
+  Index,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
+import { Invoice } from './invoice.entity';
+import { Payment } from './payment.entity';
+
+/**
+ * 映射收款分摊记录，描述单笔收款被分配到各账单的核销金额。
+ */
 @Entity('payment_allocations')
 export class PaymentAllocation {
   @PrimaryGeneratedColumn('uuid')
-  id: string
+  id: string;
 
   @Index()
   @Column({ type: 'uuid' })
-  paymentId: string
+  paymentId: string;
 
   @Index()
   @Column({ type: 'uuid' })
-  invoiceId: string
+  invoiceId: string;
 
   @Column({ type: 'decimal', precision: 18, scale: 2 })
-  allocatedAmount: number
+  allocatedAmount: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date
+  createdAt: Date;
 
   @Column({ type: 'uuid', nullable: true })
-  createdBy: string | null
+  createdBy: string | null;
 
-  @ManyToOne(() => Payment, (p) => p.allocations, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Payment, (payment) => payment.allocations, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'payment_id' })
-  payment: Payment
+  payment: Payment;
 
-  @ManyToOne(() => Invoice, (i) => i.paymentAllocations)
+  @ManyToOne(() => Invoice, (invoice) => invoice.paymentAllocations)
   @JoinColumn({ name: 'invoice_id' })
-  invoice: Invoice
+  invoice: Invoice;
 }

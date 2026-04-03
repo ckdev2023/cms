@@ -1,302 +1,543 @@
-import { DataSource } from 'typeorm'
-import { SnakeNamingStrategy } from '../common/naming-strategy'
-import * as dotenv from 'dotenv'
-import * as bcrypt from 'bcryptjs'
+import { Logger } from '@nestjs/common';
+import * as bcrypt from 'bcryptjs';
+import type { QueryRunner } from 'typeorm';
 
-dotenv.config({ path: '.env.local' })
-dotenv.config({ path: '.env' })
+import { createAppDataSource } from '../data-source';
+import type { CustomerSeed } from './seed-demo.data';
+import {
+  ADMIN_CASE_TEMPLATES,
+  CUSTOMERS,
+  INVOICE_TEMPLATES,
+  NOTE_TEMPLATES,
+  TAX_CONTRACT_TEMPLATES,
+  TEST_USERS,
+} from './seed-demo.data';
 
-async function seedDemo() {
-  const ds = new DataSource({
-    type: 'postgres',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432', 10),
-    username: process.env.DB_USERNAME || 'postgres',
-    password: process.env.DB_PASSWORD || 'postgres',
-    database: process.env.DB_DATABASE || 'jimusho_cms',
-    namingStrategy: new SnakeNamingStrategy(),
-    synchronize: false,
-    logging: false,
-  })
+interface IdRow {
+  id: string;
+}
 
-  await ds.initialize()
-  console.log('Database connected.')
+interface RoleCodeRow extends IdRow {
+  role_code: string;
+}
 
-  const qr = ds.createQueryRunner()
-  await qr.startTransaction()
+type UserIdMap = Record<string, string>;
+type CustomerIdMap = Record<string, string>;
+type RoleIdMap = Record<string, string>;
 
-  try {
-    // ── 1. Look up role IDs ──
-    const roles = await qr.query(`SELECT id, role_code FROM roles`)
-    const roleIds: Record<string, string> = {}
-    for (const r of roles) {
-      roleIds[r.role_code] = r.id
+const seedDemoLogger = new Logger('SeedDemoScript');
+
+/**
+ * 为企业客户补写公司资料扩展表记录。
+ *
+ * @param queryRunner - 当前事务使用的查询执行器
+ * @param customerId - 已写入主表的客户主键
+ * @param customer - 当前客户的演示数据模板
+ * @returns 企业资料写入完成后结束
+ */
+async function insertCompanyInfo(
+  queryRunner: QueryRunner,
+  customerId: string,
+  customer: CustomerSeed,
+): Promise<void> {
+  if (customer.type !== 'COMPANY' || !customer.company) {
+    return;
+  }
+
+  await queryRunner.query(
+    `INSERT INTO company_info (
+       id,
+       customer_id,
+       corporation_number,
+       fiscal_month,
+       representative_name
+     )
+     VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
+    [
+      customerId,
+      customer.company.corporationNumber,
+      customer.company.fiscalMonth,
+      customer.company.representativeName,
+    ],
+  );
+}
+
+/**
+ * 为个人客户补写在留相关的扩展资料记录。
+ *
+ * @param queryRunner - 当前事务使用的查询执行器
+ * @param customerId - 已写入主表的客户主键
+ * @param customer - 当前客户的演示数据模板
+ * @returns 个人资料写入完成后结束
+ */
+async function insertPersonInfo(
+  queryRunner: QueryRunner,
+  customerId: string,
+  customer: CustomerSeed,
+): Promise<void> {
+  if (customer.type !== 'PERSONAL' || !customer.person) {
+    return;
+  }
+
+  await queryRunner.query(
+    `INSERT INTO person_info (
+       id,
+       customer_id,
+       nationality,
+       residence_status,
+       residence_expire_date
+     )
+     VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
+    [
+      customerId,
+      customer.person.nationality,
+      customer.person.residenceStatus,
+      customer.person.residenceExpireDate,
+    ],
+  );
+}
+
+/**
+ * 从基础种子中读取角色编码到数据库主键的映射关系。
+ *
+ * @param queryRunner - 当前事务使用的查询执行器
+ * @returns 供测试账号和数据归属关系复用的角色主键映射
+ * @throws {Error} 基础种子尚未执行时抛出异常
+ */
+async function fetchRoleIds(queryRunner: QueryRunner): Promise<RoleIdMap> {
+  const roleRows = (await queryRunner.query(
+    'SELECT id, role_code FROM roles',
+  )) as RoleCodeRow[];
+
+  const roleIds: RoleIdMap = {};
+
+  for (const roleRow of roleRows) {
+    roleIds[roleRow.role_code] = roleRow.id;
+  }
+
+  if (!roleIds.STAFF || !roleIds.FINANCE) {
+    throw new Error(
+      'Roles STAFF and FINANCE must exist. Run `npm run seed` first.',
+    );
+  }
+
+  return roleIds;
+}
+
+/**
+ * 创建演示账号并补齐后续业务数据依赖的用户主键映射。
+ *
+ * @param queryRunner - 当前事务使用的查询执行器
+ * @param roleIds - 基础角色编码到主键的映射
+ * @returns 包含 admin 与测试账号的用户主键映射
+ */
+async function seedTestUsers(
+  queryRunner: QueryRunner,
+  roleIds: RoleIdMap,
+): Promise<UserIdMap> {
+  seedDemoLogger.log('Creating test users...');
+
+  const userIds: UserIdMap = {};
+  const passwordHash = await bcrypt.hash('test1234', 10);
+
+  for (const user of TEST_USERS) {
+    const existingRows = (await queryRunner.query(
+      'SELECT id FROM users WHERE username = $1',
+      [user.username],
+    )) as IdRow[];
+
+    if (existingRows.length > 0) {
+      userIds[user.username] = existingRows[0].id;
+      seedDemoLogger.log(`User "${user.username}" already exists, skipped.`);
+      continue;
     }
 
-    if (!roleIds['STAFF'] || !roleIds['FINANCE']) {
-      throw new Error('Roles STAFF and FINANCE must exist. Run `npm run seed` first.')
+    const insertedRows = (await queryRunner.query(
+      `INSERT INTO users (id, username, password_hash, display_name, email, status)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, 'ACTIVE')
+       RETURNING id`,
+      [user.username, passwordHash, user.displayName, user.email],
+    )) as IdRow[];
+
+    userIds[user.username] = insertedRows[0].id;
+
+    await queryRunner.query(
+      'INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)',
+      [insertedRows[0].id, roleIds[user.roleCode]],
+    );
+
+    seedDemoLogger.log(
+      `User "${user.username}" created (password: test1234, role: ${user.roleCode}).`,
+    );
+  }
+
+  const adminRows = (await queryRunner.query(
+    "SELECT id FROM users WHERE username = 'admin'",
+  )) as IdRow[];
+
+  if (adminRows.length > 0) {
+    userIds.admin = adminRows[0].id;
+  }
+
+  return userIds;
+}
+
+/**
+ * 创建演示客户并写入企业或个人扩展资料。
+ *
+ * @param queryRunner - 当前事务使用的查询执行器
+ * @param userIds - 已写入数据库的用户主键映射
+ * @returns 客户编码到数据库主键的映射
+ */
+async function seedCustomers(
+  queryRunner: QueryRunner,
+  userIds: UserIdMap,
+): Promise<CustomerIdMap> {
+  seedDemoLogger.log('Creating sample customers...');
+
+  const customerIds: CustomerIdMap = {};
+
+  for (const customer of CUSTOMERS) {
+    const existingRows = (await queryRunner.query(
+      'SELECT id FROM customers WHERE customer_code = $1',
+      [customer.code],
+    )) as IdRow[];
+
+    if (existingRows.length > 0) {
+      customerIds[customer.code] = existingRows[0].id;
+      seedDemoLogger.log(
+        `Customer "${customer.code}" already exists, skipped.`,
+      );
+      continue;
     }
 
-    // ── 2. Create test users ──
-    console.log('Creating test users...')
-    const passwordHash = await bcrypt.hash('test1234', 10)
-    const testUsers = [
-      { username: 'tanaka', displayName: '田中太郎', email: 'tanaka@jimusho.local', roleCode: 'STAFF' },
-      { username: 'suzuki', displayName: '鈴木花子', email: 'suzuki@jimusho.local', roleCode: 'STAFF' },
-      { username: 'yamamoto', displayName: '山本一郎', email: 'yamamoto@jimusho.local', roleCode: 'FINANCE' },
-    ]
+    const ownerId = userIds[customer.ownerUsername] ?? null;
+    const insertedRows = (await queryRunner.query(
+      `INSERT INTO customers (
+         id,
+         customer_code,
+         customer_type,
+         customer_name,
+         phone,
+         email,
+         address,
+         service_type,
+         owner_user_id,
+         status
+       )
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'ACTIVE')
+       RETURNING id`,
+      [
+        customer.code,
+        customer.type,
+        customer.name,
+        customer.phone,
+        customer.email,
+        customer.address,
+        customer.serviceType,
+        ownerId,
+      ],
+    )) as IdRow[];
 
-    const userIds: Record<string, string> = {}
-    for (const u of testUsers) {
-      const existing = await qr.query(`SELECT id FROM users WHERE username = $1`, [u.username])
-      if (existing.length > 0) {
-        userIds[u.username] = existing[0].id
-        console.log(`  User "${u.username}" already exists, skipped.`)
-      } else {
-        const [inserted] = await qr.query(
-          `INSERT INTO users (id, username, password_hash, display_name, email, status)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, 'ACTIVE')
-           RETURNING id`,
-          [u.username, passwordHash, u.displayName, u.email],
-        )
-        userIds[u.username] = inserted.id
-        await qr.query(`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)`, [
-          inserted.id,
-          roleIds[u.roleCode],
-        ])
-        console.log(`  User "${u.username}" created (password: test1234, role: ${u.roleCode}).`)
-      }
+    const customerId = insertedRows[0].id;
+    customerIds[customer.code] = customerId;
+
+    await insertCompanyInfo(queryRunner, customerId, customer);
+    await insertPersonInfo(queryRunner, customerId, customer);
+
+    seedDemoLogger.log(
+      `Customer "${customer.code} - ${customer.name}" created.`,
+    );
+  }
+
+  return customerIds;
+}
+
+/**
+ * 为演示中的个人客户写入行政案件样本。
+ *
+ * @param queryRunner - 当前事务使用的查询执行器
+ * @param customerIds - 客户编码到主键的映射
+ * @param userIds - 用户名到主键的映射
+ * @returns 行政案件样本写入完成后结束
+ */
+async function seedAdminCases(
+  queryRunner: QueryRunner,
+  customerIds: CustomerIdMap,
+  userIds: UserIdMap,
+): Promise<void> {
+  seedDemoLogger.log('Creating sample admin cases...');
+
+  for (const adminCase of ADMIN_CASE_TEMPLATES) {
+    const customerId = customerIds[adminCase.customerCode];
+
+    if (!customerId) {
+      continue;
     }
 
-    // Also get admin user id
-    const adminRow = await qr.query(`SELECT id FROM users WHERE username = 'admin'`)
-    if (adminRow.length > 0) userIds['admin'] = adminRow[0].id
+    const ownerId = userIds[adminCase.ownerUsername] ?? null;
 
-    // ── 3. Create sample customers ──
-    console.log('Creating sample customers...')
-    const customers = [
-      {
-        code: 'C00001', type: 'COMPANY', name: '株式会社テクノロジー',
-        phone: '03-1234-5678', email: 'info@techno.co.jp', address: '東京都千代田区丸の内1-1-1',
-        serviceType: 'BOTH', ownerUsername: 'tanaka',
-        company: { corporationNumber: '1234567890123', fiscalMonth: 3, representativeName: '佐藤健' },
-      },
-      {
-        code: 'C00002', type: 'COMPANY', name: '合同会社グローバルトレード',
-        phone: '06-9876-5432', email: 'contact@globaltrade.co.jp', address: '大阪府大阪市北区梅田2-2-2',
-        serviceType: 'TAX', ownerUsername: 'suzuki',
-        company: { corporationNumber: '9876543210987', fiscalMonth: 12, representativeName: '高橋美咲' },
-      },
-      {
-        code: 'P00001', type: 'PERSONAL', name: 'グエン・バン・アン',
-        phone: '080-1111-2222', email: 'nguyen@example.com', address: '東京都新宿区新宿3-3-3',
-        serviceType: 'ADMIN', ownerUsername: 'tanaka',
-        person: { nationality: 'ベトナム', residenceStatus: '技術・人文知識・国際業務', residenceExpireDate: '2027-06-15' },
-      },
-      {
-        code: 'P00002', type: 'PERSONAL', name: 'リー・ウェイ',
-        phone: '090-3333-4444', email: 'li.wei@example.com', address: '神奈川県横浜市中区山下町4-4-4',
-        serviceType: 'ADMIN', ownerUsername: 'tanaka',
-        person: { nationality: '中国', residenceStatus: '経営・管理', residenceExpireDate: '2026-12-01' },
-      },
-      {
-        code: 'C00003', type: 'COMPANY', name: '株式会社サクラ食品',
-        phone: '052-5555-6666', email: 'sakura@food.co.jp', address: '愛知県名古屋市中村区名駅5-5-5',
-        serviceType: 'TAX', ownerUsername: 'suzuki',
-        company: { corporationNumber: '5555666677778', fiscalMonth: 9, representativeName: '田村直樹' },
-      },
-    ]
+    await queryRunner.query(
+      `INSERT INTO admin_cases (
+         id,
+         customer_id,
+         case_name,
+         applicant_name,
+         residence_status,
+         status,
+         expire_date,
+         owner_user_id,
+         created_by
+       )
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8)`,
+      [
+        customerId,
+        adminCase.caseName,
+        adminCase.applicantName,
+        adminCase.residenceStatus,
+        adminCase.status,
+        adminCase.expireDate,
+        ownerId,
+        ownerId,
+      ],
+    );
 
-    const customerIds: Record<string, string> = {}
-    for (const c of customers) {
-      const existing = await qr.query(`SELECT id FROM customers WHERE customer_code = $1`, [c.code])
-      if (existing.length > 0) {
-        customerIds[c.code] = existing[0].id
-        console.log(`  Customer "${c.code}" already exists, skipped.`)
-        continue
-      }
-
-      const ownerId = c.ownerUsername ? userIds[c.ownerUsername] : null
-      const [inserted] = await qr.query(
-        `INSERT INTO customers (id, customer_code, customer_type, customer_name, phone, email, address, service_type, owner_user_id, status)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, 'ACTIVE')
-         RETURNING id`,
-        [c.code, c.type, c.name, c.phone, c.email, c.address, c.serviceType, ownerId],
-      )
-      customerIds[c.code] = inserted.id
-
-      if (c.type === 'COMPANY' && c.company) {
-        await qr.query(
-          `INSERT INTO company_info (id, customer_id, corporation_number, fiscal_month, representative_name)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
-          [inserted.id, c.company.corporationNumber, c.company.fiscalMonth, c.company.representativeName],
-        )
-      }
-
-      if (c.type === 'PERSONAL' && c.person) {
-        await qr.query(
-          `INSERT INTO person_info (id, customer_id, nationality, residence_status, residence_expire_date)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
-          [inserted.id, c.person.nationality, c.person.residenceStatus, c.person.residenceExpireDate],
-        )
-      }
-
-      console.log(`  Customer "${c.code} - ${c.name}" created.`)
-    }
-
-    // ── 4. Create sample admin cases ──
-    console.log('Creating sample admin cases...')
-    const cases = [
-      {
-        customerId: customerIds['P00001'], caseName: '在留資格変更許可申請',
-        applicantName: 'グエン・バン・アン', residenceStatus: '技術・人文知識・国際業務',
-        status: 'SUBMITTED', expireDate: '2027-06-15', ownerUsername: 'tanaka',
-      },
-      {
-        customerId: customerIds['P00002'], caseName: '在留期間更新許可申請',
-        applicantName: 'リー・ウェイ', residenceStatus: '経営・管理',
-        status: 'MATERIAL_PENDING', expireDate: '2026-12-01', ownerUsername: 'tanaka',
-      },
-      {
-        customerId: customerIds['P00001'], caseName: '就労資格証明書交付申請',
-        applicantName: 'グエン・バン・アン', residenceStatus: '技術・人文知識・国際業務',
-        status: 'COMPLETED', expireDate: null, ownerUsername: 'tanaka',
-      },
-    ]
-
-    const caseIds: string[] = []
-    for (const ac of cases) {
-      if (!ac.customerId) continue
-      const ownerId = ac.ownerUsername ? userIds[ac.ownerUsername] : null
-      const [inserted] = await qr.query(
-        `INSERT INTO admin_cases (id, customer_id, case_name, applicant_name, residence_status, status, expire_date, owner_user_id, created_by)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8)
-         RETURNING id`,
-        [ac.customerId, ac.caseName, ac.applicantName, ac.residenceStatus, ac.status, ac.expireDate, ownerId, ownerId],
-      )
-      caseIds.push(inserted.id)
-      console.log(`  Case "${ac.caseName}" created.`)
-    }
-
-    // ── 5. Create sample tax contracts ──
-    console.log('Creating sample tax contracts...')
-    const contracts = [
-      {
-        customerId: customerIds['C00001'], contractName: '顧問契約（月次）',
-        contractStatus: 'ACTIVE', billingCycle: 'MONTHLY',
-        startDate: '2025-04-01', endDate: null, monthlyFee: 50000, ownerUsername: 'suzuki',
-      },
-      {
-        customerId: customerIds['C00002'], contractName: '記帳代行契約',
-        contractStatus: 'ACTIVE', billingCycle: 'MONTHLY',
-        startDate: '2025-01-01', endDate: null, monthlyFee: 30000, ownerUsername: 'suzuki',
-      },
-      {
-        customerId: customerIds['C00003'], contractName: '税務顧問契約',
-        contractStatus: 'ACTIVE', billingCycle: 'MONTHLY',
-        startDate: '2024-10-01', endDate: null, monthlyFee: 80000, ownerUsername: 'suzuki',
-      },
-    ]
-
-    const contractIds: string[] = []
-    for (const tc of contracts) {
-      if (!tc.customerId) continue
-      const ownerId = tc.ownerUsername ? userIds[tc.ownerUsername] : null
-      const [inserted] = await qr.query(
-        `INSERT INTO tax_contracts (id, customer_id, contract_name, contract_status, billing_cycle, start_date, end_date, monthly_fee, owner_user_id, created_by)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING id`,
-        [tc.customerId, tc.contractName, tc.contractStatus, tc.billingCycle, tc.startDate, tc.endDate, tc.monthlyFee, ownerId, ownerId],
-      )
-      contractIds.push(inserted.id)
-      console.log(`  Tax contract "${tc.contractName}" created.`)
-    }
-
-    // ── 6. Create sample invoices ──
-    console.log('Creating sample invoices...')
-    const invoices = [
-      {
-        customerId: customerIds['C00001'], invoiceNumber: 'INV-2026-001',
-        title: '2026年3月顧問料', invoiceType: 'TAX', status: 'SENT',
-        totalAmount: 55000, taxAmount: 5000, subtotal: 50000,
-        items: [{ description: '顧問契約 2026年3月', quantity: 1, unitPrice: 50000, amount: 50000, taxRate: 10 }],
-      },
-      {
-        customerId: customerIds['C00001'], invoiceNumber: 'INV-2026-002',
-        title: '2026年2月顧問料', invoiceType: 'TAX', status: 'PAID',
-        totalAmount: 55000, taxAmount: 5000, subtotal: 50000,
-        items: [{ description: '顧問契約 2026年2月', quantity: 1, unitPrice: 50000, amount: 50000, taxRate: 10 }],
-      },
-      {
-        customerId: customerIds['P00001'], invoiceNumber: 'INV-2026-003',
-        title: '在留資格変更許可申請手数料', invoiceType: 'ADMIN', status: 'DRAFT',
-        totalAmount: 110000, taxAmount: 10000, subtotal: 100000,
-        items: [{ description: '在留資格変更許可申請 報酬', quantity: 1, unitPrice: 100000, amount: 100000, taxRate: 10 }],
-      },
-      {
-        customerId: customerIds['C00002'], invoiceNumber: 'INV-2026-004',
-        title: '2026年3月記帳代行', invoiceType: 'TAX', status: 'SENT',
-        totalAmount: 33000, taxAmount: 3000, subtotal: 30000,
-        items: [{ description: '記帳代行 2026年3月', quantity: 1, unitPrice: 30000, amount: 30000, taxRate: 10 }],
-      },
-    ]
-
-    const invoiceIds: string[] = []
-    for (const inv of invoices) {
-      if (!inv.customerId) continue
-      const [inserted] = await qr.query(
-        `INSERT INTO invoices (id, customer_id, invoice_number, title, invoice_type, status, total_amount, tax_amount, subtotal, created_by)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9)
-         RETURNING id`,
-        [inv.customerId, inv.invoiceNumber, inv.title, inv.invoiceType, inv.status, inv.totalAmount, inv.taxAmount, inv.subtotal, userIds['yamamoto']],
-      )
-      invoiceIds.push(inserted.id)
-
-      for (const item of inv.items) {
-        await qr.query(
-          `INSERT INTO invoice_items (id, invoice_id, description, quantity, unit_price, amount, tax_rate)
-           VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)`,
-          [inserted.id, item.description, item.quantity, item.unitPrice, item.amount, item.taxRate],
-        )
-      }
-
-      console.log(`  Invoice "${inv.invoiceNumber} - ${inv.title}" created.`)
-    }
-
-    // ── 7. Create sample notes ──
-    console.log('Creating sample notes...')
-    const notes = [
-      { customerId: customerIds['P00001'], content: '初回面談実施。在留資格変更の要件を確認。', noteType: 'FOLLOW_UP' },
-      { customerId: customerIds['P00001'], content: '必要書類リストを送付済み。', noteType: 'MEMO' },
-      { customerId: customerIds['C00001'], content: '月次打ち合わせ。来期の節税対策について相談。', noteType: 'FOLLOW_UP' },
-      { customerId: customerIds['C00002'], content: '契約更新時期。来月確認予定。', noteType: 'GENERAL' },
-    ]
-
-    for (const n of notes) {
-      if (!n.customerId) continue
-      await qr.query(
-        `INSERT INTO notes (id, customer_id, content, note_type, created_by)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
-        [n.customerId, n.content, n.noteType, userIds['tanaka']],
-      )
-    }
-    console.log(`  ${notes.length} notes created.`)
-
-    await qr.commitTransaction()
-    console.log('\n=== Demo data seed completed ===')
-    console.log('\nTest accounts:')
-    console.log('  admin    / admin123   (管理者)')
-    console.log('  tanaka   / test1234   (業務スタッフ)')
-    console.log('  suzuki   / test1234   (業務スタッフ)')
-    console.log('  yamamoto / test1234   (財務担当)')
-  } catch (error) {
-    await qr.rollbackTransaction()
-    console.error('Demo seed failed, transaction rolled back:', error)
-    process.exit(1)
-  } finally {
-    await qr.release()
-    await ds.destroy()
+    seedDemoLogger.log(`Case "${adminCase.caseName}" created.`);
   }
 }
 
-seedDemo()
+/**
+ * 为企业客户写入税务顾问合同样本。
+ *
+ * @param queryRunner - 当前事务使用的查询执行器
+ * @param customerIds - 客户编码到主键的映射
+ * @param userIds - 用户名到主键的映射
+ * @returns 税务合同样本写入完成后结束
+ */
+async function seedTaxContracts(
+  queryRunner: QueryRunner,
+  customerIds: CustomerIdMap,
+  userIds: UserIdMap,
+): Promise<void> {
+  seedDemoLogger.log('Creating sample tax contracts...');
+
+  for (const contract of TAX_CONTRACT_TEMPLATES) {
+    const customerId = customerIds[contract.customerCode];
+
+    if (!customerId) {
+      continue;
+    }
+
+    const ownerId = userIds[contract.ownerUsername] ?? null;
+
+    await queryRunner.query(
+      `INSERT INTO tax_contracts (
+         id,
+         customer_id,
+         contract_name,
+         contract_status,
+         billing_cycle,
+         start_date,
+         end_date,
+         monthly_fee,
+         owner_user_id,
+         created_by
+       )
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [
+        customerId,
+        contract.contractName,
+        contract.contractStatus,
+        contract.billingCycle,
+        contract.startDate,
+        contract.endDate,
+        contract.monthlyFee,
+        ownerId,
+        ownerId,
+      ],
+    );
+
+    seedDemoLogger.log(`Tax contract "${contract.contractName}" created.`);
+  }
+}
+
+/**
+ * 写入带明细行的发票样本，覆盖税务与行政业务两类单据。
+ *
+ * @param queryRunner - 当前事务使用的查询执行器
+ * @param customerIds - 客户编码到主键的映射
+ * @param userIds - 用户名到主键的映射
+ * @returns 发票与发票明细样本写入完成后结束
+ * @throws {Error} 财务演示账号缺失时抛出异常
+ */
+async function seedInvoices(
+  queryRunner: QueryRunner,
+  customerIds: CustomerIdMap,
+  userIds: UserIdMap,
+): Promise<void> {
+  seedDemoLogger.log('Creating sample invoices...');
+
+  const createdBy = userIds.yamamoto;
+
+  if (!createdBy) {
+    throw new Error('Demo user "yamamoto" must exist before seeding invoices.');
+  }
+
+  for (const invoice of INVOICE_TEMPLATES) {
+    const customerId = customerIds[invoice.customerCode];
+
+    if (!customerId) {
+      continue;
+    }
+
+    const insertedRows = (await queryRunner.query(
+      `INSERT INTO invoices (
+         id,
+         customer_id,
+         invoice_number,
+         title,
+         invoice_type,
+         status,
+         total_amount,
+         tax_amount,
+         subtotal,
+         created_by
+       )
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id`,
+      [
+        customerId,
+        invoice.invoiceNumber,
+        invoice.title,
+        invoice.invoiceType,
+        invoice.status,
+        invoice.totalAmount,
+        invoice.taxAmount,
+        invoice.subtotal,
+        createdBy,
+      ],
+    )) as IdRow[];
+
+    const invoiceId = insertedRows[0].id;
+
+    for (const item of invoice.items) {
+      await queryRunner.query(
+        `INSERT INTO invoice_items (
+           id,
+           invoice_id,
+           description,
+           quantity,
+           unit_price,
+           amount,
+           tax_rate
+         )
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)`,
+        [
+          invoiceId,
+          item.description,
+          item.quantity,
+          item.unitPrice,
+          item.amount,
+          item.taxRate,
+        ],
+      );
+    }
+
+    seedDemoLogger.log(
+      `Invoice "${invoice.invoiceNumber} - ${invoice.title}" created.`,
+    );
+  }
+}
+
+/**
+ * 为演示客户补齐跟进记录与内部备注。
+ *
+ * @param queryRunner - 当前事务使用的查询执行器
+ * @param customerIds - 客户编码到主键的映射
+ * @param userIds - 用户名到主键的映射
+ * @returns 客户备注样本写入完成后结束
+ * @throws {Error} 业务演示账号缺失时抛出异常
+ */
+async function seedNotes(
+  queryRunner: QueryRunner,
+  customerIds: CustomerIdMap,
+  userIds: UserIdMap,
+): Promise<void> {
+  seedDemoLogger.log('Creating sample notes...');
+
+  const createdBy = userIds.tanaka;
+
+  if (!createdBy) {
+    throw new Error('Demo user "tanaka" must exist before seeding notes.');
+  }
+
+  let createdCount = 0;
+
+  for (const note of NOTE_TEMPLATES) {
+    const customerId = customerIds[note.customerCode];
+
+    if (!customerId) {
+      continue;
+    }
+
+    await queryRunner.query(
+      `INSERT INTO notes (id, customer_id, content, note_type, created_by)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4)`,
+      [customerId, note.content, note.noteType, createdBy],
+    );
+    createdCount += 1;
+  }
+
+  seedDemoLogger.log(`${createdCount} notes created.`);
+}
+
+/**
+ * 在单个事务内写入演示账号、客户、案件、合同、发票和备注样本。
+ *
+ * @returns 演示数据写入完成后结束
+ */
+async function seedDemo(): Promise<void> {
+  const dataSource = createAppDataSource(process.env, { logging: false });
+
+  await dataSource.initialize();
+  seedDemoLogger.log('Database connected.');
+
+  const queryRunner = dataSource.createQueryRunner();
+  await queryRunner.startTransaction();
+
+  try {
+    const roleIds = await fetchRoleIds(queryRunner);
+    const userIds = await seedTestUsers(queryRunner, roleIds);
+    const customerIds = await seedCustomers(queryRunner, userIds);
+
+    await seedAdminCases(queryRunner, customerIds, userIds);
+    await seedTaxContracts(queryRunner, customerIds, userIds);
+    await seedInvoices(queryRunner, customerIds, userIds);
+    await seedNotes(queryRunner, customerIds, userIds);
+
+    await queryRunner.commitTransaction();
+    seedDemoLogger.log('=== Demo data seed completed ===');
+    seedDemoLogger.log('Test accounts:');
+    seedDemoLogger.log('admin / admin123 (管理者)');
+    seedDemoLogger.log('tanaka / test1234 (業務スタッフ)');
+    seedDemoLogger.log('suzuki / test1234 (業務スタッフ)');
+    seedDemoLogger.log('yamamoto / test1234 (財務担当)');
+  } catch (error) {
+    await queryRunner.rollbackTransaction();
+    throw error;
+  } finally {
+    await queryRunner.release();
+    await dataSource.destroy();
+  }
+}
+
+seedDemo().catch((error: unknown) => {
+  const message = error instanceof Error ? error.message : '未知演示种子异常';
+  const stack = error instanceof Error ? error.stack : undefined;
+
+  seedDemoLogger.error(
+    `Demo seed failed and transaction rolled back: ${message}`,
+    stack,
+  );
+  process.exit(1);
+});

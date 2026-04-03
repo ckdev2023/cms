@@ -31,14 +31,21 @@
 
 ### 后端
 
-| 目录 | 说明 |
-|------|------|
-| `backend/src/modules/*/*.service.ts` | Service 类的所有 public 和 private 方法 |
-| `backend/src/modules/*/*.controller.ts` | Controller 类的路由处理方法 |
-| `backend/src/modules/auth/guards/` | Guard 的 `canActivate` 及辅助方法 |
-| `backend/src/common/interceptors/` | Interceptor 的 `intercept` 及辅助方法 |
-| `backend/src/common/helpers/` | Helper 类的所有静态/实例方法 |
-| `backend/src/common/filters/` | Exception filter 的 `catch` 及辅助方法 |
+| 目录 | 说明 | 门禁 |
+|------|------|------|
+| `backend/src/common/dto/` | DTO 类定义须有类级 JSDoc，说明该请求/查询对象承载的业务入参语义 | **error** — ESLint Layer 1 + Layer 2（类摘要质量） |
+| `backend/src/modules/admin-case/dto/` | 行政案件模块 DTO 类定义须有类级 JSDoc，说明案件、面谈与资料入参承载的业务语义 | **error** — ESLint Layer 1 + Layer 2（类摘要质量） |
+| `backend/src/modules/system/entities/` | 系统模块实体类定义须有类级 JSDoc，说明用户、角色等系统实体映射的业务对象与持久化边界 | **error** — ESLint Layer 1 + Layer 2（类摘要质量） |
+| `backend/src/common/entities/` | Entity 类定义须有类级 JSDoc，说明该实体映射的业务对象与持久化边界 | **error** — ESLint Layer 1 + Layer 2（类摘要质量） |
+| `backend/src/common/interfaces/` | 非 `index.ts` 的接口契约文件须有顶部说明注释，说明契约服务的复用边界与同步约束 | **error** — Layer 2 文件级检查 |
+| `backend/src/common/helpers/` | Helper 类的所有静态/实例方法 | **error** — ESLint Layer 1 + Layer 2 |
+| `backend/src/common/interceptors/` | Interceptor 的类声明、`intercept` 及辅助方法 | **error** — ESLint Layer 1 + Layer 2 |
+| `backend/src/common/filters/` | Exception filter 的类声明、`catch` 及辅助方法 | **error** — ESLint Layer 1 + Layer 2 |
+| `backend/src/modules/*/*.service.ts` | Service 类的所有 public 和 private 方法 | warn — ESLint Layer 1 + Layer 2 |
+| `backend/src/modules/*/*.controller.ts` | Controller 类的路由处理方法 | warn — ESLint Layer 1 + Layer 2 |
+| `backend/src/modules/auth/guards/` | Guard 的 `canActivate` 及辅助方法 | warn — ESLint Layer 1 + Layer 2 |
+| `backend/src/common/constants/` | 非 `index.ts` 常量文件顶部须有模块说明注释，说明该文件承载的业务常量范围与同步约束 | **error** — Layer 2 文件级检查 |
+| `backend/src/migrations/` | 迁移文件顶部须有说明注释，迁移类声明须有类级 JSDoc，说明本次 schema 变更范围与初始化/回滚边界 | **error** — ESLint Layer 1 + Layer 2（文件顶部说明） |
 
 ### 豁免项
 
@@ -51,6 +58,8 @@
 - 由框架签名严格约束且无额外逻辑的单行方法（如 NestJS 空 constructor）。
 - 纯翻译字典文件中的静态消息对象（如 `i18n/messages/*.ts` 的 locale 数据）。
 - `frontend/src/types/index.ts` 这类纯聚合导出文件。
+- `backend/src/common/constants/index.ts` 这类纯 re-export 文件。
+- `backend/src/migrations/` 中 TypeORM 生成的 `up` / `down` 方法本体；迁移目录仅强制文件顶部说明与类级 JSDoc。
 
 ## 必填字段
 
@@ -271,9 +280,66 @@ static success<T>(data: T, message = 'success'): IApiResponse<T> {
 - 仍需满足中文描述、最少 8 个有效字符、不得使用空泛词。
 - `index.ts` 纯 re-export 文件可省略。
 
+### 后端常量文件顶部说明
+
+`backend/src/common/constants/*.ts` 中承载枚举、错误码、权限码等公共契约的文件，须在首个导出声明之前放置顶部说明注释：
+
+```typescript
+/**
+ * 汇总系统权限编码常量并约束统一的 `module:action` 命名格式。
+ *
+ * 权限码须与初始化种子数据和前端权限点配置保持一致，避免路由鉴权与按钮鉴权出现漂移。
+ */
+```
+
+要求：
+
+- 说明该文件服务的业务常量范围，而不是重复"定义常量"这类空泛描述。
+- 如常量需要与种子数据、冻结文档、前端映射或外部接口同步，须在说明中写明同步约束。
+- `index.ts` 纯 re-export 文件可省略。
+
+### 后端接口契约文件顶部说明
+
+`backend/src/common/interfaces/*.ts` 中承载标准响应体、分页结果等公共类型契约的文件，须在首个导入或声明之前放置顶部说明注释：
+
+```typescript
+/**
+ * 定义后端标准接口响应体的统一契约结构。
+ *
+ * 该契约需与全局响应拦截器和响应辅助方法保持一致，避免控制器返回结构出现字段漂移。
+ */
+```
+
+要求：
+
+- 说明该文件服务的契约边界，而不是重复"定义接口"这类空泛描述。
+- 如契约需要与拦截器、辅助方法、前端类型或 API 文档同步，须在说明中写明同步约束。
+- `index.ts` 纯 re-export 文件可省略。
+
+### 后端迁移文件顶部说明
+
+`backend/src/migrations/*.ts` 中承载 schema 变更的迁移文件，须在首个导入之前放置顶部说明注释：
+
+```typescript
+/**
+ * 建立一期业务后台的初始数据库结构迁移。
+ *
+ * 该版本作为全新环境初始化 schema 的基线，覆盖权限、用户、客户、
+ * 税务、文件、开票收款与行政案件等核心业务表。
+ */
+```
+
+要求：
+
+- 说明本次迁移影响的业务范围，而不是重复"创建迁移"这类空泛描述。
+- 如迁移承担初始化基线、历史数据修订或回滚约束，须在说明中明确写出。
+- 迁移类声明仍需紧贴类级 JSDoc，概括本次 schema 变更意图。
+
 ### 位置
 
 JSDoc 注释块必须紧贴在函数/方法声明之前，中间不得有空行或其他语句。
+
+对于 `backend/src/common/dto/`、`backend/src/modules/admin-case/dto/`、`backend/src/modules/system/entities/`、`backend/src/common/entities/` 与 `backend/src/migrations/` 中的声明类，以及 `backend/src/common/interfaces/`、`backend/src/common/constants/` 中的文件顶部说明，JSDoc 注释块同样须紧贴在目标声明之前。
 
 ### 行宽
 
@@ -318,6 +384,7 @@ JSDoc 注释块必须紧贴在函数/方法声明之前，中间不得有空行�
 3. **参数覆盖**：每个非 `_` 前缀参数都有对应的 `@param` 行。
 4. **返回值覆盖**：非 void 返回的函数有 `@returns` 行。
 5. **异常覆盖**：函数体内包含 `throw` 语句时，有至少一个 `@throws` 行。
+6. **声明类摘要有效**：DTO / Entity 类的摘要须说明业务对象或契约边界，不得使用 `DTO`、`Entity`、`数据对象` 之类无信息量描述；同样适用于模块级实体目录（如 `modules/system/entities`）。
 
 ### 空泛词黑名单
 

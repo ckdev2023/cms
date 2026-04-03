@@ -1,3 +1,8 @@
+/**
+ * 汇总事務所管理系统各业务模块共用的状态枚举与分类枚举。
+ *
+ * 新增或调整枚举值时，须同步更新 `docs/17_业务口径冻结确认表.md` 中的冻结口径说明。
+ */
 export enum CustomerType {
   PERSONAL = 'PERSONAL',
   COMPANY = 'COMPANY',

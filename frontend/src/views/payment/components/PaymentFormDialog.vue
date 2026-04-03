@@ -1,19 +1,19 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
+import { Delete, Plus } from '@element-plus/icons-vue'
+import { ElMessage, type FormInstance, type FormRules } from 'element-plus'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { FormInstance, FormRules } from 'element-plus'
-import { ElMessage } from 'element-plus'
-import { Plus, Delete } from '@element-plus/icons-vue'
-import { PaymentMethod, InvoiceStatus } from '@/constants/enums'
-import { PaymentMethodLabel } from '@/constants/enum-labels'
-import { createPayment } from '@/api/payment'
+
 import { getCustomers } from '@/api/customer'
 import { getInvoices } from '@/api/invoice'
+import { createPayment } from '@/api/payment'
 import { useSubmitLock } from '@/composables/useSubmitLock'
-import { useLocaleFormatter } from '@/utils/locale-format'
+import { PaymentMethodLabel } from '@/constants/enum-labels'
+import { InvoiceStatus, PaymentMethod } from '@/constants/enums'
 import type { CustomerItem } from '@/types/customer'
 import type { InvoiceListItem } from '@/types/invoice'
 import type { CreatePaymentParams } from '@/types/payment'
+import { useLocaleFormatter } from '@/utils/locale-format'
 
 const props = defineProps<{
   modelValue: boolean
@@ -111,6 +111,9 @@ watch(
   },
 )
 
+/**
+ * 根据默认值重置收款表单，并清理校验状态。
+ */
 function resetForm() {
   form.customerId = props.defaultCustomerId ?? ''
   form.paymentDate = new Date().toISOString().slice(0, 10)
@@ -121,6 +124,11 @@ function resetForm() {
   nextTick(() => formRef.value?.clearValidate())
 }
 
+/**
+ * 按关键字拉取可选客户列表。
+ *
+ * @param query - 客户远程搜索输入关键字
+ */
 async function fetchCustomers(query: string) {
   customerLoading.value = true
   try {
@@ -131,6 +139,11 @@ async function fetchCustomers(query: string) {
   }
 }
 
+/**
+ * 根据当前客户加载可分配的发票列表。
+ *
+ * @param customerId - 当前选中的客户 ID
+ */
 async function fetchInvoices(customerId: string) {
   invoiceLoading.value = true
   try {
@@ -150,6 +163,9 @@ async function fetchInvoices(customerId: string) {
   }
 }
 
+/**
+ * 在分配表格中新增一条空白的发票分配行。
+ */
 function addAllocation() {
   form.allocations.push({
     invoiceId: '',
@@ -165,6 +181,11 @@ function removeAllocation(index: number) {
   form.allocations.splice(index, 1)
 }
 
+/**
+ * 选择发票后回填金额与剩余可分配额度。
+ *
+ * @param index - 当前分配行索引
+ */
 function onInvoiceSelect(index: number) {
   const row = form.allocations[index]
   const invoice = invoiceOptions.value.find((i) => i.id === row.invoiceId)
@@ -181,6 +202,12 @@ function onInvoiceSelect(index: number) {
   }
 }
 
+/**
+ * 过滤当前行可选的未重复发票。
+ *
+ * @param currentIndex - 当前编辑的分配行索引
+ * @returns 当前行允许选择的发票列表
+ */
 function getAvailableInvoices(currentIndex: number) {
   const selectedIds = new Set(
     form.allocations
@@ -191,6 +218,11 @@ function getAvailableInvoices(currentIndex: number) {
   return invoiceOptions.value.filter((inv) => !selectedIds.has(inv.id))
 }
 
+/**
+ * 组装新建收款接口需要的提交载荷。
+ *
+ * @returns 可直接传给收款创建接口的请求参数
+ */
 function buildPayload(): CreatePaymentParams {
   return {
     customerId: form.customerId,
@@ -205,6 +237,9 @@ function buildPayload(): CreatePaymentParams {
   }
 }
 
+/**
+ * 校验收款表单与发票分配后提交新增请求。
+ */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
   if (!valid) return

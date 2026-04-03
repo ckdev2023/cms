@@ -1,5 +1,7 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { setActivePinia, createPinia } from 'pinia'
+import { createPinia, setActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { getMe, login as loginApi, logout as logoutApi } from '@/api/auth'
 import { useUserStore } from '@/stores/user'
 
 vi.mock('@/api/auth', () => ({
@@ -7,8 +9,6 @@ vi.mock('@/api/auth', () => ({
   logout: vi.fn(),
   getMe: vi.fn(),
 }))
-
-import { login as loginApi, logout as logoutApi, getMe } from '@/api/auth'
 
 const mockLoginResponse = {
   code: 0,
@@ -41,13 +41,7 @@ const mockUserInfoResponse = {
   },
 }
 
-describe('useUserStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
-    localStorage.clear()
-    vi.clearAllMocks()
-  })
-
+function registerInitialStateTests(): void {
   describe('initial state', () => {
     it('should start with empty token and null userInfo', () => {
       const store = useUserStore()
@@ -64,7 +58,9 @@ describe('useUserStore', () => {
       expect(store.isLoggedIn).toBe(true)
     })
   })
+}
 
+function registerLoginTests(): void {
   describe('login', () => {
     it('should store token and user info on success', async () => {
       vi.mocked(loginApi).mockResolvedValue(mockLoginResponse)
@@ -89,7 +85,9 @@ describe('useUserStore', () => {
       expect(store.isLoggedIn).toBe(false)
     })
   })
+}
 
+function registerLogoutTests(): void {
   describe('logout', () => {
     it('should clear token and user info', async () => {
       vi.mocked(loginApi).mockResolvedValue(mockLoginResponse)
@@ -117,7 +115,9 @@ describe('useUserStore', () => {
       expect(localStorage.getItem('access_token')).toBeNull()
     })
   })
+}
 
+function registerFetchUserInfoTests(): void {
   describe('fetchUserInfo', () => {
     it('should populate userInfo from API', async () => {
       vi.mocked(getMe).mockResolvedValue(mockUserInfoResponse)
@@ -127,7 +127,9 @@ describe('useUserStore', () => {
       expect(store.userInfo).toEqual(mockUserInfoResponse.data)
     })
   })
+}
 
+function registerPermissionTests(): void {
   describe('permissions', () => {
     it('should compute permissions from userInfo', async () => {
       vi.mocked(loginApi).mockResolvedValue(mockLoginResponse)
@@ -147,7 +149,9 @@ describe('useUserStore', () => {
       expect(store.hasPermission('finance:create')).toBe(false)
     })
   })
+}
 
+function registerResetStateTests(): void {
   describe('resetState', () => {
     it('should clear all state and localStorage', async () => {
       vi.mocked(loginApi).mockResolvedValue(mockLoginResponse)
@@ -160,4 +164,21 @@ describe('useUserStore', () => {
       expect(localStorage.getItem('access_token')).toBeNull()
     })
   })
-})
+}
+
+function setupUserStoreSuite(): void {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    localStorage.clear()
+    vi.clearAllMocks()
+  })
+
+  registerInitialStateTests()
+  registerLoginTests()
+  registerLogoutTests()
+  registerFetchUserInfoTests()
+  registerPermissionTests()
+  registerResetStateTests()
+}
+
+describe('useUserStore', setupUserStoreSuite)

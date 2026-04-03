@@ -1,18 +1,20 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { Plus, Refresh, Search } from '@element-plus/icons-vue'
+import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { Plus, Search, Refresh } from '@element-plus/icons-vue'
+import { useRouter } from 'vue-router'
+
+import { getPayments } from '@/api/payment'
 import PageList from '@/components/PageList.vue'
 import ProTable from '@/components/ProTable.vue'
-import PaymentFormDialog from './components/PaymentFormDialog.vue'
-import { getPayments } from '@/api/payment'
 import { useProTable } from '@/composables/useProTable'
-import { PaymentStatus, PaymentMethod } from '@/constants/enums'
-import { PaymentStatusLabel, PaymentMethodLabel } from '@/constants/enum-labels'
-import { useLocaleFormatter } from '@/utils/locale-format'
+import { PaymentMethodLabel, PaymentStatusLabel } from '@/constants/enum-labels'
+import { PaymentMethod, PaymentStatus } from '@/constants/enums'
 import type { ProTableColumn } from '@/types/components'
 import type { PaymentListItem, PaymentQueryParams } from '@/types/payment'
+import { useLocaleFormatter } from '@/utils/locale-format'
+
+import PaymentFormDialog from './components/PaymentFormDialog.vue'
 
 defineOptions({ name: 'PaymentListView' })
 
@@ -79,14 +81,20 @@ function handleSaved() {
   fetchData()
 }
 
+/**
+ * 根据已填写的收款筛选条件刷新列表。
+ */
 function doSearch() {
-  const params: Record<string, any> = {}
+  const params: Partial<PaymentQueryParams> = {}
   if (searchForm.keyword) params.keyword = searchForm.keyword
   if (searchForm.status) params.status = searchForm.status
   if (searchForm.paymentMethod) params.paymentMethod = searchForm.paymentMethod
   handleSearch(params)
 }
 
+/**
+ * 清空收款筛选表单并恢复默认列表。
+ */
 function doReset() {
   searchForm.keyword = ''
   searchForm.status = undefined
@@ -94,8 +102,15 @@ function doReset() {
   handleReset()
 }
 
+/**
+ * 将表格排序字段同步到收款列表查询参数。
+ *
+ * @param sort - 表格组件返回的排序字段与排序方向
+ * @param sort.prop - 当前生效的排序字段
+ * @param sort.order - 当前生效的排序方向
+ */
 function handleSortChange(sort: { prop: string; order: string }) {
-  const params: Record<string, any> = {}
+  const params: Partial<PaymentQueryParams> = {}
   if (sort.prop && sort.order) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'

@@ -34,6 +34,9 @@ onMounted(() => {
   fetchFiles()
 })
 
+/**
+ * 按业务对象与关联记录刷新附件列表。
+ */
 async function fetchFiles() {
   loading.value = true
   try {
@@ -55,6 +58,11 @@ function handleClickUpload() {
   fileInputRef.value?.click()
 }
 
+/**
+ * 校验并上传用户本次选中的附件集合。
+ *
+ * @param e - 原生文件输入框触发的变更事件
+ */
 async function handleFileChange(e: Event) {
   const input = e.target as HTMLInputElement
   if (!input.files?.length) return
@@ -97,6 +105,11 @@ async function handleFileChange(e: Event) {
   }
 }
 
+/**
+ * 下载当前附件并在失败时提示用户。
+ *
+ * @param file - 需要下载的附件记录
+ */
 async function handleDownload(file: FileItem) {
   try {
     await downloadFile(file.id, file.fileName)
@@ -110,6 +123,11 @@ function handlePreview(file: FileItem) {
   previewVisible.value = true
 }
 
+/**
+ * 确认后删除当前附件并刷新列表。
+ *
+ * @param file - 需要删除的附件记录
+ */
 async function handleDelete(file: FileItem) {
   try {
     await ElMessageBox.confirm(
@@ -125,6 +143,12 @@ async function handleDelete(file: FileItem) {
   }
 }
 
+/**
+ * 将字节数转换为附件列表展示用的可读文本。
+ *
+ * @param bytes - 附件原始大小，可能为空
+ * @returns 适合表格展示的大小文本
+ */
 function formatSize(bytes: number | null): string {
   if (bytes === null || bytes === undefined) return '-'
   if (bytes < 1024) return `${bytes} B`

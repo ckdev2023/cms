@@ -1,6 +1,7 @@
 /**
- * Unified permission code constants.
- * Convention: `module:action` — keep in sync with seed data.
+ * 汇总系统权限编码常量并约束统一的 `module:action` 命名格式。
+ *
+ * 权限码须与初始化种子数据和前端权限点配置保持一致，避免路由鉴权与按钮鉴权出现漂移。
  */
 export const PermissionCodes = {
   CUSTOMER_LIST: 'customer:list',
@@ -40,7 +41,7 @@ export const PermissionCodes = {
   LOG_LIST: 'log:list',
 
   DASHBOARD_VIEW: 'dashboard:view',
-} as const
+} as const;
 
 export type PermissionCode =
-  (typeof PermissionCodes)[keyof typeof PermissionCodes]
+  (typeof PermissionCodes)[keyof typeof PermissionCodes];
