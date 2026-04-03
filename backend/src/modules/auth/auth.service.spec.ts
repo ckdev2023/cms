@@ -1,17 +1,86 @@
-import { Test, TestingModule } from '@nestjs/testing'
-import { getRepositoryToken } from '@nestjs/typeorm'
-import { JwtService } from '@nestjs/jwt'
-import { UnauthorizedException, BadRequestException } from '@nestjs/common'
-import * as bcrypt from 'bcryptjs'
-import { AuthService } from './auth.service'
-import { User } from './entities/user.entity'
-import { LoginLog } from '../log/entities/login-log.entity'
-import { UserStatus } from '../../common/constants/enums'
+import { BadRequestException, UnauthorizedException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import * as bcrypt from 'bcryptjs';
 
-const PASSWORD_HASH = bcrypt.hashSync('correct123', 10)
+import {
+  LoginType,
+  OperationResult,
+  PermissionType,
+  UserStatus,
+} from '../../common/constants/enums';
+import { LoginLog } from '../log/entities/login-log.entity';
+import { AuthService } from './auth.service';
+import { Permission } from './entities/permission.entity';
+import { Role } from './entities/role.entity';
+import { User } from './entities/user.entity';
+import type { JwtPayload } from './interfaces/jwt-payload.interface';
+
+const PASSWORD_HASH = bcrypt.hashSync('correct123', 10);
+
+type UserRepoMock = {
+  findOne: jest.Mock<Promise<User | null>, [unknown]>;
+  save: jest.Mock<Promise<User>, [User]>;
+};
+
+type LoginLogInput = Pick<
+  LoginLog,
+  | 'userId'
+  | 'username'
+  | 'loginType'
+  | 'result'
+  | 'failureReason'
+  | 'ipAddress'
+  | 'deviceInfo'
+>;
+
+type LoginLogRepoMock = {
+  create: jest.Mock<LoginLogInput, [LoginLogInput]>;
+  save: jest.Mock<Promise<void>, [LoginLogInput]>;
+};
+
+type JwtServiceMock = {
+  sign: jest.Mock<string, [JwtPayload]>;
+};
+
+let service: AuthService;
+let userRepo: UserRepoMock;
+let loginLogRepo: LoginLogRepoMock;
+let jwtService: JwtServiceMock;
+
+function createMockPermission(overrides: Partial<Permission> = {}): Permission {
+  return Object.assign(new Permission(), {
+    id: 'perm-1',
+    permissionCode: 'customer:list',
+    permissionName: '顧客一覧',
+    description: null,
+    permissionType: PermissionType.BUTTON,
+    module: 'customer',
+    sortOrder: 0,
+    createdAt: new Date(),
+    roles: [],
+    ...overrides,
+  });
+}
+
+function createMockRole(overrides: Partial<Role> = {}): Role {
+  return Object.assign(new Role(), {
+    id: 'role-1',
+    roleName: '業務スタッフ',
+    roleCode: 'STAFF',
+    description: null,
+    isSystem: true,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    users: [],
+    permissions: [createMockPermission()],
+    ...overrides,
+  });
+}
 
 function createMockUser(overrides: Partial<User> = {}): User {
-  return {
+  return Object.assign(new User(), {
     id: 'user-1',
     username: 'testuser',
     passwordHash: PASSWORD_HASH,
@@ -24,286 +93,286 @@ function createMockUser(overrides: Partial<User> = {}): User {
     createdAt: new Date(),
     updatedAt: new Date(),
     deletedAt: null,
-    roles: [
-      {
-        id: 'role-1',
-        roleName: '業務スタッフ',
-        roleCode: 'STAFF',
-        description: null,
-        isSystem: true,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        users: [],
-        permissions: [
-          {
-            id: 'perm-1',
-            permissionCode: 'customer:list',
-            permissionName: '顧客一覧',
-            description: null,
-            permissionType: 'BUTTON' as any,
-            module: 'customer',
-            sortOrder: 0,
-            createdAt: new Date(),
-            roles: [],
-          },
-        ],
-      },
-    ],
+    roles: [createMockRole()],
     ...overrides,
-  } as User
+  });
 }
 
-describe('AuthService', () => {
-  let service: AuthService
-  let userRepo: Record<string, jest.Mock>
-  let loginLogRepo: Record<string, jest.Mock>
-  let jwtService: Record<string, jest.Mock>
+async function createAuthTestingModule(): Promise<TestingModule> {
+  userRepo = {
+    findOne: jest.fn<Promise<User | null>, [unknown]>(),
+    save: jest
+      .fn<Promise<User>, [User]>()
+      .mockImplementation((user: User) => Promise.resolve(user)),
+  };
 
-  beforeEach(async () => {
-    userRepo = {
-      findOne: jest.fn(),
-      save: jest.fn().mockImplementation((u) => Promise.resolve(u)),
-    }
+  loginLogRepo = {
+    create: jest
+      .fn<LoginLogInput, [LoginLogInput]>()
+      .mockImplementation((data: LoginLogInput) => data),
+    save: jest
+      .fn<Promise<void>, [LoginLogInput]>()
+      .mockResolvedValue(undefined),
+  };
 
-    loginLogRepo = {
-      create: jest.fn().mockImplementation((d) => d),
-      save: jest.fn().mockResolvedValue(undefined),
-    }
+  jwtService = {
+    sign: jest.fn<string, [JwtPayload]>().mockReturnValue('mock-jwt-token'),
+  };
 
-    jwtService = {
-      sign: jest.fn().mockReturnValue('mock-jwt-token'),
-    }
+  return Test.createTestingModule({
+    providers: [
+      AuthService,
+      { provide: getRepositoryToken(User), useValue: userRepo },
+      { provide: getRepositoryToken(LoginLog), useValue: loginLogRepo },
+      { provide: JwtService, useValue: jwtService },
+    ],
+  }).compile();
+}
 
-    const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        AuthService,
-        { provide: getRepositoryToken(User), useValue: userRepo },
-        { provide: getRepositoryToken(LoginLog), useValue: loginLogRepo },
-        { provide: JwtService, useValue: jwtService },
-      ],
-    }).compile()
+function defineValidateUserHappyPathTests(): void {
+  it('returns user for valid credentials', async () => {
+    const mockUser = createMockUser();
+    userRepo.findOne.mockResolvedValue(mockUser);
 
-    service = module.get<AuthService>(AuthService)
-  })
+    const result = await service.validateUser('testuser', 'correct123');
 
+    expect(result).toBeDefined();
+    expect(result?.id).toBe('user-1');
+    expect(result?.failedLoginCount).toBe(0);
+  });
+
+  it('returns null for non-existent user', async () => {
+    userRepo.findOne.mockResolvedValue(null);
+
+    const result = await service.validateUser('nobody', 'password');
+
+    expect(result).toBeNull();
+    expect(loginLogRepo.save).toHaveBeenCalled();
+  });
+
+  it('returns null and increments failed count for wrong password', async () => {
+    const mockUser = createMockUser();
+    userRepo.findOne.mockResolvedValue(mockUser);
+
+    const result = await service.validateUser('testuser', 'wrongpass');
+    const savedUser = userRepo.save.mock.calls[0]?.[0];
+
+    expect(result).toBeNull();
+    expect(savedUser?.failedLoginCount).toBe(1);
+  });
+}
+
+function defineValidateUserLockTests(): void {
+  it('throws for inactive user', async () => {
+    const mockUser = createMockUser({ status: UserStatus.INACTIVE });
+    userRepo.findOne.mockResolvedValue(mockUser);
+
+    await expect(
+      service.validateUser('testuser', 'correct123'),
+    ).rejects.toThrow(UnauthorizedException);
+    await expect(
+      service.validateUser('testuser', 'correct123'),
+    ).rejects.toThrow('アカウントが無効です');
+  });
+
+  it('throws for locked account', async () => {
+    const future = new Date(Date.now() + 10 * 60 * 1000);
+    const mockUser = createMockUser({
+      failedLoginCount: 5,
+      lockedUntil: future,
+    });
+    userRepo.findOne.mockResolvedValue(mockUser);
+
+    await expect(
+      service.validateUser('testuser', 'correct123'),
+    ).rejects.toThrow(UnauthorizedException);
+    await expect(
+      service.validateUser('testuser', 'correct123'),
+    ).rejects.toThrow('アカウントがロックされています');
+  });
+
+  it('locks account after 5 failed attempts', async () => {
+    const mockUser = createMockUser({ failedLoginCount: 4 });
+    userRepo.findOne.mockResolvedValue(mockUser);
+
+    await expect(service.validateUser('testuser', 'wrongpass')).rejects.toThrow(
+      'ログイン試行回数が上限を超えました',
+    );
+
+    const savedUser = userRepo.save.mock.calls[0]?.[0];
+    expect(savedUser?.failedLoginCount).toBe(5);
+    expect(savedUser?.lockedUntil).toBeInstanceOf(Date);
+  });
+}
+
+function defineValidateUserResetTests(): void {
+  it('increments failed count from an existing value', async () => {
+    const mockUser = createMockUser({ failedLoginCount: 2 });
+    userRepo.findOne.mockResolvedValue(mockUser);
+
+    await service.validateUser('testuser', 'wrongpass');
+
+    const savedUser = userRepo.save.mock.calls[0]?.[0];
+    expect(savedUser?.failedLoginCount).toBe(3);
+  });
+
+  it('resets failed count on successful login', async () => {
+    const mockUser = createMockUser({ failedLoginCount: 3 });
+    userRepo.findOne.mockResolvedValue(mockUser);
+
+    const result = await service.validateUser('testuser', 'correct123');
+    const savedUser = userRepo.save.mock.calls[0]?.[0];
+
+    expect(result).toBeDefined();
+    expect(savedUser?.failedLoginCount).toBe(0);
+    expect(savedUser?.lockedUntil).toBeNull();
+  });
+
+  it('allows login after lock expires', async () => {
+    const past = new Date(Date.now() - 60 * 1000);
+    const mockUser = createMockUser({
+      failedLoginCount: 5,
+      lockedUntil: past,
+    });
+    userRepo.findOne.mockResolvedValue(mockUser);
+
+    const result = await service.validateUser('testuser', 'correct123');
+    const savedUser = userRepo.save.mock.calls[0]?.[0];
+
+    expect(result).toBeDefined();
+    expect(savedUser?.failedLoginCount).toBe(0);
+    expect(savedUser?.lockedUntil).toBeNull();
+  });
+}
+
+function defineValidateUserTests(): void {
   describe('validateUser', () => {
-    it('should return user for valid credentials', async () => {
-      const mockUser = createMockUser()
-      userRepo.findOne!.mockResolvedValue(mockUser)
+    defineValidateUserHappyPathTests();
+    defineValidateUserLockTests();
+    defineValidateUserResetTests();
+  });
+}
 
-      const result = await service.validateUser('testuser', 'correct123')
-      expect(result).toBeDefined()
-      expect(result!.id).toBe('user-1')
-      expect(result!.failedLoginCount).toBe(0)
-    })
-
-    it('should return null for non-existent user', async () => {
-      userRepo.findOne!.mockResolvedValue(null)
-
-      const result = await service.validateUser('nobody', 'password')
-      expect(result).toBeNull()
-      expect(loginLogRepo.save).toHaveBeenCalled()
-    })
-
-    it('should return null for wrong password', async () => {
-      const mockUser = createMockUser()
-      userRepo.findOne!.mockResolvedValue(mockUser)
-
-      const result = await service.validateUser('testuser', 'wrongpass')
-      expect(result).toBeNull()
-      expect(userRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ failedLoginCount: 1 }),
-      )
-    })
-
-    it('should throw for inactive user', async () => {
-      const mockUser = createMockUser({ status: UserStatus.INACTIVE })
-      userRepo.findOne!.mockResolvedValue(mockUser)
-
-      await expect(
-        service.validateUser('testuser', 'correct123'),
-      ).rejects.toThrow(UnauthorizedException)
-
-      await expect(
-        service.validateUser('testuser', 'correct123'),
-      ).rejects.toThrow('アカウントが無効です')
-    })
-
-    it('should throw for locked account', async () => {
-      const future = new Date(Date.now() + 10 * 60 * 1000)
-      const mockUser = createMockUser({
-        failedLoginCount: 5,
-        lockedUntil: future,
-      })
-      userRepo.findOne!.mockResolvedValue(mockUser)
-
-      await expect(
-        service.validateUser('testuser', 'correct123'),
-      ).rejects.toThrow(UnauthorizedException)
-
-      await expect(
-        service.validateUser('testuser', 'correct123'),
-      ).rejects.toThrow('アカウントがロックされています')
-    })
-
-    it('should increment failed count on wrong password', async () => {
-      const mockUser = createMockUser({ failedLoginCount: 2 })
-      userRepo.findOne!.mockResolvedValue(mockUser)
-
-      await service.validateUser('testuser', 'wrongpass')
-
-      expect(userRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ failedLoginCount: 3 }),
-      )
-    })
-
-    it('should lock account after 5 failed attempts', async () => {
-      const mockUser = createMockUser({ failedLoginCount: 4 })
-      userRepo.findOne!.mockResolvedValue(mockUser)
-
-      await expect(
-        service.validateUser('testuser', 'wrongpass'),
-      ).rejects.toThrow('ログイン試行回数が上限を超えました')
-
-      expect(userRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          failedLoginCount: 5,
-          lockedUntil: expect.any(Date),
-        }),
-      )
-    })
-
-    it('should reset failed count on successful login', async () => {
-      const mockUser = createMockUser({ failedLoginCount: 3 })
-      userRepo.findOne!.mockResolvedValue(mockUser)
-
-      const result = await service.validateUser('testuser', 'correct123')
-      expect(result).toBeDefined()
-      expect(userRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ failedLoginCount: 0, lockedUntil: null }),
-      )
-    })
-
-    it('should allow login after lock expires', async () => {
-      const past = new Date(Date.now() - 60 * 1000)
-      const mockUser = createMockUser({
-        failedLoginCount: 5,
-        lockedUntil: past,
-      })
-      userRepo.findOne!.mockResolvedValue(mockUser)
-
-      const result = await service.validateUser('testuser', 'correct123')
-      expect(result).toBeDefined()
-      expect(userRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ failedLoginCount: 0, lockedUntil: null }),
-      )
-    })
-  })
-
+function defineLoginTests(): void {
   describe('login', () => {
-    it('should return access token and user info', async () => {
-      const mockUser = createMockUser()
-      const result = await service.login(mockUser)
+    it('returns access token and user info', async () => {
+      const mockUser = createMockUser();
+      const result = await service.login(mockUser);
 
-      expect(result.accessToken).toBe('mock-jwt-token')
-      expect(result.user.id).toBe('user-1')
-      expect(result.user.username).toBe('testuser')
-      expect(result.user.roles).toEqual(['STAFF'])
-      expect(result.user.permissions).toContain('customer:list')
+      expect(result.accessToken).toBe('mock-jwt-token');
+      expect(result.user.id).toBe('user-1');
+      expect(result.user.username).toBe('testuser');
+      expect(result.user.roles).toEqual(['STAFF']);
+      expect(result.user.permissions).toContain('customer:list');
       expect(jwtService.sign).toHaveBeenCalledWith({
         sub: 'user-1',
         username: 'testuser',
-      })
-    })
+      });
+    });
 
-    it('should record login log', async () => {
-      const mockUser = createMockUser()
-      await service.login(mockUser, '127.0.0.1', 'TestAgent')
+    it('records login log with request metadata', async () => {
+      const mockUser = createMockUser();
+      await service.login(mockUser, '127.0.0.1', 'TestAgent');
 
-      expect(loginLogRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 'user-1',
-          username: 'testuser',
-          ipAddress: '127.0.0.1',
-          deviceInfo: 'TestAgent',
-        }),
-      )
-      expect(loginLogRepo.save).toHaveBeenCalled()
-    })
-  })
+      const logInput = loginLogRepo.create.mock.calls[0]?.[0];
+      expect(logInput?.userId).toBe('user-1');
+      expect(logInput?.username).toBe('testuser');
+      expect(logInput?.ipAddress).toBe('127.0.0.1');
+      expect(logInput?.deviceInfo).toBe('TestAgent');
+      expect(loginLogRepo.save).toHaveBeenCalled();
+    });
+  });
+}
 
+function defineProfileTests(): void {
   describe('getProfile', () => {
-    it('should return user info with roles and permissions', async () => {
-      const mockUser = createMockUser()
-      userRepo.findOne!.mockResolvedValue(mockUser)
+    it('returns user info with roles and permissions', async () => {
+      const mockUser = createMockUser();
+      userRepo.findOne.mockResolvedValue(mockUser);
 
-      const result = await service.getProfile('user-1')
-      expect(result.id).toBe('user-1')
-      expect(result.roles).toEqual(['STAFF'])
-      expect(result.permissions).toContain('customer:list')
-    })
+      const result = await service.getProfile('user-1');
 
-    it('should throw for non-existent user', async () => {
-      userRepo.findOne!.mockResolvedValue(null)
+      expect(result.id).toBe('user-1');
+      expect(result.roles).toEqual(['STAFF']);
+      expect(result.permissions).toContain('customer:list');
+    });
+
+    it('throws for non-existent user', async () => {
+      userRepo.findOne.mockResolvedValue(null);
 
       await expect(service.getProfile('nonexistent')).rejects.toThrow(
         UnauthorizedException,
-      )
-    })
-  })
+      );
+    });
+  });
+}
 
+function defineChangePasswordTests(): void {
   describe('changePassword', () => {
-    it('should change password successfully', async () => {
-      const mockUser = createMockUser()
-      userRepo.findOne!.mockResolvedValue(mockUser)
+    it('changes password successfully', async () => {
+      const mockUser = createMockUser();
+      userRepo.findOne.mockResolvedValue(mockUser);
 
-      await service.changePassword('user-1', 'correct123', 'newpass123')
+      await service.changePassword('user-1', 'correct123', 'newpass123');
 
-      expect(userRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          passwordHash: expect.not.stringContaining(PASSWORD_HASH),
-        }),
-      )
-    })
+      const savedUser = userRepo.save.mock.calls[0]?.[0];
+      expect(savedUser).toBeDefined();
+      expect(savedUser?.passwordHash).not.toBe(PASSWORD_HASH);
+      await expect(
+        bcrypt.compare('newpass123', savedUser?.passwordHash ?? ''),
+      ).resolves.toBe(true);
+    });
 
-    it('should throw for wrong old password', async () => {
-      const mockUser = createMockUser()
-      userRepo.findOne!.mockResolvedValue(mockUser)
+    it('throws for wrong old password', async () => {
+      const mockUser = createMockUser();
+      userRepo.findOne.mockResolvedValue(mockUser);
 
       await expect(
         service.changePassword('user-1', 'wrongold', 'newpass123'),
-      ).rejects.toThrow(BadRequestException)
-    })
+      ).rejects.toThrow(BadRequestException);
+    });
 
-    it('should throw for non-existent user', async () => {
-      userRepo.findOne!.mockResolvedValue(null)
+    it('throws for non-existent user', async () => {
+      userRepo.findOne.mockResolvedValue(null);
 
       await expect(
         service.changePassword('nonexistent', 'old', 'new123'),
-      ).rejects.toThrow(UnauthorizedException)
-    })
-  })
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+}
 
+function defineLogoutTests(): void {
   describe('logout', () => {
-    it('should record logout log', async () => {
-      const mockUser = createMockUser()
-      userRepo.findOne!.mockResolvedValue(mockUser)
+    it('records logout log', async () => {
+      const mockUser = createMockUser();
+      userRepo.findOne.mockResolvedValue(mockUser);
 
-      await service.logout('user-1')
+      await service.logout('user-1');
 
-      expect(loginLogRepo.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          userId: 'user-1',
-          loginType: 'LOGOUT',
-          result: 'SUCCESS',
-        }),
-      )
-    })
+      const logInput = loginLogRepo.create.mock.calls[0]?.[0];
+      expect(logInput?.userId).toBe('user-1');
+      expect(logInput?.loginType).toBe(LoginType.LOGOUT);
+      expect(logInput?.result).toBe(OperationResult.SUCCESS);
+    });
 
-    it('should not throw for non-existent user', async () => {
-      userRepo.findOne!.mockResolvedValue(null)
+    it('does not throw for non-existent user', async () => {
+      userRepo.findOne.mockResolvedValue(null);
 
-      await expect(service.logout('nonexistent')).resolves.toBeUndefined()
-    })
-  })
-})
+      await expect(service.logout('nonexistent')).resolves.toBeUndefined();
+    });
+  });
+}
+
+describe('AuthService', () => {
+  beforeEach(async () => {
+    const testingModule = await createAuthTestingModule();
+    service = testingModule.get<AuthService>(AuthService);
+  });
+
+  defineValidateUserTests();
+  defineLoginTests();
+  defineProfileTests();
+  defineChangePasswordTests();
+  defineLogoutTests();
+});
