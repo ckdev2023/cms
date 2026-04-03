@@ -1,53 +1,52 @@
-# 事務所管理システム
+# 事务所管理系统
 
-行政書士 + 税理士事務所向けの内部業務管理後台システム。
+面向行政书士与税理士事务所的内部业务管理后台。
 
-## プロジェクト構成
+## 项目结构
 
 ```
-├── frontend/    # Vue 3 + TypeScript + Element Plus 管理画面
-├── backend/     # NestJS + TypeORM + PostgreSQL API サーバー
-├── scripts/     # 初期化・マイグレーション・デプロイ補助スクリプト
-└── docs/        # 要件定義・設計・開発ドキュメント
+├── frontend/    # Vue 3 + TypeScript + Element Plus 管理端
+├── backend/     # NestJS + TypeORM + PostgreSQL API 服务
+├── scripts/     # 初始化、迁移、部署等辅助脚本
+└── docs/        # 需求、设计与开发文档
 ```
 
-## 技術スタック
+## 技术栈
 
-| レイヤー | 技術 |
+| 层级 | 技术 |
 | --- | --- |
-| フロントエンド | Vue 3, TypeScript, Vite, Element Plus, Pinia, Vue Router |
-| バックエンド | Node.js, NestJS, TypeORM |
-| データベース | PostgreSQL |
-| ファイル管理 | NAS / ローカルディレクトリ + DB メタデータ |
-| API | RESTful (`/api/v1`), Swagger/OpenAPI |
+| 前端 | Vue 3、TypeScript、Vite、Element Plus、Pinia、Vue Router |
+| 后端 | Node.js、NestJS、TypeORM |
+| 数据库 | PostgreSQL |
+| 文件管理 | NAS / 本地目录 + 数据库元数据 |
+| API | RESTful（`/api/v1`）、Swagger/OpenAPI |
 
-## クイックスタート
+## 快速开始
 
-### 前提条件
+### 环境要求
 
 - Node.js >= 20
 - PostgreSQL >= 15
 - npm >= 10
 
-### セットアップ
+### 安装与启动
 
 ```bash
-# フロントエンド
+# 前端
 cd frontend
 cp .env.example .env.local
 npm install
 npm run dev
 
-# バックエンド
+# 后端
 cd backend
 cp .env.example .env
 npm install
 npm run start:dev
 ```
 
-### アクセス
+### 访问地址
 
-- フロントエンド: http://localhost:5173
-- バックエンド API: http://localhost:3000/api/v1
-- Swagger ドキュメント: http://localhost:3000/api/docs
-```
+- 前端：http://localhost:5173
+- 后端 API：http://localhost:3000/api/v1
+- Swagger 文档：http://localhost:3000/api/docs
