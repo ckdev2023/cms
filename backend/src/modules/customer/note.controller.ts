@@ -1,31 +1,34 @@
 import {
-  Controller,
-  Get,
-  Post,
-  Put,
-  Delete,
   Body,
-  Param,
-  Query,
-  Req,
-  ParseUUIDPipe,
+  Controller,
+  Delete,
+  Get,
   HttpCode,
   HttpStatus,
-} from '@nestjs/common'
+  Param,
+  ParseUUIDPipe,
+  Post,
+  Put,
+  Query,
+  Req,
+} from '@nestjs/common';
 import {
-  ApiTags,
-  ApiOperation,
   ApiBearerAuth,
+  ApiOperation,
   ApiParam,
-} from '@nestjs/swagger'
-import type { Request } from 'express'
-import { NoteService } from './note.service'
-import { CreateNoteDto, UpdateNoteDto, QueryNoteDto } from './dto'
-import { Permissions } from '../auth/decorators'
-import { PermissionCodes } from '../../common/constants/permission-codes'
-import { ApiResponse } from '../../common/helpers/api-response.helper'
-import { AuditAction } from '../log/decorators'
-import { AuditActionType, AuditTargetType } from '../../common/constants/enums'
+  ApiTags,
+} from '@nestjs/swagger';
+import type { Request } from 'express';
+
+import { AuditActionType, AuditTargetType } from '../../common/constants/enums';
+import { PermissionCodes } from '../../common/constants/permission-codes';
+import { ApiResponse } from '../../common/helpers/api-response.helper';
+import { Permissions } from '../auth/decorators';
+import { AuditAction } from '../log/decorators';
+import { CreateNoteDto, QueryNoteDto, UpdateNoteDto } from './dto';
+import { NoteService } from './note.service';
+
+type AuthenticatedRequest = Request & { user: { id: string } };
 
 @ApiTags('顧客メモ')
 @Controller('customers/:customerId/notes')
@@ -33,21 +36,37 @@ import { AuditActionType, AuditTargetType } from '../../common/constants/enums'
 export class NoteController {
   constructor(private readonly noteService: NoteService) {}
 
+  /**
+   * 为指定客户新增备注并记录操作人。
+   *
+   * @param customerId - 路由中传入的客户主键 ID
+   * @param dto - 包含备注内容和类型的创建请求体
+   * @param req - 携带当前登录用户 ID 的认证请求对象
+   * @returns 新创建且带创建人信息的备注实体
+   */
   @Post()
   @Permissions(PermissionCodes.CUSTOMER_EDIT)
-  @AuditAction({ action: AuditActionType.CREATE, targetType: AuditTargetType.NOTE })
+  @AuditAction({
+    action: AuditActionType.CREATE,
+    targetType: AuditTargetType.NOTE,
+  })
   @ApiOperation({ summary: 'メモ新規作成' })
   @ApiParam({ name: 'customerId', type: 'string', format: 'uuid' })
   async create(
     @Param('customerId', ParseUUIDPipe) customerId: string,
     @Body() dto: CreateNoteDto,
-    @Req() req: Request,
+    @Req() req: AuthenticatedRequest,
   ) {
-    const userId = (req.user as { id: string }).id
-    const note = await this.noteService.create(customerId, dto, userId)
-    return note
+    return this.noteService.create(customerId, dto, req.user.id);
   }
 
+  /**
+   * 分页读取指定客户的备注列表。
+   *
+   * @param customerId - 路由中传入的客户主键 ID
+   * @param query - 备注分页、过滤与排序查询参数
+   * @returns 符合统一分页结构的备注列表响应体
+   */
   @Get()
   @Permissions(PermissionCodes.CUSTOMER_DETAIL)
   @ApiOperation({ summary: 'メモ一覧取得' })
@@ -56,15 +75,22 @@ export class NoteController {
     @Param('customerId', ParseUUIDPipe) customerId: string,
     @Query() query: QueryNoteDto,
   ) {
-    const result = await this.noteService.findAll(customerId, query)
+    const result = await this.noteService.findAll(customerId, query);
     return ApiResponse.paginated(
       result.items,
       result.total,
       result.page,
       result.pageSize,
-    )
+    );
   }
 
+  /**
+   * 读取单条客户备注详情。
+   *
+   * @param customerId - 路由中传入的客户主键 ID
+   * @param id - 备注主键 ID
+   * @returns 指定客户范围下的备注详情
+   */
   @Get(':id')
   @Permissions(PermissionCodes.CUSTOMER_DETAIL)
   @ApiOperation({ summary: 'メモ詳細取得' })
@@ -74,12 +100,23 @@ export class NoteController {
     @Param('customerId', ParseUUIDPipe) customerId: string,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    return this.noteService.findOne(customerId, id)
+    return this.noteService.findOne(customerId, id);
   }
 
+  /**
+   * 更新指定客户备注的内容或备注类型。
+   *
+   * @param customerId - 路由中传入的客户主键 ID
+   * @param id - 备注主键 ID
+   * @param dto - 备注更新请求体
+   * @returns 更新完成后的备注详情
+   */
   @Put(':id')
   @Permissions(PermissionCodes.CUSTOMER_EDIT)
-  @AuditAction({ action: AuditActionType.UPDATE, targetType: AuditTargetType.NOTE })
+  @AuditAction({
+    action: AuditActionType.UPDATE,
+    targetType: AuditTargetType.NOTE,
+  })
   @ApiOperation({ summary: 'メモ更新' })
   @ApiParam({ name: 'customerId', type: 'string', format: 'uuid' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
@@ -88,12 +125,22 @@ export class NoteController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateNoteDto,
   ) {
-    return this.noteService.update(customerId, id, dto)
+    return this.noteService.update(customerId, id, dto);
   }
 
+  /**
+   * 对指定客户备注执行逻辑删除。
+   *
+   * @param customerId - 路由中传入的客户主键 ID
+   * @param id - 备注主键 ID
+   * @returns 空响应体，表示逻辑删除已完成
+   */
   @Delete(':id')
   @Permissions(PermissionCodes.CUSTOMER_DELETE)
-  @AuditAction({ action: AuditActionType.DELETE, targetType: AuditTargetType.NOTE })
+  @AuditAction({
+    action: AuditActionType.DELETE,
+    targetType: AuditTargetType.NOTE,
+  })
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'メモ削除（論理削除）' })
   @ApiParam({ name: 'customerId', type: 'string', format: 'uuid' })
@@ -102,7 +149,7 @@ export class NoteController {
     @Param('customerId', ParseUUIDPipe) customerId: string,
     @Param('id', ParseUUIDPipe) id: string,
   ) {
-    await this.noteService.remove(customerId, id)
-    return null
+    await this.noteService.remove(customerId, id);
+    return null;
   }
 }

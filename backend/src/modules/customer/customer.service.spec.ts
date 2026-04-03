@@ -1,15 +1,16 @@
-import { Test, TestingModule } from '@nestjs/testing'
-import { getRepositoryToken } from '@nestjs/typeorm'
-import { NotFoundException, ConflictException } from '@nestjs/common'
-import { CustomerService } from './customer.service'
-import { Customer } from './entities/customer.entity'
-import { CompanyInfo } from './entities/company-info.entity'
-import { PersonInfo } from './entities/person-info.entity'
+import { ConflictException, NotFoundException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { getRepositoryToken } from '@nestjs/typeorm';
+
 import {
+  CustomerStatus,
   CustomerType,
   ServiceType,
-  CustomerStatus,
-} from '../../common/constants/enums'
+} from '../../common/constants/enums';
+import { CustomerService } from './customer.service';
+import { CompanyInfo } from './entities/company-info.entity';
+import { Customer } from './entities/customer.entity';
+import { PersonInfo } from './entities/person-info.entity';
 
 function createMockCustomer(overrides: Partial<Customer> = {}): Customer {
   return {
@@ -31,7 +32,7 @@ function createMockCustomer(overrides: Partial<Customer> = {}): Customer {
     owner: {
       id: 'user-1',
       displayName: 'テスト太郎',
-    } as any,
+    } as Customer['owner'],
     companyInfo: {
       id: 'ci-1',
       customerId: 'cust-1',
@@ -45,10 +46,12 @@ function createMockCustomer(overrides: Partial<Customer> = {}): Customer {
     notes: [],
     staffRelations: [],
     ...overrides,
-  } as Customer
+  } as Customer;
 }
 
-function createMockPersonalCustomer(overrides: Partial<Customer> = {}): Customer {
+function createMockPersonalCustomer(
+  overrides: Partial<Customer> = {},
+): Customer {
   return createMockCustomer({
     id: 'cust-2',
     customerCode: 'P00001',
@@ -65,36 +68,53 @@ function createMockPersonalCustomer(overrides: Partial<Customer> = {}): Customer
       updatedAt: new Date(),
     } as PersonInfo,
     ...overrides,
-  })
+  });
 }
 
 describe('CustomerService', () => {
-  let service: CustomerService
-  let customerRepo: Record<string, jest.Mock>
-  let companyInfoRepo: Record<string, jest.Mock>
-  let personInfoRepo: Record<string, jest.Mock>
+  let service: CustomerService;
+  let customerRepo: Record<string, jest.Mock>;
+  let companyInfoRepo: Record<string, jest.Mock>;
+  let personInfoRepo: Record<string, jest.Mock>;
 
   beforeEach(async () => {
     customerRepo = {
-      create: jest.fn().mockImplementation((d) => ({ ...d, id: 'cust-new' })),
-      save: jest.fn().mockImplementation((c) => Promise.resolve(c)),
+      create: jest
+        .fn()
+        .mockImplementation((data: Partial<Customer>): Customer => {
+          return { ...data, id: 'cust-new' } as Customer;
+        }),
+      save: jest
+        .fn()
+        .mockImplementation(
+          (customer: Customer): Promise<Customer> => Promise.resolve(customer),
+        ),
       findOne: jest.fn(),
       count: jest.fn().mockResolvedValue(0),
       softRemove: jest.fn().mockResolvedValue(undefined),
+      recover: jest.fn().mockResolvedValue(undefined),
       createQueryBuilder: jest.fn(),
-    }
+    };
 
     companyInfoRepo = {
-      create: jest.fn().mockImplementation((d) => d),
+      create: jest
+        .fn()
+        .mockImplementation(
+          (data: Partial<CompanyInfo>): Partial<CompanyInfo> => data,
+        ),
       save: jest.fn().mockResolvedValue(undefined),
       remove: jest.fn().mockResolvedValue(undefined),
-    }
+    };
 
     personInfoRepo = {
-      create: jest.fn().mockImplementation((d) => d),
+      create: jest
+        .fn()
+        .mockImplementation(
+          (data: Partial<PersonInfo>): Partial<PersonInfo> => data,
+        ),
       save: jest.fn().mockResolvedValue(undefined),
       remove: jest.fn().mockResolvedValue(undefined),
-    }
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -103,30 +123,30 @@ describe('CustomerService', () => {
         { provide: getRepositoryToken(CompanyInfo), useValue: companyInfoRepo },
         { provide: getRepositoryToken(PersonInfo), useValue: personInfoRepo },
       ],
-    }).compile()
+    }).compile();
 
-    service = module.get<CustomerService>(CustomerService)
-  })
+    service = module.get<CustomerService>(CustomerService);
+  });
 
   function setupCodeGenQueryBuilder(lastCustomer: Customer | null) {
     const qb = {
       where: jest.fn().mockReturnThis(),
       orderBy: jest.fn().mockReturnThis(),
       getOne: jest.fn().mockResolvedValue(lastCustomer),
-    }
-    customerRepo.createQueryBuilder.mockReturnValue(qb)
-    return qb
+    };
+    customerRepo.createQueryBuilder.mockReturnValue(qb);
+    return qb;
   }
 
   function setupFindOneAfterCreate(customer: Customer) {
-    customerRepo.findOne.mockResolvedValue(customer)
+    customerRepo.findOne.mockResolvedValue(customer);
   }
 
   describe('create', () => {
     it('should create a company customer with companyInfo', async () => {
-      const mockCreated = createMockCustomer()
-      setupCodeGenQueryBuilder(null)
-      setupFindOneAfterCreate(mockCreated)
+      const mockCreated = createMockCustomer();
+      setupCodeGenQueryBuilder(null);
+      setupFindOneAfterCreate(mockCreated);
 
       const result = await service.create(
         {
@@ -140,7 +160,7 @@ describe('CustomerService', () => {
           },
         },
         'user-1',
-      )
+      );
 
       expect(customerRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -148,22 +168,22 @@ describe('CustomerService', () => {
           customerName: 'テスト株式会社',
           customerCode: 'C00001',
         }),
-      )
-      expect(customerRepo.save).toHaveBeenCalled()
+      );
+      expect(customerRepo.save).toHaveBeenCalled();
       expect(companyInfoRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           corporationNumber: '1234567890123',
           fiscalMonth: 3,
         }),
-      )
-      expect(companyInfoRepo.save).toHaveBeenCalled()
-      expect(result).toBeDefined()
-    })
+      );
+      expect(companyInfoRepo.save).toHaveBeenCalled();
+      expect(result).toBeDefined();
+    });
 
     it('should create a personal customer with personInfo', async () => {
-      const mockCreated = createMockPersonalCustomer()
-      setupCodeGenQueryBuilder(null)
-      setupFindOneAfterCreate(mockCreated)
+      const mockCreated = createMockPersonalCustomer();
+      setupCodeGenQueryBuilder(null);
+      setupFindOneAfterCreate(mockCreated);
 
       const result = await service.create(
         {
@@ -177,26 +197,26 @@ describe('CustomerService', () => {
           },
         },
         'user-1',
-      )
+      );
 
       expect(customerRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           customerType: CustomerType.PERSONAL,
           customerCode: 'P00001',
         }),
-      )
+      );
       expect(personInfoRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({
           nationality: '日本',
         }),
-      )
-      expect(result).toBeDefined()
-    })
+      );
+      expect(result).toBeDefined();
+    });
 
     it('should auto-generate customer code with incrementing numbers', async () => {
-      const lastCust = createMockCustomer({ customerCode: 'C00005' })
-      setupCodeGenQueryBuilder(lastCust)
-      setupFindOneAfterCreate(createMockCustomer({ customerCode: 'C00006' }))
+      const lastCust = createMockCustomer({ customerCode: 'C00005' });
+      setupCodeGenQueryBuilder(lastCust);
+      setupFindOneAfterCreate(createMockCustomer({ customerCode: 'C00006' }));
 
       await service.create(
         {
@@ -205,16 +225,16 @@ describe('CustomerService', () => {
           serviceType: ServiceType.TAX,
         },
         'user-1',
-      )
+      );
 
       expect(customerRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ customerCode: 'C00006' }),
-      )
-    })
+      );
+    });
 
     it('should throw ConflictException for duplicate customer code', async () => {
-      setupCodeGenQueryBuilder(null)
-      customerRepo.count.mockResolvedValue(1)
+      setupCodeGenQueryBuilder(null);
+      customerRepo.count.mockResolvedValue(1);
 
       await expect(
         service.create(
@@ -225,12 +245,12 @@ describe('CustomerService', () => {
           },
           'user-1',
         ),
-      ).rejects.toThrow(ConflictException)
-    })
+      ).rejects.toThrow(ConflictException);
+    });
 
     it('should not create companyInfo for personal type', async () => {
-      setupCodeGenQueryBuilder(null)
-      setupFindOneAfterCreate(createMockPersonalCustomer())
+      setupCodeGenQueryBuilder(null);
+      setupFindOneAfterCreate(createMockPersonalCustomer());
 
       await service.create(
         {
@@ -240,38 +260,44 @@ describe('CustomerService', () => {
           companyInfo: { corporationNumber: '123' },
         },
         'user-1',
-      )
+      );
 
-      expect(companyInfoRepo.create).not.toHaveBeenCalled()
-    })
-  })
+      expect(companyInfoRepo.create).not.toHaveBeenCalled();
+    });
+  });
 
   describe('findOne', () => {
     it('should return customer with relations', async () => {
-      const mockCustomer = createMockCustomer()
-      customerRepo.findOne.mockResolvedValue(mockCustomer)
+      const mockCustomer = createMockCustomer();
+      customerRepo.findOne.mockResolvedValue(mockCustomer);
 
-      const result = await service.findOne('cust-1')
+      const result = await service.findOne('cust-1');
 
-      expect(result.id).toBe('cust-1')
+      expect(result.id).toBe('cust-1');
       expect(customerRepo.findOne).toHaveBeenCalledWith({
         where: { id: 'cust-1' },
-        relations: ['companyInfo', 'personInfo', 'owner', 'staffRelations', 'staffRelations.user'],
-      })
-    })
+        relations: [
+          'companyInfo',
+          'personInfo',
+          'owner',
+          'staffRelations',
+          'staffRelations.user',
+        ],
+      });
+    });
 
     it('should throw NotFoundException for non-existent customer', async () => {
-      customerRepo.findOne.mockResolvedValue(null)
+      customerRepo.findOne.mockResolvedValue(null);
 
       await expect(service.findOne('nonexistent')).rejects.toThrow(
         NotFoundException,
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe('findAll', () => {
     it('should return paginated results', async () => {
-      const mockCustomers = [createMockCustomer()]
+      const mockCustomers = [createMockCustomer()];
       const qb = {
         leftJoinAndSelect: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -279,16 +305,16 @@ describe('CustomerService', () => {
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([mockCustomers, 1]),
-      }
-      customerRepo.createQueryBuilder.mockReturnValue(qb)
+      };
+      customerRepo.createQueryBuilder.mockReturnValue(qb);
 
-      const result = await service.findAll({ page: 1, pageSize: 20 })
+      const result = await service.findAll({ page: 1, pageSize: 20 });
 
-      expect(result.items).toHaveLength(1)
-      expect(result.total).toBe(1)
-      expect(result.page).toBe(1)
-      expect(result.pageSize).toBe(20)
-    })
+      expect(result.items).toHaveLength(1);
+      expect(result.total).toBe(1);
+      expect(result.page).toBe(1);
+      expect(result.pageSize).toBe(20);
+    });
 
     it('should apply keyword filter', async () => {
       const qb = {
@@ -298,13 +324,13 @@ describe('CustomerService', () => {
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
-      }
-      customerRepo.createQueryBuilder.mockReturnValue(qb)
+      };
+      customerRepo.createQueryBuilder.mockReturnValue(qb);
 
-      await service.findAll({ keyword: 'テスト', page: 1, pageSize: 20 })
+      await service.findAll({ keyword: 'テスト', page: 1, pageSize: 20 });
 
-      expect(qb.andWhere).toHaveBeenCalled()
-    })
+      expect(qb.andWhere).toHaveBeenCalled();
+    });
 
     it('should apply type/service/status filters', async () => {
       const qb = {
@@ -314,8 +340,8 @@ describe('CustomerService', () => {
         skip: jest.fn().mockReturnThis(),
         take: jest.fn().mockReturnThis(),
         getManyAndCount: jest.fn().mockResolvedValue([[], 0]),
-      }
-      customerRepo.createQueryBuilder.mockReturnValue(qb)
+      };
+      customerRepo.createQueryBuilder.mockReturnValue(qb);
 
       await service.findAll({
         customerType: CustomerType.COMPANY,
@@ -323,48 +349,51 @@ describe('CustomerService', () => {
         status: CustomerStatus.ACTIVE,
         page: 1,
         pageSize: 10,
-      })
+      });
 
-      expect(qb.andWhere).toHaveBeenCalledTimes(3)
-    })
-  })
+      expect(qb.andWhere).toHaveBeenCalledTimes(3);
+    });
+  });
 
   describe('update', () => {
     it('should update basic customer fields', async () => {
-      const mockCustomer = createMockCustomer()
-      customerRepo.findOne.mockResolvedValue(mockCustomer)
+      const mockCustomer = createMockCustomer();
+      customerRepo.findOne.mockResolvedValue(mockCustomer);
 
-      await service.update('cust-1', { customerName: '更新テスト' }, 'user-2')
+      await service.update('cust-1', { customerName: '更新テスト' }, 'user-2');
 
       expect(customerRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({ customerName: '更新テスト', updatedBy: 'user-2' }),
-      )
-    })
+        expect.objectContaining({
+          customerName: '更新テスト',
+          updatedBy: 'user-2',
+        }),
+      );
+    });
 
     it('should update companyInfo for company type', async () => {
-      const mockCustomer = createMockCustomer()
-      customerRepo.findOne.mockResolvedValue(mockCustomer)
+      const mockCustomer = createMockCustomer();
+      customerRepo.findOne.mockResolvedValue(mockCustomer);
 
       await service.update(
         'cust-1',
         { companyInfo: { fiscalMonth: 12 } },
         'user-2',
-      )
+      );
 
-      expect(companyInfoRepo.save).toHaveBeenCalled()
-    })
+      expect(companyInfoRepo.save).toHaveBeenCalled();
+    });
 
     it('should throw NotFoundException when updating non-existent customer', async () => {
-      customerRepo.findOne.mockResolvedValue(null)
+      customerRepo.findOne.mockResolvedValue(null);
 
       await expect(
         service.update('nonexistent', { customerName: 'テスト' }, 'user-1'),
-      ).rejects.toThrow(NotFoundException)
-    })
+      ).rejects.toThrow(NotFoundException);
+    });
 
     it('should handle type change from company to personal', async () => {
-      const mockCustomer = createMockCustomer()
-      customerRepo.findOne.mockResolvedValue(mockCustomer)
+      const mockCustomer = createMockCustomer();
+      customerRepo.findOne.mockResolvedValue(mockCustomer);
 
       await service.update(
         'cust-1',
@@ -373,31 +402,69 @@ describe('CustomerService', () => {
           personInfo: { nationality: '日本' },
         },
         'user-1',
-      )
+      );
 
-      expect(companyInfoRepo.remove).toHaveBeenCalledWith(mockCustomer.companyInfo)
+      expect(companyInfoRepo.remove).toHaveBeenCalledWith(
+        mockCustomer.companyInfo,
+      );
       expect(personInfoRepo.create).toHaveBeenCalledWith(
         expect.objectContaining({ nationality: '日本' }),
-      )
-    })
-  })
+      );
+    });
+  });
 
   describe('remove', () => {
     it('should soft-delete a customer', async () => {
-      const mockCustomer = createMockCustomer()
-      customerRepo.findOne.mockResolvedValue(mockCustomer)
+      const mockCustomer = createMockCustomer();
+      customerRepo.findOne.mockResolvedValue(mockCustomer);
 
-      await service.remove('cust-1')
+      await service.remove('cust-1');
 
-      expect(customerRepo.softRemove).toHaveBeenCalledWith(mockCustomer)
-    })
+      expect(customerRepo.softRemove).toHaveBeenCalledWith(mockCustomer);
+    });
 
     it('should throw NotFoundException for non-existent customer', async () => {
-      customerRepo.findOne.mockResolvedValue(null)
+      customerRepo.findOne.mockResolvedValue(null);
 
       await expect(service.remove('nonexistent')).rejects.toThrow(
         NotFoundException,
-      )
-    })
-  })
-})
+      );
+    });
+  });
+
+  describe('restore', () => {
+    it('should recover a soft-deleted customer', async () => {
+      const deletedCustomer = createMockCustomer({
+        deletedAt: new Date('2026-01-01'),
+      });
+      const restoredCustomer = createMockCustomer({ deletedAt: null });
+      customerRepo.findOne
+        .mockResolvedValueOnce(deletedCustomer)
+        .mockResolvedValueOnce(restoredCustomer);
+
+      const result = await service.restore('cust-1');
+
+      expect(customerRepo.recover).toHaveBeenCalledWith(deletedCustomer);
+      expect(result).toEqual(restoredCustomer);
+    });
+
+    it('should throw NotFoundException when restoring a non-existent customer', async () => {
+      customerRepo.findOne.mockResolvedValue(null);
+
+      await expect(service.restore('nonexistent')).rejects.toThrow(
+        NotFoundException,
+      );
+    });
+
+    it('should throw NotFoundException when the customer is not deleted', async () => {
+      customerRepo.findOne.mockResolvedValue(
+        createMockCustomer({ deletedAt: null }),
+      );
+
+      await expect(service.restore('cust-1')).rejects.toThrow(
+        NotFoundException,
+      );
+      expect(customerRepo.recover).not.toHaveBeenCalled();
+    });
+  });
+});
