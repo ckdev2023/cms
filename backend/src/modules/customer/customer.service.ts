@@ -8,7 +8,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 
 import { CustomerType } from '../../common/constants/enums';
-import { CreateCustomerDto } from './dto/create-customer.dto';
+import {
+  CompanyInfoDto,
+  CreateCustomerDto,
+  PersonInfoDto,
+} from './dto/create-customer.dto';
 import { QueryCustomerDto } from './dto/query-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
 import { CompanyInfo } from './entities/company-info.entity';
@@ -60,6 +64,8 @@ const ALLOWED_SORT_FIELDS = [
   'updatedAt',
 ] as const;
 
+type AllowedSortField = (typeof ALLOWED_SORT_FIELDS)[number];
+
 @Injectable()
 export class CustomerService {
   private readonly logger = new Logger(CustomerService.name);
@@ -83,43 +89,9 @@ export class CustomerService {
    */
   async create(dto: CreateCustomerDto, userId?: string): Promise<Customer> {
     const customerCode = await this.generateCustomerCode(dto.customerType);
-
-    const customer = this.customerRepo.create({
-      customerCode,
-      customerType: dto.customerType,
-      customerName: dto.customerName,
-      phone: dto.phone ?? null,
-      email: dto.email ?? null,
-      address: dto.address ?? null,
-      serviceType: dto.serviceType,
-      ownerUserId: dto.ownerUserId ?? null,
-      createdBy: userId ?? null,
-      updatedBy: userId ?? null,
-    });
-
+    const customer = this.buildCustomerEntity(dto, customerCode, userId);
     const saved = await this.customerRepo.save(customer);
-
-    if (dto.customerType === CustomerType.COMPANY && dto.companyInfo) {
-      const ci = this.companyInfoRepo.create({
-        customerId: saved.id,
-        corporationNumber: dto.companyInfo.corporationNumber ?? null,
-        fiscalMonth: dto.companyInfo.fiscalMonth ?? null,
-        representativeName: dto.companyInfo.representativeName ?? null,
-      });
-      await this.companyInfoRepo.save(ci);
-    }
-
-    if (dto.customerType === CustomerType.PERSONAL && dto.personInfo) {
-      const pi = this.personInfoRepo.create({
-        customerId: saved.id,
-        nationality: dto.personInfo.nationality ?? null,
-        residenceStatus: dto.personInfo.residenceStatus ?? null,
-        residenceExpireDate: dto.personInfo.residenceExpireDate
-          ? new Date(dto.personInfo.residenceExpireDate)
-          : null,
-      });
-      await this.personInfoRepo.save(pi);
-    }
+    await this.createRelatedProfile(saved.id, dto);
 
     this.logger.log(
       `Customer "${saved.customerCode}" created by user ${userId}`,
@@ -182,8 +154,7 @@ export class CustomerService {
       });
     }
 
-    const orderField =
-      sortBy && ALLOWED_SORT_FIELDS.includes(sortBy) ? sortBy : 'createdAt';
+    const orderField = this.isAllowedSortField(sortBy) ? sortBy : 'createdAt';
     qb.orderBy(`c.${orderField}`, sortOrder);
 
     qb.skip((page - 1) * pageSize).take(pageSize);
@@ -239,100 +210,11 @@ export class CustomerService {
     userId?: string,
   ): Promise<Customer> {
     const customer = await this.findOne(id);
+    const targetType = dto.customerType ?? customer.customerType;
 
-    if (dto.customerName !== undefined)
-      customer.customerName = dto.customerName;
-    if (dto.phone !== undefined) customer.phone = dto.phone ?? null;
-    if (dto.email !== undefined) customer.email = dto.email ?? null;
-    if (dto.address !== undefined) customer.address = dto.address ?? null;
-    if (dto.serviceType !== undefined) customer.serviceType = dto.serviceType;
-    if (dto.ownerUserId !== undefined)
-      customer.ownerUserId = dto.ownerUserId ?? null;
-    customer.updatedBy = userId ?? null;
-
-    const typeChanged =
-      dto.customerType !== undefined &&
-      dto.customerType !== customer.customerType;
-
-    if (typeChanged) {
-      customer.customerType = dto.customerType!;
-
-      if (dto.customerType === CustomerType.COMPANY) {
-        if (customer.personInfo) {
-          await this.personInfoRepo.remove(customer.personInfo);
-        }
-        if (dto.companyInfo) {
-          const ci = this.companyInfoRepo.create({
-            customerId: id,
-            ...dto.companyInfo,
-          });
-          await this.companyInfoRepo.save(ci);
-        }
-      } else {
-        if (customer.companyInfo) {
-          await this.companyInfoRepo.remove(customer.companyInfo);
-        }
-        if (dto.personInfo) {
-          const pi = this.personInfoRepo.create({
-            customerId: id,
-            nationality: dto.personInfo.nationality ?? null,
-            residenceStatus: dto.personInfo.residenceStatus ?? null,
-            residenceExpireDate: dto.personInfo.residenceExpireDate
-              ? new Date(dto.personInfo.residenceExpireDate)
-              : null,
-          });
-          await this.personInfoRepo.save(pi);
-        }
-      }
-    } else {
-      if (customer.customerType === CustomerType.COMPANY && dto.companyInfo) {
-        if (customer.companyInfo) {
-          Object.assign(customer.companyInfo, {
-            corporationNumber:
-              dto.companyInfo.corporationNumber ??
-              customer.companyInfo.corporationNumber,
-            fiscalMonth:
-              dto.companyInfo.fiscalMonth ?? customer.companyInfo.fiscalMonth,
-            representativeName:
-              dto.companyInfo.representativeName ??
-              customer.companyInfo.representativeName,
-          });
-          await this.companyInfoRepo.save(customer.companyInfo);
-        } else {
-          const ci = this.companyInfoRepo.create({
-            customerId: id,
-            ...dto.companyInfo,
-          });
-          await this.companyInfoRepo.save(ci);
-        }
-      }
-
-      if (customer.customerType === CustomerType.PERSONAL && dto.personInfo) {
-        if (customer.personInfo) {
-          Object.assign(customer.personInfo, {
-            nationality:
-              dto.personInfo.nationality ?? customer.personInfo.nationality,
-            residenceStatus:
-              dto.personInfo.residenceStatus ??
-              customer.personInfo.residenceStatus,
-            residenceExpireDate: dto.personInfo.residenceExpireDate
-              ? new Date(dto.personInfo.residenceExpireDate)
-              : customer.personInfo.residenceExpireDate,
-          });
-          await this.personInfoRepo.save(customer.personInfo);
-        } else {
-          const pi = this.personInfoRepo.create({
-            customerId: id,
-            nationality: dto.personInfo.nationality ?? null,
-            residenceStatus: dto.personInfo.residenceStatus ?? null,
-            residenceExpireDate: dto.personInfo.residenceExpireDate
-              ? new Date(dto.personInfo.residenceExpireDate)
-              : null,
-          });
-          await this.personInfoRepo.save(pi);
-        }
-      }
-    }
+    this.applyBasicCustomerUpdates(customer, dto, userId);
+    await this.syncRelatedProfile(customer, id, dto, targetType);
+    customer.customerType = targetType;
 
     await this.customerRepo.save(customer);
     this.logger.log(
@@ -420,6 +302,322 @@ export class CustomerService {
     }
 
     return code;
+  }
+
+  /**
+   * 校验排序字段是否属于白名单，避免动态排序时注入非法列名。
+   *
+   * @param sortBy - 查询参数中的排序字段
+   * @returns 命中白名单时返回 true
+   */
+  private isAllowedSortField(sortBy?: string): sortBy is AllowedSortField {
+    return (
+      typeof sortBy === 'string' &&
+      ALLOWED_SORT_FIELDS.includes(sortBy as AllowedSortField)
+    );
+  }
+
+  /**
+   * 根据创建参数构建客户主实体，统一补齐审计字段与可空值。
+   *
+   * @param dto - 客户创建请求体
+   * @param customerCode - 已生成且通过唯一性校验的客户编码
+   * @param userId - 当前登录用户 ID
+   * @returns 可直接持久化的客户实体
+   */
+  private buildCustomerEntity(
+    dto: CreateCustomerDto,
+    customerCode: string,
+    userId?: string,
+  ): Customer {
+    return this.customerRepo.create({
+      customerCode,
+      customerType: dto.customerType,
+      customerName: dto.customerName,
+      phone: dto.phone ?? null,
+      email: dto.email ?? null,
+      address: dto.address ?? null,
+      serviceType: dto.serviceType,
+      ownerUserId: dto.ownerUserId ?? null,
+      createdBy: userId ?? null,
+      updatedBy: userId ?? null,
+    });
+  }
+
+  /**
+   * 在客户主档创建成功后补建公司或个人附属资料。
+   *
+   * @param customerId - 已保存客户的主键 ID
+   * @param dto - 客户创建请求体
+   */
+  private async createRelatedProfile(
+    customerId: string,
+    dto: CreateCustomerDto,
+  ): Promise<void> {
+    if (dto.customerType === CustomerType.COMPANY) {
+      await this.createCompanyInfoIfProvided(customerId, dto.companyInfo);
+      return;
+    }
+
+    await this.createPersonInfoIfProvided(customerId, dto.personInfo);
+  }
+
+  /**
+   * 将更新请求中的基础字段合并到客户实体。
+   *
+   * @param customer - 当前数据库中的客户实体
+   * @param dto - 局部更新请求体
+   * @param userId - 当前登录用户 ID
+   */
+  private applyBasicCustomerUpdates(
+    customer: Customer,
+    dto: UpdateCustomerDto,
+    userId?: string,
+  ): void {
+    if (dto.customerName !== undefined) {
+      customer.customerName = dto.customerName;
+    }
+
+    if (dto.phone !== undefined) {
+      customer.phone = dto.phone ?? null;
+    }
+
+    if (dto.email !== undefined) {
+      customer.email = dto.email ?? null;
+    }
+
+    if (dto.address !== undefined) {
+      customer.address = dto.address ?? null;
+    }
+
+    if (dto.serviceType !== undefined) {
+      customer.serviceType = dto.serviceType;
+    }
+
+    if (dto.ownerUserId !== undefined) {
+      customer.ownerUserId = dto.ownerUserId ?? null;
+    }
+
+    customer.updatedBy = userId ?? null;
+  }
+
+  /**
+   * 按更新后的客户类型同步附属资料，覆盖类型切换与同类型增量更新两种场景。
+   *
+   * @param customer - 当前数据库中的客户实体
+   * @param customerId - 客户主键 ID
+   * @param dto - 局部更新请求体
+   * @param targetType - 本次更新后应生效的客户类型
+   */
+  private async syncRelatedProfile(
+    customer: Customer,
+    customerId: string,
+    dto: UpdateCustomerDto,
+    targetType: CustomerType,
+  ): Promise<void> {
+    if (targetType !== customer.customerType) {
+      await this.rebuildRelatedProfile(customer, customerId, dto, targetType);
+      return;
+    }
+
+    await this.updateExistingRelatedProfile(
+      customer,
+      customerId,
+      dto,
+      targetType,
+    );
+  }
+
+  /**
+   * 在客户类型发生切换时清理旧附属资料并重建新类型所需档案。
+   *
+   * @param customer - 当前数据库中的客户实体
+   * @param customerId - 客户主键 ID
+   * @param dto - 局部更新请求体
+   * @param targetType - 目标客户类型
+   */
+  private async rebuildRelatedProfile(
+    customer: Customer,
+    customerId: string,
+    dto: UpdateCustomerDto,
+    targetType: CustomerType,
+  ): Promise<void> {
+    if (targetType === CustomerType.COMPANY) {
+      await this.removePersonInfoIfExists(customer);
+      await this.createCompanyInfoIfProvided(customerId, dto.companyInfo);
+      return;
+    }
+
+    await this.removeCompanyInfoIfExists(customer);
+    await this.createPersonInfoIfProvided(customerId, dto.personInfo);
+  }
+
+  /**
+   * 在客户类型未变化时按需更新对应的公司或个人附属资料。
+   *
+   * @param customer - 当前数据库中的客户实体
+   * @param customerId - 客户主键 ID
+   * @param dto - 局部更新请求体
+   * @param targetType - 当前客户类型
+   */
+  private async updateExistingRelatedProfile(
+    customer: Customer,
+    customerId: string,
+    dto: UpdateCustomerDto,
+    targetType: CustomerType,
+  ): Promise<void> {
+    if (targetType === CustomerType.COMPANY && dto.companyInfo) {
+      await this.upsertCompanyInfo(
+        customerId,
+        customer.companyInfo,
+        dto.companyInfo,
+      );
+      return;
+    }
+
+    if (targetType === CustomerType.PERSONAL && dto.personInfo) {
+      await this.upsertPersonInfo(
+        customerId,
+        customer.personInfo,
+        dto.personInfo,
+      );
+    }
+  }
+
+  /**
+   * 在需要时创建公司附属资料记录。
+   *
+   * @param customerId - 客户主键 ID
+   * @param companyInfo - 公司补充资料
+   */
+  private async createCompanyInfoIfProvided(
+    customerId: string,
+    companyInfo?: CompanyInfoDto,
+  ): Promise<void> {
+    if (!companyInfo) {
+      return;
+    }
+
+    const createdCompanyInfo = this.companyInfoRepo.create({
+      customerId,
+      corporationNumber: companyInfo.corporationNumber ?? null,
+      fiscalMonth: companyInfo.fiscalMonth ?? null,
+      representativeName: companyInfo.representativeName ?? null,
+    });
+    await this.companyInfoRepo.save(createdCompanyInfo);
+  }
+
+  /**
+   * 在需要时创建个人附属资料记录。
+   *
+   * @param customerId - 客户主键 ID
+   * @param personInfo - 个人补充资料
+   */
+  private async createPersonInfoIfProvided(
+    customerId: string,
+    personInfo?: PersonInfoDto,
+  ): Promise<void> {
+    if (!personInfo) {
+      return;
+    }
+
+    const createdPersonInfo = this.personInfoRepo.create({
+      customerId,
+      nationality: personInfo.nationality ?? null,
+      residenceStatus: personInfo.residenceStatus ?? null,
+      residenceExpireDate: this.parseResidenceExpireDate(
+        personInfo.residenceExpireDate,
+      ),
+    });
+    await this.personInfoRepo.save(createdPersonInfo);
+  }
+
+  /**
+   * 删除客户当前绑定的公司档案，避免类型切换后遗留脏数据。
+   *
+   * @param customer - 当前数据库中的客户实体
+   */
+  private async removeCompanyInfoIfExists(customer: Customer): Promise<void> {
+    if (customer.companyInfo) {
+      await this.companyInfoRepo.remove(customer.companyInfo);
+    }
+  }
+
+  /**
+   * 删除客户当前绑定的个人档案，避免类型切换后遗留脏数据。
+   *
+   * @param customer - 当前数据库中的客户实体
+   */
+  private async removePersonInfoIfExists(customer: Customer): Promise<void> {
+    if (customer.personInfo) {
+      await this.personInfoRepo.remove(customer.personInfo);
+    }
+  }
+
+  /**
+   * 对公司附属资料执行更新或补建，确保空值字段按既有值回退。
+   *
+   * @param customerId - 客户主键 ID
+   * @param existingCompanyInfo - 当前已存在的公司档案
+   * @param companyInfo - 本次请求提交的公司资料
+   */
+  private async upsertCompanyInfo(
+    customerId: string,
+    existingCompanyInfo: CompanyInfo | null,
+    companyInfo: CompanyInfoDto,
+  ): Promise<void> {
+    if (!existingCompanyInfo) {
+      await this.createCompanyInfoIfProvided(customerId, companyInfo);
+      return;
+    }
+
+    Object.assign(existingCompanyInfo, {
+      corporationNumber:
+        companyInfo.corporationNumber ?? existingCompanyInfo.corporationNumber,
+      fiscalMonth: companyInfo.fiscalMonth ?? existingCompanyInfo.fiscalMonth,
+      representativeName:
+        companyInfo.representativeName ??
+        existingCompanyInfo.representativeName,
+    });
+    await this.companyInfoRepo.save(existingCompanyInfo);
+  }
+
+  /**
+   * 对个人附属资料执行更新或补建，并统一处理日期字段转换。
+   *
+   * @param customerId - 客户主键 ID
+   * @param existingPersonInfo - 当前已存在的个人档案
+   * @param personInfo - 本次请求提交的个人资料
+   */
+  private async upsertPersonInfo(
+    customerId: string,
+    existingPersonInfo: PersonInfo | null,
+    personInfo: PersonInfoDto,
+  ): Promise<void> {
+    if (!existingPersonInfo) {
+      await this.createPersonInfoIfProvided(customerId, personInfo);
+      return;
+    }
+
+    Object.assign(existingPersonInfo, {
+      nationality: personInfo.nationality ?? existingPersonInfo.nationality,
+      residenceStatus:
+        personInfo.residenceStatus ?? existingPersonInfo.residenceStatus,
+      residenceExpireDate:
+        this.parseResidenceExpireDate(personInfo.residenceExpireDate) ??
+        existingPersonInfo.residenceExpireDate,
+    });
+    await this.personInfoRepo.save(existingPersonInfo);
+  }
+
+  /**
+   * 将个人资料中的日期字符串安全转换为日期对象，便于仓储统一写入。
+   *
+   * @param residenceExpireDate - 请求体中的在留期限字符串
+   * @returns 转换后的日期对象，缺失时返回 null
+   */
+  private parseResidenceExpireDate(residenceExpireDate?: string): Date | null {
+    return residenceExpireDate ? new Date(residenceExpireDate) : null;
   }
 
   /**
