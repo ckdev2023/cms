@@ -177,7 +177,11 @@ const rules = computed<FormRules>(() => ({
 const personalColumnDisabled = computed(() => isEdit.value && form.customerType === CustomerType.COMPANY)
 const companyColumnDisabled = computed(() => isEdit.value && form.customerType === CustomerType.PERSONAL)
 
-/** 判断公司扩展栏位是否至少填写了一个有效字段。 */
+/**
+ * 判断公司扩展栏位是否至少填写了一个有效字段。
+ *
+ * @returns 公司扩展字段中存在至少一个非空有效值时返回 `true`
+ */
 function hasCompanyExtension(): boolean {
   return !!(
     form.corporationNumber?.trim() ||
@@ -186,7 +190,11 @@ function hasCompanyExtension(): boolean {
   )
 }
 
-/** 判断个人扩展栏位是否至少填写了一个有效字段。 */
+/**
+ * 判断个人扩展栏位是否至少填写了一个有效字段。
+ *
+ * @returns 个人扩展字段中存在至少一个非空有效值时返回 `true`
+ */
 function hasPersonExtension(): boolean {
   return !!(
     form.nationality?.trim() ||
