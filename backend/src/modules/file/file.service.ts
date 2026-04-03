@@ -75,7 +75,7 @@ interface FileTransferInfo {
   mimeType: string;
 }
 
-interface FileResponseDto {
+export interface FileResponseDto {
   id: string;
   customerId: string | null;
   businessType: BusinessType;
@@ -85,13 +85,13 @@ interface FileResponseDto {
   fileExt: string | null;
   fileSize: number | null;
   mimeType: string | null;
-  uploadedBy: string;
+  uploadedBy: string | null;
   uploaderName: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface FileListResult {
+export interface FileListResult {
   items: FileResponseDto[];
   total: number;
   page: number;

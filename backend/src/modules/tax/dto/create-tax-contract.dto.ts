@@ -48,10 +48,10 @@ export class CreateTaxContractDto {
   @IsDateString({}, { message: '開始日の形式が無効です' })
   startDate: string;
 
-  @ApiPropertyOptional({ example: '2027-03-31' })
+  @ApiPropertyOptional({ example: '2027-03-31', nullable: true })
   @IsOptional()
   @IsDateString({}, { message: '終了日の形式が無効です' })
-  endDate?: string;
+  endDate?: string | null;
 
   @ApiPropertyOptional({ example: 50000 })
   @IsOptional()

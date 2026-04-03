@@ -1,40 +1,44 @@
 import {
-  Entity,
   Column,
-  ManyToMany,
-  JoinTable,
   CreateDateColumn,
-  UpdateDateColumn,
+  Entity,
+  JoinTable,
+  ManyToMany,
   PrimaryGeneratedColumn,
-} from 'typeorm'
-import { User } from './user.entity'
-import { Permission } from './permission.entity'
+  UpdateDateColumn,
+} from 'typeorm';
 
+import { Permission } from './permission.entity';
+import { User } from './user.entity';
+
+/**
+ * 定义系统角色的持久化实体，并维护角色与用户、权限之间的关联关系。
+ */
 @Entity('roles')
 export class Role {
   @PrimaryGeneratedColumn('uuid')
-  id: string
+  id: string;
 
   @Column({ type: 'varchar', length: 50 })
-  roleName: string
+  roleName: string;
 
   @Column({ type: 'varchar', length: 50, unique: true })
-  roleCode: string
+  roleCode: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  description: string | null
+  description: string | null;
 
   @Column({ type: 'boolean', default: false })
-  isSystem: boolean
+  isSystem: boolean;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date
+  createdAt: Date;
 
   @UpdateDateColumn({ type: 'timestamptz' })
-  updatedAt: Date
+  updatedAt: Date;
 
   @ManyToMany(() => User, (user) => user.roles)
-  users: User[]
+  users: User[];
 
   @ManyToMany(() => Permission, (permission) => permission.roles, {
     eager: false,
@@ -47,5 +51,5 @@ export class Role {
       referencedColumnName: 'id',
     },
   })
-  permissions: Permission[]
+  permissions: Permission[];
 }

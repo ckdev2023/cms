@@ -1,42 +1,46 @@
 import {
-  Entity,
   Column,
-  ManyToMany,
   CreateDateColumn,
-  PrimaryGeneratedColumn,
+  Entity,
   Index,
-} from 'typeorm'
-import { PermissionType } from '../../../common/constants/enums'
-import { Role } from './role.entity'
+  ManyToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 
+import { PermissionType } from '../../../common/constants/enums';
+import { Role } from './role.entity';
+
+/**
+ * 定义系统权限点的持久化实体，并维护权限与角色的多对多关联关系。
+ */
 @Entity('permissions')
 export class Permission {
   @PrimaryGeneratedColumn('uuid')
-  id: string
+  id: string;
 
   @Column({ type: 'varchar', length: 100, unique: true })
-  permissionCode: string
+  permissionCode: string;
 
   @Column({ type: 'varchar', length: 100 })
-  permissionName: string
+  permissionName: string;
 
   @Column({ type: 'varchar', length: 255, nullable: true })
-  description: string | null
+  description: string | null;
 
   @Index()
   @Column({ type: 'varchar', length: 20 })
-  permissionType: PermissionType
+  permissionType: PermissionType;
 
   @Index()
   @Column({ type: 'varchar', length: 50 })
-  module: string
+  module: string;
 
   @Column({ type: 'int', default: 0 })
-  sortOrder: number
+  sortOrder: number;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  createdAt: Date
+  createdAt: Date;
 
   @ManyToMany(() => Role, (role) => role.permissions)
-  roles: Role[]
+  roles: Role[];
 }

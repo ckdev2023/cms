@@ -1,4 +1,4 @@
-import type { Repository, SelectQueryBuilder } from 'typeorm';
+import type { ObjectLiteral, Repository, SelectQueryBuilder } from 'typeorm';
 
 import {
   BillingCycle,
@@ -22,7 +22,7 @@ export type MockCompletedByUser = NonNullable<
   TaxMonthlyWorkItem['completedByUser']
 >;
 
-export type TaxRepositoryMock<TEntity> = {
+export type TaxRepositoryMock<TEntity extends ObjectLiteral> = {
   create: jest.Mock<TEntity, [MockCreateInput]>;
   save: jest.Mock<Promise<TEntity | TEntity[]>, [TEntity | TEntity[]]>;
   findOne: jest.Mock<Promise<TEntity | null>, [object]>;
@@ -52,7 +52,7 @@ export type TaxServiceTestContext = {
   workItemRepo: TaxRepositoryMock<TaxMonthlyWorkItem>;
 };
 
-function createRepositoryMock<TEntity>(
+function createRepositoryMock<TEntity extends ObjectLiteral>(
   generatedId: string,
 ): TaxRepositoryMock<TEntity> {
   return {
@@ -61,7 +61,7 @@ function createRepositoryMock<TEntity>(
         ({
           ...data,
           id: generatedId,
-        }) as TEntity,
+        }) as unknown as TEntity,
     ),
     save: jest
       .fn<Promise<TEntity | TEntity[]>, [TEntity | TEntity[]]>()
