@@ -42,9 +42,9 @@ export type AdminCaseInterviewDto = {
 export type AdminCaseDocumentFileDto = {
   id: string;
   fileName: string;
-  fileExt: string;
+  fileExt: string | null;
   fileSize: number | null;
-  mimeType: string;
+  mimeType: string | null;
   description: string | null;
   uploaderName: string | null;
   createdAt: Date;

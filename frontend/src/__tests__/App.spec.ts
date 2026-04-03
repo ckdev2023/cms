@@ -1,12 +1,23 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
+import { createPinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
 
 import App from '../App.vue'
+import { i18n } from '../i18n'
+
+vi.mock('vue-router', () => ({
+  useRoute: () => ({
+    meta: {},
+  }),
+}))
 
 describe('App', () => {
   it('renders without crashing', () => {
+    const pinia = createPinia()
+
     const wrapper = mount(App, {
       global: {
+        plugins: [pinia, i18n],
         stubs: ['router-view'],
       },
     })

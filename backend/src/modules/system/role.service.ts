@@ -11,19 +11,19 @@ import { Permission } from '../auth/entities/permission.entity';
 import { Role } from '../auth/entities/role.entity';
 import { CreateRoleDto, QueryRoleDto, UpdateRoleDto } from './dto';
 
-interface RolePermissionSummary {
+export interface RolePermissionSummary {
   id: string;
   permissionCode: string;
   permissionName: string;
   module: string;
 }
 
-interface GroupedPermissionNode {
+export interface GroupedPermissionNode {
   module: string;
   children: RolePermissionSummary[];
 }
 
-interface RoleResponse {
+export interface RoleResponse {
   id: string;
   roleName: string;
   roleCode: string;
@@ -35,7 +35,7 @@ interface RoleResponse {
   updatedAt: Date;
 }
 
-interface RoleListResult {
+export interface RoleListResult {
   items: RoleResponse[];
   total: number;
   page: number;

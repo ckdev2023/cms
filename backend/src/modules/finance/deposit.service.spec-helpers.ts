@@ -41,14 +41,8 @@ export type DepositMockManager = {
     Promise<DepositAccount | Invoice | null>,
     [typeof DepositAccount | typeof Invoice, object]
   >;
-  create: jest.Mock<
-    Record<string, unknown>,
-    [unknown, Record<string, unknown>]
-  >;
-  save: jest.Mock<
-    Promise<Record<string, unknown>>,
-    [unknown, Record<string, unknown>]
-  >;
+  create: jest.Mock<object, [unknown, object]>;
+  save: jest.Mock<Promise<object>, [unknown, object]>;
   createQueryBuilder: jest.Mock<
     SelectQueryBuilder<DepositTransaction>,
     [typeof DepositTransaction, string]
@@ -157,19 +151,21 @@ export function createDepositContext(): DepositServiceContext {
       [typeof DepositAccount | typeof Invoice, object]
     >(),
     create: jest
-      .fn<Record<string, unknown>, [unknown, Record<string, unknown>]>()
+      .fn<object, [unknown, object]>()
       .mockImplementation((_entity, data) => data),
     save: jest
-      .fn<
-        Promise<Record<string, unknown>>,
-        [unknown, Record<string, unknown>]
-      >()
-      .mockImplementation((_entity, data) =>
-        Promise.resolve({
-          ...data,
-          id: typeof data.id === 'string' ? data.id : 'generated-uuid',
-        }),
-      ),
+      .fn<Promise<object>, [unknown, object]>()
+      .mockImplementation((_entity, data) => {
+        const entityRecord = data as Record<string, unknown>;
+
+        return Promise.resolve({
+          ...entityRecord,
+          id:
+            typeof entityRecord.id === 'string'
+              ? entityRecord.id
+              : 'generated-uuid',
+        });
+      }),
     createQueryBuilder: jest
       .fn<
         SelectQueryBuilder<DepositTransaction>,

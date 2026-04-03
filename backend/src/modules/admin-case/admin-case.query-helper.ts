@@ -1,4 +1,8 @@
-import { Brackets, type SelectQueryBuilder } from 'typeorm';
+import {
+  Brackets,
+  type ObjectLiteral,
+  type SelectQueryBuilder,
+} from 'typeorm';
 
 import type { QueryAdminCaseDto } from './dto/query-admin-case.dto';
 import type { QueryInterviewDto } from './dto/query-interview.dto';
@@ -137,7 +141,7 @@ function applyAdminCaseInterviewFilters(
  * @param page - 当前页码
  * @param pageSize - 每页大小
  */
-function applyPagination<Entity>(
+function applyPagination<Entity extends ObjectLiteral>(
   qb: SelectQueryBuilder<Entity>,
   page: number,
   pageSize: number,

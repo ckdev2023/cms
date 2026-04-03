@@ -1,4 +1,9 @@
-import { DataSource, type Repository, type SelectQueryBuilder } from 'typeorm';
+import {
+  DataSource,
+  type ObjectLiteral,
+  type Repository,
+  type SelectQueryBuilder,
+} from 'typeorm';
 
 import {
   InvoiceStatus,
@@ -38,7 +43,7 @@ export type MockQueryBuilder<TEntity, TRaw = unknown> = {
   getRawMany: jest.Mock<Promise<TRaw[]>, []>;
 };
 
-export type MockEntityRepository<TEntity> = {
+export type MockEntityRepository<TEntity extends ObjectLiteral> = {
   createQueryBuilder: jest.Mock<SelectQueryBuilder<TEntity>, [string?]>;
 };
 
@@ -48,14 +53,8 @@ export type MockManager = {
     Promise<Invoice | Payment | null>,
     [typeof Invoice | typeof Payment, object]
   >;
-  create: jest.Mock<
-    Record<string, unknown>,
-    [unknown, Record<string, unknown>]
-  >;
-  save: jest.Mock<
-    Promise<Record<string, unknown>>,
-    [unknown, Record<string, unknown>]
-  >;
+  create: jest.Mock<object, [unknown, object]>;
+  save: jest.Mock<Promise<object>, [unknown, object]>;
   remove: jest.Mock<Promise<void>, [unknown, PaymentAllocation[]]>;
   getRepository: jest.Mock<MockEntityRepository<Payment>, [unknown]>;
 };
@@ -196,7 +195,7 @@ export function createMockQueryBuilder<TEntity, TRaw = unknown>(options?: {
   return qb;
 }
 
-export function toSelectQueryBuilder<TEntity>(
+export function toSelectQueryBuilder<TEntity extends ObjectLiteral>(
   qb: MockQueryBuilder<TEntity>,
 ): SelectQueryBuilder<TEntity> {
   return qb as unknown as SelectQueryBuilder<TEntity>;
@@ -211,27 +210,31 @@ export function createContext(): ServiceContext {
       [typeof Invoice | typeof Payment, object]
     >(),
     create: jest
-      .fn<Record<string, unknown>, [unknown, Record<string, unknown>]>()
+      .fn<object, [unknown, object]>()
       .mockImplementation((_entity, data) => data),
     save: jest
-      .fn<
-        Promise<Record<string, unknown>>,
-        [unknown, Record<string, unknown>]
-      >()
-      .mockImplementation((_entity, data) =>
-        Promise.resolve({
-          ...data,
-          id: typeof data.id === 'string' ? data.id : 'generated-uuid',
-        }),
-      ),
+      .fn<Promise<object>, [unknown, object]>()
+      .mockImplementation((_entity, data) => {
+        const entityRecord = data as Record<string, unknown>;
+
+        return Promise.resolve({
+          ...entityRecord,
+          id:
+            typeof entityRecord.id === 'string'
+              ? entityRecord.id
+              : 'generated-uuid',
+        });
+      }),
     remove: jest
       .fn<Promise<void>, [unknown, PaymentAllocation[]]>()
       .mockResolvedValue(undefined),
-    getRepository: jest.fn(() => ({
-      createQueryBuilder: jest
-        .fn<SelectQueryBuilder<Payment>, [string?]>()
-        .mockReturnValue(toSelectQueryBuilder(paymentNumberQb)),
-    })),
+    getRepository: jest
+      .fn<MockEntityRepository<Payment>, [unknown]>()
+      .mockImplementation((_entity) => ({
+        createQueryBuilder: jest
+          .fn<SelectQueryBuilder<Payment>, [string?]>()
+          .mockReturnValue(toSelectQueryBuilder(paymentNumberQb)),
+      })),
   };
 
   const mockQueryRunner: MockQueryRunner = {

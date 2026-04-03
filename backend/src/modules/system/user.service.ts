@@ -13,13 +13,13 @@ import { Role } from '../auth/entities/role.entity';
 import { User } from '../auth/entities/user.entity';
 import { CreateUserDto, QueryUserDto, UpdateUserDto } from './dto';
 
-interface UserRoleSummary {
+export interface UserRoleSummary {
   id: string;
   roleName: string;
   roleCode: string;
 }
 
-interface UserResponse {
+export interface UserResponse {
   id: string;
   username: string;
   displayName: string;
@@ -31,7 +31,7 @@ interface UserResponse {
   updatedAt: Date;
 }
 
-interface UserListResult {
+export interface UserListResult {
   items: UserResponse[];
   total: number;
   page: number;
