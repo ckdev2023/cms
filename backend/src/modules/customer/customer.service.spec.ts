@@ -201,7 +201,7 @@ function registerCreateGuardTests(context: CustomerServiceTestContext): void {
     ).rejects.toThrow(ConflictException);
   });
 
-  it('should not create companyInfo for personal type', async () => {
+  it('should create companyInfo when company payload has content even if customerType is personal', async () => {
     context.setupCodeGenQueryBuilder(null);
     context.setupFindOneAfterCreate(createMockPersonalCustomer());
 
@@ -210,12 +210,53 @@ function registerCreateGuardTests(context: CustomerServiceTestContext): void {
         customerType: CustomerType.PERSONAL,
         customerName: '個人テスト',
         serviceType: ServiceType.ADMIN,
-        companyInfo: { corporationNumber: '123' },
+        companyInfo: { corporationNumber: '1234567890123' },
       },
       'user-1',
     );
 
-    expect(context.getCompanyInfoRepo().create).not.toHaveBeenCalled();
+    expect(context.getCompanyInfoRepo().create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        corporationNumber: '1234567890123',
+      }),
+    );
+    expect(context.getCompanyInfoRepo().save).toHaveBeenCalled();
+  });
+
+  it('should create both companyInfo and personInfo when both payloads have content', async () => {
+    const mockCreated = createMockCustomer({
+      personInfo: { id: 'pi-2', customerId: 'cust-new' } as PersonInfo,
+    });
+    context.setupCodeGenQueryBuilder(null);
+    context.setupFindOneAfterCreate(mockCreated);
+
+    await context.getService().create(
+      {
+        customerType: CustomerType.COMPANY,
+        customerName: '代表兼法人',
+        serviceType: ServiceType.BOTH,
+        companyInfo: {
+          corporationNumber: '1234567890123',
+          fiscalMonth: 3,
+          representativeName: '代表太郎',
+        },
+        personInfo: {
+          nationality: '中国',
+          residenceStatus: '技術・人文知識・国際業務',
+          residenceExpireDate: '2030-01-01',
+        },
+      },
+      'user-1',
+    );
+
+    expect(context.getCompanyInfoRepo().create).toHaveBeenCalled();
+    expect(context.getCompanyInfoRepo().save).toHaveBeenCalled();
+    expect(context.getPersonInfoRepo().create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nationality: '中国',
+      }),
+    );
+    expect(context.getPersonInfoRepo().save).toHaveBeenCalled();
   });
 }
 

@@ -5,7 +5,7 @@ import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { createCustomer, updateCustomer } from '@/api/customer'
-import { CustomerTypeLabel, ServiceTypeLabel } from '@/constants/enum-labels'
+import { ServiceTypeLabel } from '@/constants/enum-labels'
 import { CustomerType, ServiceType } from '@/constants/enums'
 import type { CreateCustomerParams, CustomerItem } from '@/types/customer'
 
@@ -72,7 +72,7 @@ type PersonFormValues = Pick<
  */
 function createDefaultFormModel(): FormModel {
   return {
-    customerType: CustomerType.COMPANY,
+    customerType: CustomerType.PERSONAL,
     customerName: '',
     phone: '',
     email: '',
@@ -141,7 +141,6 @@ function buildPersonFormValues(data: CustomerItem): PersonFormValues {
 const form = reactive<FormModel>(createDefaultFormModel())
 
 const rules = computed<FormRules>(() => ({
-  customerType: [{ required: true, message: t('common.selectField', { field: t('dialogs.customerForm.customerType') }), trigger: 'change' }],
   customerName: [
     { required: true, message: t('common.enterField', { field: t('dialogs.customerForm.customerName') }), trigger: 'blur' },
     { max: 200, message: t('validation.maxChars', { max: 200 }), trigger: 'blur' },
@@ -149,16 +148,65 @@ const rules = computed<FormRules>(() => ({
   serviceType: [{ required: true, message: t('common.selectField', { field: t('dialogs.customerForm.serviceType') }), trigger: 'change' }],
   email: [{ type: 'email', message: t('validation.invalidEmail'), trigger: 'blur' }],
   fiscalMonth: [
-    { type: 'number', min: 1, max: 12, message: t('validation.numberRange', { min: 1, max: 12 }), trigger: 'blur' },
+    {
+      validator: (_rule, value, callback) => {
+        const companySideActive =
+          hasCompanyExtension() ||
+          (isEdit.value && form.customerType === CustomerType.COMPANY)
+        if (!companySideActive) {
+          callback()
+          return
+        }
+        if (value === undefined || value === null || value === '') {
+          callback()
+          return
+        }
+        const n = Number(value)
+        if (Number.isNaN(n) || n < 1 || n > 12) {
+          callback(new Error(t('validation.numberRange', { min: 1, max: 12 })))
+          return
+        }
+        callback()
+      },
+      trigger: 'blur',
+    },
   ],
 }))
 
-const isCompany = computed(() => form.customerType === CustomerType.COMPANY)
+/** 编辑时仅允许改与当前客户类型一致的一栏；新建时两栏可同时填写并一并提交 */
+const personalColumnDisabled = computed(() => isEdit.value && form.customerType === CustomerType.COMPANY)
+const companyColumnDisabled = computed(() => isEdit.value && form.customerType === CustomerType.PERSONAL)
 
-const customerTypeOptions = Object.entries(CustomerTypeLabel).map(([value, label]) => ({
-  value,
-  label,
-}))
+/** 判断公司扩展栏位是否至少填写了一个有效字段。 */
+function hasCompanyExtension(): boolean {
+  return !!(
+    form.corporationNumber?.trim() ||
+    form.representativeName?.trim() ||
+    (form.fiscalMonth !== undefined && form.fiscalMonth !== null)
+  )
+}
+
+/** 判断个人扩展栏位是否至少填写了一个有效字段。 */
+function hasPersonExtension(): boolean {
+  return !!(
+    form.nationality?.trim() ||
+    form.residenceStatus?.trim() ||
+    (
+      form.residenceExpireDate !== undefined &&
+      form.residenceExpireDate !== null &&
+      String(form.residenceExpireDate).trim() !== ''
+    )
+  )
+}
+
+/**
+ * 新建时根据已填写的扩展字段推导客户类型。
+ *
+ * @returns 存在公司扩展字段时返回法人类型，否则返回个人类型
+ */
+function resolveCreateCustomerType(): CustomerType {
+  return hasCompanyExtension() ? CustomerType.COMPANY : CustomerType.PERSONAL
+}
 
 const serviceTypeOptions = Object.entries(ServiceTypeLabel).map(([value, label]) => ({
   value,
@@ -178,6 +226,30 @@ watch(
       })
     }
   },
+)
+
+/**
+ * 将待编辑客户数据展开到表单模型，兼容公司客户和个人客户字段。
+ *
+ * @param data - 当前正在编辑的客户记录
+ */
+watch(
+  () => [
+    form.corporationNumber,
+    form.representativeName,
+    form.fiscalMonth,
+    form.nationality,
+    form.residenceStatus,
+    form.residenceExpireDate,
+    form.customerType,
+  ],
+  () => {
+    if (!props.modelValue) return
+    nextTick(() => {
+      formRef.value?.clearValidate(['fiscalMonth', 'corporationNumber', 'representativeName', 'nationality', 'residenceStatus', 'residenceExpireDate'])
+    })
+  },
+  { deep: true },
 )
 
 /**
@@ -211,7 +283,7 @@ function resetForm() {
  */
 function buildPayload(): CreateCustomerParams {
   const payload: CreateCustomerParams = {
-    customerType: form.customerType,
+    customerType: isEdit.value ? form.customerType : resolveCreateCustomerType(),
     customerName: form.customerName,
     serviceType: form.serviceType,
   }
@@ -221,12 +293,16 @@ function buildPayload(): CreateCustomerParams {
   if (form.address) payload.address = form.address
   if (form.ownerUserId) payload.ownerUserId = form.ownerUserId
 
-  if (isCompany.value) {
+  if (hasCompanyExtension()) {
     payload.companyInfo = {}
     if (form.corporationNumber) payload.companyInfo.corporationNumber = form.corporationNumber
-    if (form.fiscalMonth) payload.companyInfo.fiscalMonth = form.fiscalMonth
+    if (form.fiscalMonth !== undefined && form.fiscalMonth !== null) {
+      payload.companyInfo.fiscalMonth = form.fiscalMonth
+    }
     if (form.representativeName) payload.companyInfo.representativeName = form.representativeName
-  } else {
+  }
+
+  if (hasPersonExtension()) {
     payload.personInfo = {}
     if (form.nationality) payload.personInfo.nationality = form.nationality
     if (form.residenceStatus) payload.personInfo.residenceStatus = form.residenceStatus
@@ -275,7 +351,8 @@ function handleClose() {
   <el-dialog
     :model-value="modelValue"
     :title="dialogTitle"
-    width="680px"
+    width="960px"
+    class="customer-form-dialog"
     destroy-on-close
     @close="handleClose"
   >
@@ -286,18 +363,6 @@ function handleClose() {
       label-width="120px"
       label-position="right"
     >
-      <el-form-item :label="t('dialogs.customerForm.customerType')" prop="customerType">
-        <el-radio-group v-model="form.customerType" :disabled="isEdit">
-          <el-radio-button
-            v-for="opt in customerTypeOptions"
-            :key="opt.value"
-            :value="opt.value"
-          >
-            {{ opt.label }}
-          </el-radio-button>
-        </el-radio-group>
-      </el-form-item>
-
       <el-form-item :label="t('dialogs.customerForm.customerName')" prop="customerName">
         <el-input
           v-model="form.customerName"
@@ -338,58 +403,101 @@ function handleClose() {
         </el-select>
       </el-form-item>
 
-      <el-divider content-position="left">
-        {{ isCompany ? t('dialogs.customerForm.companyInfo') : t('dialogs.customerForm.personalInfo') }}
-      </el-divider>
-
-      <template v-if="isCompany">
-        <el-form-item :label="t('dialogs.customerForm.corporationNumber')" prop="corporationNumber">
-          <el-input v-model="form.corporationNumber" :placeholder="t('dialogs.customerForm.corporationNumber')" maxlength="50" />
-        </el-form-item>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item :label="t('dialogs.customerForm.fiscalMonth')" prop="fiscalMonth">
-              <el-input-number
-                v-model="form.fiscalMonth"
-                :min="1"
-                :max="12"
-                :placeholder="t('dialogs.customerForm.month')"
-                controls-position="right"
-                style="width: 100%"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item :label="t('dialogs.customerForm.representativeName')" prop="representativeName">
-              <el-input v-model="form.representativeName" :placeholder="t('dialogs.customerForm.representativeName')" maxlength="120" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-      </template>
-
-      <template v-else>
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item :label="t('dialogs.customerForm.nationality')" prop="nationality">
-              <el-input v-model="form.nationality" :placeholder="t('dialogs.customerForm.nationality')" maxlength="80" />
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
-            <el-form-item :label="t('dialogs.customerForm.residenceStatus')" prop="residenceStatus">
-              <el-input v-model="form.residenceStatus" :placeholder="t('dialogs.customerForm.residenceStatus')" maxlength="100" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item :label="t('dialogs.customerForm.residenceExpireDate')" prop="residenceExpireDate">
-          <el-date-picker
-            v-model="form.residenceExpireDate"
-            type="date"
-            :placeholder="t('common.selectField', { field: t('dialogs.customerForm.residenceExpireDate') })"
-            value-format="YYYY-MM-DD"
-            style="width: 100%"
-          />
-        </el-form-item>
-      </template>
+      <el-row :gutter="20" class="customer-form-dialog__extension">
+        <el-col :xs="24" :md="12">
+          <div
+            class="customer-form-dialog__extension-title"
+            :class="{ 'is-inactive': personalColumnDisabled }"
+          >
+            {{ t('dialogs.customerForm.personalInfo') }}
+          </div>
+          <el-form-item
+            :label="t('dialogs.customerForm.nationality')"
+            prop="nationality"
+            label-width="108px"
+          >
+            <el-input
+              v-model="form.nationality"
+              :disabled="personalColumnDisabled"
+              :placeholder="t('dialogs.customerForm.nationality')"
+              maxlength="80"
+            />
+          </el-form-item>
+          <el-form-item
+            :label="t('dialogs.customerForm.residenceStatus')"
+            prop="residenceStatus"
+            label-width="108px"
+          >
+            <el-input
+              v-model="form.residenceStatus"
+              :disabled="personalColumnDisabled"
+              :placeholder="t('dialogs.customerForm.residenceStatus')"
+              maxlength="100"
+            />
+          </el-form-item>
+          <el-form-item
+            :label="t('dialogs.customerForm.residenceExpireDate')"
+            prop="residenceExpireDate"
+            label-width="108px"
+          >
+            <el-date-picker
+              v-model="form.residenceExpireDate"
+              type="date"
+              :disabled="personalColumnDisabled"
+              :placeholder="t('common.selectField', { field: t('dialogs.customerForm.residenceExpireDate') })"
+              value-format="YYYY-MM-DD"
+              style="width: 100%"
+            />
+          </el-form-item>
+        </el-col>
+        <el-col :xs="24" :md="12">
+          <div
+            class="customer-form-dialog__extension-title"
+            :class="{ 'is-inactive': companyColumnDisabled }"
+          >
+            {{ t('dialogs.customerForm.companyInfo') }}
+          </div>
+          <el-form-item
+            :label="t('dialogs.customerForm.corporationNumber')"
+            prop="corporationNumber"
+            label-width="108px"
+          >
+            <el-input
+              v-model="form.corporationNumber"
+              :disabled="companyColumnDisabled"
+              :placeholder="t('dialogs.customerForm.corporationNumber')"
+              maxlength="50"
+            />
+          </el-form-item>
+          <el-form-item
+            :label="t('dialogs.customerForm.fiscalMonth')"
+            prop="fiscalMonth"
+            label-width="108px"
+          >
+            <el-input-number
+              v-model="form.fiscalMonth"
+              :disabled="companyColumnDisabled"
+              :min="1"
+              :max="12"
+              :placeholder="t('dialogs.customerForm.month')"
+              controls-position="right"
+              style="width: 100%"
+            />
+          </el-form-item>
+          <el-form-item
+            :label="t('dialogs.customerForm.representativeName')"
+            prop="representativeName"
+            label-width="108px"
+          >
+            <el-input
+              v-model="form.representativeName"
+              :disabled="companyColumnDisabled"
+              :placeholder="t('dialogs.customerForm.representativeName')"
+              maxlength="120"
+            />
+          </el-form-item>
+        </el-col>
+      </el-row>
     </el-form>
 
     <template #footer>
@@ -400,3 +508,23 @@ function handleClose() {
     </template>
   </el-dialog>
 </template>
+
+<style scoped>
+.customer-form-dialog__extension {
+  margin-top: 4px;
+}
+
+.customer-form-dialog__extension-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin: 0 0 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.customer-form-dialog__extension-title.is-inactive {
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+}
+</style>

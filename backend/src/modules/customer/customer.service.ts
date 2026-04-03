@@ -345,7 +345,7 @@ export class CustomerService {
   }
 
   /**
-   * 在客户主档创建成功后补建公司或个人附属资料。
+   * 在客户主档创建成功后按请求内容补建公司或个人附属资料。
    *
    * @param customerId - 已保存客户的主键 ID
    * @param dto - 客户创建请求体
@@ -354,12 +354,13 @@ export class CustomerService {
     customerId: string,
     dto: CreateCustomerDto,
   ): Promise<void> {
-    if (dto.customerType === CustomerType.COMPANY) {
+    if (this.hasCompanyDtoContent(dto.companyInfo)) {
       await this.createCompanyInfoIfProvided(customerId, dto.companyInfo);
-      return;
     }
 
-    await this.createPersonInfoIfProvided(customerId, dto.personInfo);
+    if (this.hasPersonDtoContent(dto.personInfo)) {
+      await this.createPersonInfoIfProvided(customerId, dto.personInfo);
+    }
   }
 
   /**
@@ -377,7 +378,6 @@ export class CustomerService {
     if (dto.customerName !== undefined) {
       customer.customerName = dto.customerName;
     }
-
     if (dto.phone !== undefined) {
       customer.phone = dto.phone ?? null;
     }
@@ -420,12 +420,7 @@ export class CustomerService {
       return;
     }
 
-    await this.updateExistingRelatedProfile(
-      customer,
-      customerId,
-      dto,
-      targetType,
-    );
+    await this.updateExistingRelatedProfile(customer, customerId, dto);
   }
 
   /**
@@ -453,29 +448,26 @@ export class CustomerService {
   }
 
   /**
-   * 在客户类型未变化时按需更新对应的公司或个人附属资料。
+   * 在客户类型未变化时按请求内容增量更新公司或个人附属资料。
    *
    * @param customer - 当前数据库中的客户实体
    * @param customerId - 客户主键 ID
    * @param dto - 局部更新请求体
-   * @param targetType - 当前客户类型
    */
   private async updateExistingRelatedProfile(
     customer: Customer,
     customerId: string,
     dto: UpdateCustomerDto,
-    targetType: CustomerType,
   ): Promise<void> {
-    if (targetType === CustomerType.COMPANY && dto.companyInfo) {
+    if (dto.companyInfo && this.hasCompanyDtoContent(dto.companyInfo)) {
       await this.upsertCompanyInfo(
         customerId,
         customer.companyInfo,
         dto.companyInfo,
       );
-      return;
     }
 
-    if (targetType === CustomerType.PERSONAL && dto.personInfo) {
+    if (dto.personInfo && this.hasPersonDtoContent(dto.personInfo)) {
       await this.upsertPersonInfo(
         customerId,
         customer.personInfo,
@@ -494,7 +486,7 @@ export class CustomerService {
     customerId: string,
     companyInfo?: CompanyInfoDto,
   ): Promise<void> {
-    if (!companyInfo) {
+    if (!companyInfo || !this.hasCompanyDtoContent(companyInfo)) {
       return;
     }
 
@@ -517,7 +509,7 @@ export class CustomerService {
     customerId: string,
     personInfo?: PersonInfoDto,
   ): Promise<void> {
-    if (!personInfo) {
+    if (!personInfo || !this.hasPersonDtoContent(personInfo)) {
       return;
     }
 
@@ -530,6 +522,42 @@ export class CustomerService {
       ),
     });
     await this.personInfoRepo.save(createdPersonInfo);
+  }
+
+  /**
+   * 判断公司附属资料请求是否包含至少一个有效字段。
+   *
+   * @param info - 公司附属资料请求体
+   * @returns 任一公司字段存在有效值时返回 true
+   */
+  private hasCompanyDtoContent(info?: CompanyInfoDto | null): boolean {
+    if (!info) {
+      return false;
+    }
+
+    return Boolean(
+      info.corporationNumber?.trim() ||
+      info.representativeName?.trim() ||
+      (info.fiscalMonth !== undefined && info.fiscalMonth !== null),
+    );
+  }
+
+  /**
+   * 判断个人附属资料请求是否包含至少一个有效字段。
+   *
+   * @param info - 个人附属资料请求体
+   * @returns 任一个人字段存在有效值时返回 true
+   */
+  private hasPersonDtoContent(info?: PersonInfoDto | null): boolean {
+    if (!info) {
+      return false;
+    }
+
+    return Boolean(
+      info.nationality?.trim() ||
+      info.residenceStatus?.trim() ||
+      info.residenceExpireDate,
+    );
   }
 
   /**
