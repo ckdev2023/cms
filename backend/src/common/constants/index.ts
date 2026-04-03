@@ -1,3 +1,3 @@
-export * from './error-codes'
-export * from './enums'
-export * from './permission-codes'
+export * from './enums';
+export * from './error-codes';
+export * from './permission-codes';

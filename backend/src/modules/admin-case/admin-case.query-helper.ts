@@ -1,8 +1,4 @@
-import {
-  Brackets,
-  type ObjectLiteral,
-  type SelectQueryBuilder,
-} from 'typeorm';
+import { Brackets, type ObjectLiteral, type SelectQueryBuilder } from 'typeorm';
 
 import type { QueryAdminCaseDto } from './dto/query-admin-case.dto';
 import type { QueryInterviewDto } from './dto/query-interview.dto';
