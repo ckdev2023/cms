@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- 门面编排家属、日志、资料路径、提醒与案件材料等子服务 */
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
@@ -439,7 +440,7 @@ export class VisaCaseService {
    * 查询指定签证案件下的全部家属成员列表。
    *
    * @param visaCaseId - 签证案件主键 ID
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 按主申请人优先排列的家属成员列表
    * @throws {NotFoundException} 案件不存在时
    */
@@ -456,7 +457,7 @@ export class VisaCaseService {
    *
    * @param visaCaseId - 签证案件主键 ID
    * @param dto - 家属成员创建参数
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 新创建的家属成员响应对象
    * @throws {NotFoundException} 案件或目标客户不存在时
    * @throws {BadRequestException} 同一客户已挂载到该案件时
@@ -476,7 +477,7 @@ export class VisaCaseService {
    * @param visaCaseId - 签证案件主键 ID
    * @param memberId - 家属成员记录 ID
    * @param dto - 允许修改的字段集
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 更新后的家属成员响应对象
    * @throws {NotFoundException} 案件或成员记录不存在时
    */
@@ -499,7 +500,7 @@ export class VisaCaseService {
    *
    * @param visaCaseId - 签证案件主键 ID
    * @param memberId - 家属成员记录 ID
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns Promise<void> 删除完成后无返回值
    * @throws {NotFoundException} 案件或成员记录不存在时
    */
@@ -535,7 +536,7 @@ export class VisaCaseService {
    *
    * @param visaCaseId - 日志归属的签证案件 ID
    * @param query - 分页、日志类型筛选查询参数
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 包含日志列表和分页信息的结果对象
    * @throws {NotFoundException} 目标签证案件不存在时
    */
@@ -553,7 +554,7 @@ export class VisaCaseService {
    *
    * @param visaCaseId - 日志归属的签证案件 ID
    * @param logId - 日志主键 ID
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 匹配案件范围且已加载创建人信息的日志响应对象
    * @throws {NotFoundException} 日志不存在或不属于该案件时
    */
@@ -572,7 +573,7 @@ export class VisaCaseService {
    * @param visaCaseId - 日志归属的签证案件 ID
    * @param logId - 需要更新的日志 ID
    * @param dto - 包含可选更新字段的日志修改参数
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 更新完成后重新加载的日志响应对象
    * @throws {NotFoundException} 日志不存在或不属于该案件时
    */
@@ -591,7 +592,7 @@ export class VisaCaseService {
    *
    * @param visaCaseId - 日志归属的签证案件 ID
    * @param logId - 需要逻辑删除的日志 ID
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns Promise<void> 软删除完成后无返回值
    * @throws {NotFoundException} 日志不存在或不属于该案件时
    */
@@ -644,7 +645,7 @@ export class VisaCaseService {
    *
    * @param visaCaseId - 路径关联的签证案件 ID
    * @param query - 分页与路径类型筛选参数
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 包含路径列表和分页信息的结果对象
    * @throws {NotFoundException} 签证案件不存在时
    */
@@ -662,7 +663,7 @@ export class VisaCaseService {
    *
    * @param id - 路径记录 ID
    * @param dto - 包含部分可更新字段的请求体
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 更新后的路径响应对象
    * @throws {NotFoundException} 路径记录不存在时
    * @throws {NotFoundException} 更新关联案件时案件不存在
@@ -690,7 +691,7 @@ export class VisaCaseService {
    * 对指定资料路径记录执行逻辑删除。
    *
    * @param id - 路径记录 ID
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns Promise<void> 软删除完成后无返回值
    * @throws {NotFoundException} 路径记录不存在时
    */
@@ -834,7 +835,7 @@ export class VisaCaseService {
    * 查询案件下全部材料项。
    *
    * @param visaCaseId - 签证案件 ID
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 按排序的材料项列表
    */
   async findMaterials(
@@ -868,7 +869,7 @@ export class VisaCaseService {
    * @param visaCaseId - 签证案件 ID
    * @param itemId - 材料项 ID
    * @param dto - 更新参数
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 更新后的材料项
    */
   async updateMaterialItem(
@@ -886,7 +887,7 @@ export class VisaCaseService {
    *
    * @param visaCaseId - 签证案件 ID
    * @param itemId - 材料项 ID
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns Promise<void> 删除完成后无返回值
    */
   async deleteMaterialItem(
@@ -902,7 +903,7 @@ export class VisaCaseService {
    * 获取案件材料完成统计与建议 material_status。
    *
    * @param visaCaseId - 签证案件 ID
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 含完成数与建议状态的摘要
    */
   async getMaterialSummary(
@@ -917,7 +918,7 @@ export class VisaCaseService {
    * 将 checklist 建议状态同步写入 visa_cases.material_status。
    *
    * @param visaCaseId - 签证案件 ID
-   * @param userId
+   * @param userId - 当前登录用户主键，用于行级数据范围校验与操作人上下文
    * @returns 同步后的摘要
    */
   async syncMaterialStatus(

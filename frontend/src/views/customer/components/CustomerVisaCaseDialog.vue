@@ -203,6 +203,98 @@ const defaultForm = (): VisaCaseFormModel => ({
 
 const form = reactive(defaultForm())
 
+/**
+ * 将可空字符串规范为表单绑定用非空字符串。
+ *
+ * @param value - 案件字段上的可选字符串
+ * @returns 缺失时返回空字符串
+ */
+function coalesceVisaCaseString(value: string | null | undefined): string {
+  return value ?? ''
+}
+
+/**
+ * 将打开编辑时的 `VisaCaseItem` 写入响应式表单模型（不含家属与客户下拉副作用）。
+ *
+ * @param src - 后端返回的案件详情
+ * @param target - 对话框内 `reactive` 表单
+ */
+function applyVisaCaseItemToForm(src: VisaCaseItem, target: VisaCaseFormModel): void {
+  target.caseType = coalesceVisaCaseString(src.caseType)
+  target.caseStatus = src.caseStatus
+  target.assignedTo = coalesceVisaCaseString(src.assignedTo)
+  target.expireDate = coalesceVisaCaseString(src.expireDate)
+  target.nextFollowUpAt = src.nextFollowUpAt ? src.nextFollowUpAt.slice(0, 16) : ''
+  target.materialStatus = coalesceVisaCaseString(src.materialStatus)
+  target.feeStatus = coalesceVisaCaseString(src.feeStatus)
+  target.isFamilyCase = src.isFamilyCase
+  target.familyLinkMode = src.familyLinkMode ?? ''
+  target.internalPrimaryCustomerId = coalesceVisaCaseString(src.internalPrimaryCustomerId)
+  target.externalPrimaryName = coalesceVisaCaseString(src.externalPrimaryName)
+  target.externalPrimaryCaseType = coalesceVisaCaseString(src.externalPrimaryCaseType)
+  target.externalPrimaryExpireDate = coalesceVisaCaseString(src.externalPrimaryExpireDate)
+  target.externalPrimaryRelationToApplicant = src.externalPrimaryRelationToApplicant ?? ''
+  target.memo = coalesceVisaCaseString(src.memo)
+}
+
+/**
+ * 若案件为内部关联家属且带主申客户信息，则预填内部主申请人下拉候选项。
+ *
+ * @param src - 后端返回的案件详情
+ */
+function syncInternalPrimaryCustomerOptions(src: VisaCaseItem): void {
+  if (!src.internalPrimaryCustomerId || !src.internalPrimaryCustomerName) {
+    return
+  }
+  customerOptions.value = [
+    {
+      label: src.internalPrimaryCustomerName,
+      value: src.internalPrimaryCustomerId,
+    },
+  ]
+}
+
+/**
+ * 写入与家属模式、内外部主申相关的可编辑字段。
+ *
+ * @param formModel - 当前表单
+ * @param payload - 待补全的更新载荷
+ */
+function applyFamilyLinkFieldsToPayload(
+  formModel: VisaCaseFormModel,
+  payload: UpdateVisaCaseParams,
+): void {
+  if (formModel.isFamilyCase && formModel.familyLinkMode) {
+    payload.familyLinkMode = formModel.familyLinkMode as FamilyLinkMode
+  }
+  if (!formModel.isFamilyCase) {
+    return
+  }
+  if (
+    formModel.familyLinkMode === FamilyLinkMode.INTERNAL &&
+    formModel.internalPrimaryCustomerId
+  ) {
+    payload.internalPrimaryCustomerId = formModel.internalPrimaryCustomerId
+    return
+  }
+  if (formModel.familyLinkMode !== FamilyLinkMode.EXTERNAL) {
+    return
+  }
+  if (formModel.externalPrimaryName) {
+    payload.externalPrimaryName = formModel.externalPrimaryName
+  }
+  if (formModel.externalPrimaryCaseType) {
+    payload.externalPrimaryCaseType = formModel.externalPrimaryCaseType
+  }
+  if (formModel.externalPrimaryExpireDate) {
+    payload.externalPrimaryExpireDate = formModel.externalPrimaryExpireDate
+  }
+  if (formModel.externalPrimaryRelationToApplicant) {
+    payload.externalPrimaryRelationToApplicant =
+      formModel.externalPrimaryRelationToApplicant as FamilyRelation
+  }
+}
+
 watch(
   () => props.visible,
   (visible) => {
@@ -264,41 +356,13 @@ function initializeForm(): void {
   customerOptions.value = []
   localMembers.value = [...props.familyMembers]
 
-  if (!props.initialValue) {
+  const init = props.initialValue
+  if (!init) {
     return
   }
 
-  form.caseType = props.initialValue.caseType ?? ''
-  form.caseStatus = props.initialValue.caseStatus
-  form.assignedTo = props.initialValue.assignedTo ?? ''
-  form.expireDate = props.initialValue.expireDate ?? ''
-  form.nextFollowUpAt = props.initialValue.nextFollowUpAt
-    ? props.initialValue.nextFollowUpAt.slice(0, 16)
-    : ''
-  form.materialStatus = props.initialValue.materialStatus ?? ''
-  form.feeStatus = props.initialValue.feeStatus ?? ''
-  form.isFamilyCase = props.initialValue.isFamilyCase
-  form.familyLinkMode = props.initialValue.familyLinkMode ?? ''
-  form.internalPrimaryCustomerId =
-    props.initialValue.internalPrimaryCustomerId ?? ''
-  form.externalPrimaryName = props.initialValue.externalPrimaryName ?? ''
-  form.externalPrimaryCaseType = props.initialValue.externalPrimaryCaseType ?? ''
-  form.externalPrimaryExpireDate = props.initialValue.externalPrimaryExpireDate ?? ''
-  form.externalPrimaryRelationToApplicant =
-    props.initialValue.externalPrimaryRelationToApplicant ?? ''
-  form.memo = props.initialValue.memo ?? ''
-
-  if (
-    props.initialValue.internalPrimaryCustomerId &&
-    props.initialValue.internalPrimaryCustomerName
-  ) {
-    customerOptions.value = [
-      {
-        label: props.initialValue.internalPrimaryCustomerName,
-        value: props.initialValue.internalPrimaryCustomerId,
-      },
-    ]
-  }
+  applyVisaCaseItemToForm(init, form)
+  syncInternalPrimaryCustomerOptions(init)
 }
 
 /**
@@ -456,12 +520,7 @@ function closeDialog(): void {
  * @returns 适用于创建和更新接口的公共请求字段
  */
 function buildSubmitPayload(): UpdateVisaCaseParams {
-  const isInternalFamily =
-    form.isFamilyCase && form.familyLinkMode === FamilyLinkMode.INTERNAL
-  const isExternalFamily =
-    form.isFamilyCase && form.familyLinkMode === FamilyLinkMode.EXTERNAL
-
-  return {
+  const payload: UpdateVisaCaseParams = {
     caseType: form.caseType || undefined,
     caseStatus: form.caseStatus,
     assignedTo: form.assignedTo || undefined,
@@ -472,31 +531,10 @@ function buildSubmitPayload(): UpdateVisaCaseParams {
     materialStatus: form.materialStatus || undefined,
     feeStatus: (form.feeStatus as VisaCaseFeeStatus) || undefined,
     isFamilyCase: form.isFamilyCase,
-    familyLinkMode: form.isFamilyCase && form.familyLinkMode
-      ? (form.familyLinkMode as FamilyLinkMode)
-      : undefined,
-    internalPrimaryCustomerId:
-      isInternalFamily && form.internalPrimaryCustomerId
-        ? form.internalPrimaryCustomerId
-        : undefined,
-    externalPrimaryName:
-      isExternalFamily && form.externalPrimaryName
-        ? form.externalPrimaryName
-        : undefined,
-    externalPrimaryCaseType:
-      isExternalFamily && form.externalPrimaryCaseType
-        ? form.externalPrimaryCaseType
-        : undefined,
-    externalPrimaryExpireDate:
-      isExternalFamily && form.externalPrimaryExpireDate
-        ? form.externalPrimaryExpireDate
-        : undefined,
-    externalPrimaryRelationToApplicant:
-      isExternalFamily && form.externalPrimaryRelationToApplicant
-        ? form.externalPrimaryRelationToApplicant
-        : undefined,
     memo: form.memo || undefined,
   }
+  applyFamilyLinkFieldsToPayload(form, payload)
+  return payload
 }
 
 /**

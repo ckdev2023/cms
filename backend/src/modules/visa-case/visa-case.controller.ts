@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- 聚合签证案件域多子资源 REST 路由，拆分会增加跨文件跳转成本 */
 import {
   Body,
   Controller,
@@ -220,7 +221,7 @@ export class VisaCaseController {
    * 读取单个签证案件详情。
    *
    * @param id - 签证案件主键 ID
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 指定案件的详情响应体
    */
   @Get('visa-cases/:id')
@@ -262,7 +263,7 @@ export class VisaCaseController {
    * 查询指定签证案件下的全部家属成员。
    *
    * @param visaCaseId - 签证案件主键 ID
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 家属成员列表响应体
    */
   @Get('visa-cases/:visaCaseId/family-members')
@@ -281,7 +282,7 @@ export class VisaCaseController {
    *
    * @param visaCaseId - 签证案件主键 ID
    * @param dto - 家属成员创建请求体
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 新挂载的家属成员响应体
    */
   @Post('visa-cases/:visaCaseId/family-members')
@@ -306,7 +307,7 @@ export class VisaCaseController {
    * @param visaCaseId - 签证案件主键 ID
    * @param memberId - 家属成员记录 ID
    * @param dto - 家属成员更新请求体
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 更新后的家属成员响应体
    */
   @Put('visa-cases/:visaCaseId/family-members/:memberId')
@@ -337,7 +338,7 @@ export class VisaCaseController {
    *
    * @param visaCaseId - 签证案件主键 ID
    * @param memberId - 家属成员记录 ID
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    */
   @Delete('visa-cases/:visaCaseId/family-members/:memberId')
   @Permissions(PermissionCodes.VISA_CASE_EDIT)
@@ -390,7 +391,7 @@ export class VisaCaseController {
    *
    * @param visaCaseId - 签证案件主键 ID
    * @param query - 日志分页与类型筛选查询参数
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 符合统一分页结构的日志列表响应体
    */
   @Get('visa-cases/:visaCaseId/logs')
@@ -420,7 +421,7 @@ export class VisaCaseController {
    *
    * @param visaCaseId - 签证案件主键 ID
    * @param logId - 日志主键 ID
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 指定案件范围下的日志详情响应体
    */
   @Get('visa-cases/:visaCaseId/logs/:logId')
@@ -442,7 +443,7 @@ export class VisaCaseController {
    * @param visaCaseId - 签证案件主键 ID
    * @param logId - 日志主键 ID
    * @param dto - 日志更新请求体
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 更新后的日志详情响应体
    */
   @Put('visa-cases/:visaCaseId/logs/:logId')
@@ -468,7 +469,7 @@ export class VisaCaseController {
    *
    * @param visaCaseId - 签证案件主键 ID
    * @param logId - 日志主键 ID
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 空响应体，表示逻辑删除已完成
    */
   @Delete('visa-cases/:visaCaseId/logs/:logId')
@@ -546,7 +547,7 @@ export class VisaCaseController {
    *
    * @param visaCaseId - 签证案件 ID
    * @param query - 路径分页与类型筛选查询参数
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 符合统一分页结构的路径列表响应体
    */
   @Get('visa-cases/:visaCaseId/file-paths')
@@ -576,7 +577,7 @@ export class VisaCaseController {
    *
    * @param id - 路径记录 ID
    * @param dto - 路径更新请求体
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 更新后的路径响应体
    */
   @Put('file-paths/:id')
@@ -599,7 +600,7 @@ export class VisaCaseController {
    * 对指定资料路径记录执行逻辑删除。
    *
    * @param id - 路径记录 ID
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 空响应体
    */
   @Delete('file-paths/:id')
@@ -720,7 +721,7 @@ export class VisaCaseController {
    * 取得指定案件下的全部材料项列表。
    *
    * @param id - 签证案件 ID
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 按排序的材料项列表
    */
   @Get('visa-cases/:id/materials')
@@ -764,7 +765,7 @@ export class VisaCaseController {
    * @param id - 签证案件 ID
    * @param itemId - 材料项 ID
    * @param dto - 材料项更新请求体
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 更新后的材料项响应体
    */
   @Put('visa-cases/:id/materials/:itemId')
@@ -795,7 +796,7 @@ export class VisaCaseController {
    *
    * @param id - 签证案件 ID
    * @param itemId - 材料项 ID
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 空响应体
    */
   @Delete('visa-cases/:id/materials/:itemId')
@@ -820,7 +821,7 @@ export class VisaCaseController {
    * 取得案件材料的完成统计与建议 material_status。
    *
    * @param id - 签证案件 ID
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 含完成数与建议状态的摘要
    */
   @Get('visa-cases/:id/materials/summary')
@@ -838,7 +839,7 @@ export class VisaCaseController {
    * 将 checklist 建议的 material_status 同步写入案件表。
    *
    * @param id - 签证案件 ID
-   * @param req
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 同步后的摘要
    */
   @Post('visa-cases/:id/materials/sync-status')

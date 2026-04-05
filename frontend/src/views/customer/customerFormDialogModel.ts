@@ -85,6 +85,40 @@ type PersonFormValues = Pick<
 >
 
 /**
+ * 将可空字符串规范为表单用非空字符串，降低上层函数的圈复杂度计数。
+ *
+ * @param value - 后端或嵌套对象上的可选字符串
+ * @returns 缺失时返回空字符串
+ */
+function coalescePersonFormString(value: string | null | undefined): string {
+  return value ?? ''
+}
+
+/**
+ * 解析个人扩展中的家属标记，供 `buildPersonFormValues` 复用。
+ *
+ * @param personInfo - 客户详情中的 `personInfo` 片段
+ * @returns 未显式给出时按非家属处理
+ */
+function coalesceIsFamilyMemberFlag(
+  personInfo: CustomerItem['personInfo'],
+): boolean {
+  return personInfo?.isFamilyMember ?? false
+}
+
+/**
+ * 解析在留提醒提前天数，空值与 `null` 统一为 `undefined`。
+ *
+ * @param value - `personInfo.remindDaysBefore` 原始值
+ * @returns 未设置时返回 `undefined`
+ */
+function coalesceRemindDaysBefore(
+  value: number | null | undefined,
+): number | undefined {
+  return value ?? undefined
+}
+
+/**
  * 创建客户弹窗所需的默认表单模型。
  *
  * @returns 适用于新增客户场景的初始表单值
@@ -379,17 +413,17 @@ export function buildCompanyFormValues(data: CustomerItem): CompanyFormValues {
  * @returns 个人客户表单所需的补充字段
  */
 export function buildPersonFormValues(data: CustomerItem): PersonFormValues {
-  const personInfo = data.personInfo
+  const p = data.personInfo
 
   return {
-    nationality: personInfo?.nationality ?? '',
-    passportNumber: personInfo?.passportNumber ?? '',
-    residenceStatus: personInfo?.residenceStatus ?? '',
-    residenceExpireDate: personInfo?.residenceExpireDate ?? '',
-    isFamilyMember: personInfo?.isFamilyMember ?? false,
-    familyRelation: personInfo?.familyRelation ?? '',
-    primaryCustomerId: personInfo?.primaryCustomerId ?? '',
-    remindDaysBefore: personInfo?.remindDaysBefore ?? undefined,
+    nationality: coalescePersonFormString(p?.nationality),
+    passportNumber: coalescePersonFormString(p?.passportNumber),
+    residenceStatus: coalescePersonFormString(p?.residenceStatus),
+    residenceExpireDate: coalescePersonFormString(p?.residenceExpireDate),
+    isFamilyMember: coalesceIsFamilyMemberFlag(p),
+    familyRelation: coalescePersonFormString(p?.familyRelation) as FamilyRelation | '',
+    primaryCustomerId: coalescePersonFormString(p?.primaryCustomerId),
+    remindDaysBefore: coalesceRemindDaysBefore(p?.remindDaysBefore),
   }
 }
 
