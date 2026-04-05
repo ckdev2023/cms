@@ -58,7 +58,7 @@ function cancelDocForm() {
  */
 async function handleDocSubmit() {
   const valid = await docFormRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   submitting.value = true
   try {
@@ -101,7 +101,7 @@ async function toggleDocReceived(doc: TaxMonthlyDocumentItem) {
  */
 async function handleDocDelete(doc: TaxMonthlyDocumentItem) {
   const confirmed = await confirmDelete(doc.documentName)
-  if (!confirmed) return
+  if (!confirmed) {return}
 
   try {
     await deleteTaxDocument(props.contractId, props.periodId, doc.id)

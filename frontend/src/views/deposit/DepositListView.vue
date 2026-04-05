@@ -115,8 +115,8 @@ function handleSaved() {
  */
 function doSearch() {
   const params: DepositListSearchParams = {}
-  if (searchForm.keyword) params.keyword = searchForm.keyword
-  if (searchForm.hasBalance === true) params.hasBalance = true
+  if (searchForm.keyword) {params.keyword = searchForm.keyword}
+  if (searchForm.hasBalance === true) {params.hasBalance = true}
   handleSearch(params)
 }
 

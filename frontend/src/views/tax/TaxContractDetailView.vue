@@ -11,6 +11,7 @@ import {
 } from '@/constants/enum-labels'
 import { BillingCycle,TaxContractStatus } from '@/constants/enums'
 import type { TaxContractDetail } from '@/types/tax'
+import { mergeCustomerDetailReturnQuery } from '@/utils/customer-detail-return-navigation'
 import { useLocaleFormatter } from '@/utils/locale-format'
 
 import PeriodsTab from './components/PeriodsTab.vue'
@@ -66,14 +67,27 @@ function handleStatusUpdated() {
   fetchContract()
 }
 
+/**
+ *
+ */
+/**
+ * 跳转税务合约关联客户主档详情，并写入客户中心返回锚点。
+ */
 function goToCustomer() {
-  if (contract.value?.customerId) {
-    router.push(`/customers/${contract.value.customerId}`)
+  if (!contract.value?.customerId) {
+    return
   }
+  const query: Record<string, string> = {}
+  mergeCustomerDetailReturnQuery(query, route)
+  if (Object.keys(query).length > 0) {
+    void router.push({ path: `/customers/${contract.value.customerId}`, query })
+    return
+  }
+  void router.push(`/customers/${contract.value.customerId}`)
 }
 
 function formatFee(value: number) {
-  if (value === null || value === undefined) return '-'
+  if (value === null || value === undefined) {return '-'}
   return formatCurrency(value, '¥')
 }
 

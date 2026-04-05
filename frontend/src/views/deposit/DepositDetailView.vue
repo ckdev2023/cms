@@ -14,6 +14,7 @@ import type {
   DepositTransactionListItem,
   DepositTransactionQueryParams,
 } from '@/types/deposit'
+import { mergeCustomerDetailReturnQuery } from '@/utils/customer-detail-return-navigation'
 import { useLocaleFormatter } from '@/utils/locale-format'
 
 import DepositOffsetDialog from './components/DepositOffsetDialog.vue'
@@ -127,7 +128,7 @@ async function fetchTransactions() {
       page: txnPage.value,
       pageSize: txnPageSize.value,
     }
-    if (txnFilter.value) params.transactionType = txnFilter.value
+    if (txnFilter.value) {params.transactionType = txnFilter.value}
     const res = await getAccountTransactions(accountId.value, params)
     txnData.value = res.data.items
     txnTotal.value = res.data.total
@@ -165,10 +166,23 @@ function goBack() {
   router.push('/finance/deposits')
 }
 
+/**
+ *
+ */
+/**
+ * 跳转预存款账户关联客户主档详情，并写入客户中心返回锚点。
+ */
 function goToCustomer() {
-  if (account.value?.customerId) {
-    router.push(`/customers/${account.value.customerId}`)
+  if (!account.value?.customerId) {
+    return
   }
+  const query: Record<string, string> = {}
+  mergeCustomerDetailReturnQuery(query, route)
+  if (Object.keys(query).length > 0) {
+    void router.push({ path: `/customers/${account.value.customerId}`, query })
+    return
+  }
+  void router.push(`/customers/${account.value.customerId}`)
 }
 
 function goToInvoice(invoiceId: string) {
@@ -207,7 +221,7 @@ function formatSignedAmount(
  * @returns 充值返回加号样式，扣减类交易返回减号样式，其余返回空字符串
  */
 function getAmountClass(type: DepositTransactionType) {
-  if (type === DepositTransactionType.RECHARGE) return 'amount--plus'
+  if (type === DepositTransactionType.RECHARGE) {return 'amount--plus'}
   if (
     type === DepositTransactionType.OFFSET ||
     type === DepositTransactionType.REFUND

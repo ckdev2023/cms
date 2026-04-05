@@ -38,7 +38,7 @@ export const useTagsViewStore = defineStore('tagsView', () => {
    * @param route - 当前进入的规范化路由对象
    */
   function addVisitedView(route: RouteLocationNormalized): void {
-    if (visitedViews.value.some((v) => v.path === route.path)) return
+    if (visitedViews.value.some((v) => v.path === route.path)) {return}
     visitedViews.value.push({
       path: route.path,
       name: (route.name as string) || '',
@@ -55,7 +55,7 @@ export const useTagsViewStore = defineStore('tagsView', () => {
    * @param route - 当前进入的规范化路由对象
    */
   function addCachedView(route: RouteLocationNormalized): void {
-    if (route.meta?.noCache || !route.name) return
+    if (route.meta?.noCache || !route.name) {return}
     cachedViews.value.add(route.name as string)
   }
 
@@ -68,11 +68,11 @@ export const useTagsViewStore = defineStore('tagsView', () => {
    */
   function removeView(path: string): void {
     const idx = visitedViews.value.findIndex((v) => v.path === path)
-    if (idx === -1) return
+    if (idx === -1) {return}
     const view = visitedViews.value[idx]
-    if (view.affix) return
+    if (view.affix) {return}
     visitedViews.value.splice(idx, 1)
-    if (view.name) cachedViews.value.delete(view.name)
+    if (view.name) {cachedViews.value.delete(view.name)}
   }
 
   /**
@@ -101,7 +101,7 @@ export const useTagsViewStore = defineStore('tagsView', () => {
   function rebuildCache(): void {
     cachedViews.value.clear()
     visitedViews.value.forEach((v) => {
-      if (v.name) cachedViews.value.add(v.name)
+      if (v.name) {cachedViews.value.add(v.name)}
     })
   }
 

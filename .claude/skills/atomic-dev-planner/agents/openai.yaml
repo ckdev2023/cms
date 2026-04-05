@@ -1,0 +1,3 @@
+interface:
+  display_name: "Atomic Dev Planner"
+  short_description: "将需求或设计稿拆成开发总计划与可独立执行的原子任务文档"

@@ -1,6 +1,6 @@
 import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 
 import { NoteType } from '../../common/constants/enums';
 import { CreateNoteDto } from './dto/create-note.dto';
@@ -14,6 +14,10 @@ type NoteResponseDto = {
   customerId: string;
   content: string;
   noteType: NoteType;
+  submittedItems: string | null;
+  missingItems: string | null;
+  nextAction: string | null;
+  nextFollowUpAt: string | null;
   createdBy: string | null;
   creatorName: string | null;
   createdAt: Date;
@@ -58,6 +62,10 @@ export class NoteService {
       customerId,
       content: dto.content,
       noteType: dto.noteType ?? NoteType.GENERAL,
+      submittedItems: this.normalizeOptionalText(dto.submittedItems),
+      missingItems: this.normalizeOptionalText(dto.missingItems),
+      nextAction: this.normalizeOptionalText(dto.nextAction),
+      nextFollowUpAt: this.parseNextFollowUpAt(dto.nextFollowUpAt),
       createdBy: userId ?? null,
     });
 
@@ -87,7 +95,8 @@ export class NoteService {
     const qb = this.noteRepo
       .createQueryBuilder('n')
       .leftJoinAndSelect('n.creator', 'creator')
-      .where('n.customerId = :customerId', { customerId });
+      .where('n.customerId = :customerId', { customerId })
+      .andWhere('n.visaCaseId IS NULL');
 
     if (noteType) {
       qb.andWhere('n.noteType = :noteType', { noteType });
@@ -116,7 +125,7 @@ export class NoteService {
    */
   async findOne(customerId: string, noteId: string): Promise<Note> {
     const note = await this.noteRepo.findOne({
-      where: { id: noteId, customerId },
+      where: { id: noteId, customerId, visaCaseId: IsNull() },
       relations: ['creator'],
     });
 
@@ -145,6 +154,18 @@ export class NoteService {
 
     if (dto.content !== undefined) note.content = dto.content;
     if (dto.noteType !== undefined) note.noteType = dto.noteType;
+    if (dto.submittedItems !== undefined) {
+      note.submittedItems = this.normalizeOptionalText(dto.submittedItems);
+    }
+    if (dto.missingItems !== undefined) {
+      note.missingItems = this.normalizeOptionalText(dto.missingItems);
+    }
+    if (dto.nextAction !== undefined) {
+      note.nextAction = this.normalizeOptionalText(dto.nextAction);
+    }
+    if (dto.nextFollowUpAt !== undefined) {
+      note.nextFollowUpAt = this.parseNextFollowUpAt(dto.nextFollowUpAt);
+    }
 
     await this.noteRepo.save(note);
     this.logger.log(`Note ${noteId} updated for customer ${customerId}`);
@@ -189,10 +210,44 @@ export class NoteService {
       customerId: note.customerId,
       content: note.content,
       noteType: note.noteType,
+      submittedItems: note.submittedItems ?? null,
+      missingItems: note.missingItems ?? null,
+      nextAction: note.nextAction ?? null,
+      nextFollowUpAt: note.nextFollowUpAt
+        ? note.nextFollowUpAt.toISOString()
+        : null,
       createdBy: note.createdBy,
       creatorName: note.creator?.displayName ?? null,
       createdAt: note.createdAt,
       updatedAt: note.updatedAt,
     };
+  }
+
+  /**
+   * 将可选多行文本入参规范为数据库可写入的空串或裁剪后内容。
+   *
+   * @param value - 请求体中的可选字符串字段
+   * @returns 去除首尾空白后的非空串，否则为 null
+   */
+  private normalizeOptionalText(value: string | undefined): string | null {
+    if (value === undefined || value === null) {
+      return null;
+    }
+    const t = value.trim();
+    return t.length > 0 ? t : null;
+  }
+
+  /**
+   * 将 ISO8601 跟进时间字符串解析为可持久化的日期或空值。
+   *
+   * @param value - 可选日期时间字符串；空串与 null 视为清空
+   * @returns 有效时区时间戳，未提供或无法解析时为 null
+   */
+  private parseNextFollowUpAt(value: string | undefined | null): Date | null {
+    if (value === undefined || value === null || value === '') {
+      return null;
+    }
+    const d = new Date(value);
+    return Number.isNaN(d.getTime()) ? null : d;
   }
 }

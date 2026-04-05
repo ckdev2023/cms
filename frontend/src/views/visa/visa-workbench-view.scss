@@ -1,0 +1,224 @@
+/**
+ * 签证工作台页布局（旧 KPI 卡片栅格样式已移除，摘要为 `VisaWorkbenchKpiStrip` 内聚样式）。
+ */
+.visa-workbench {
+  display: flex;
+  flex-direction: column;
+  /** 页头与下方主列仅保留一层较小间距，避免与 `__below-head` 内 gap 叠成「双白条」 */
+  gap: var(--app-spacing-sm);
+  /** 高度由布局区与表格撑开，避免首屏被固定 min-height 顶出大块留白 */
+  min-height: 0;
+  flex: 1;
+  box-sizing: border-box;
+  /** 画布层：与侧栏 `el-bg-color` 卡片形成轻度对比 */
+  padding: var(--app-spacing-md);
+  border-radius: 12px;
+  background: var(--el-fill-color-lighter);
+  border: 1px solid var(--el-border-color-lighter);
+
+  /** 页顶：主标题与数据范围同一行，与下方主内容区分离，避免双横条留白 */
+  &__page-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-spacing-sm);
+    padding: var(--app-spacing-sm) var(--app-spacing-md);
+    border-radius: var(--app-radius-md);
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-lighter);
+    box-shadow: 0 1px 2px rgb(15 23 42 / 4%);
+  }
+
+  &__page-title {
+    margin: 0;
+    font-size: var(--app-font-size-xl);
+    font-weight: var(--app-font-weight-semibold);
+    color: var(--app-text-primary);
+    line-height: 1.3;
+  }
+
+  &__page-head-actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--app-spacing-sm);
+    flex-shrink: 0;
+    max-width: 100%;
+  }
+
+  &__scope {
+    flex: 0 1 auto;
+    min-width: 0;
+    justify-content: flex-end;
+  }
+
+  /**
+   * 页头以下的单列：刷新告警与主内容/首屏态共用同一 flex 列，
+   * loading 与致命错误共用 `__state-shell` 占位，避免两块 state 各撑一遍垂直留白。
+   */
+  &__below-head {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-sm);
+    flex: 1;
+    min-height: 0;
+  }
+
+  /**
+   * KPI 摘要带：不参与纵向伸展，避免与下方提醒表争抢首屏可视区。
+   */
+  &__summary {
+    flex-shrink: 0;
+    padding: var(--app-spacing-md);
+    border-radius: var(--app-radius-md);
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-lighter);
+    box-shadow: 0 1px 3px rgb(15 23 42 / 6%);
+  }
+
+  &__alert {
+    flex-shrink: 0;
+  }
+
+  &__alert-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-sm);
+  }
+
+  /** 首屏 loading 与致命错误共用外框，只保留一处 min-height */
+  &__state-shell {
+    border-radius: var(--app-radius-md);
+    flex-shrink: 0;
+    /** 略低于首屏半屏，加载完成后尽快让出纵向空间给提醒表 */
+    min-height: min(36vh, 280px);
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-lighter);
+    box-shadow: 0 1px 3px rgb(15 23 42 / 6%);
+  }
+
+  &__state-shell-fill {
+    box-sizing: border-box;
+    min-height: inherit;
+    border-radius: inherit;
+  }
+
+  &__state-shell-fill--loading {
+    min-height: min(36vh, 280px);
+  }
+
+  &__state-shell-fill--error {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--app-spacing-base);
+    padding: var(--app-spacing-lg);
+    text-align: center;
+  }
+
+  /** KPI 之后、主表之前：空范围说明（紧凑，让表格区更靠上） */
+  &__success-empty-hint {
+    flex-shrink: 0;
+    margin-top: var(--app-spacing-xs);
+    margin-bottom: var(--app-spacing-xs);
+  }
+
+  /**
+   * 聚合数据就绪后的主列：KPI + 提示 + 提醒表纵向排列，表格区吃掉剩余高度。
+   */
+  &__body {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    gap: var(--app-spacing-md);
+  }
+
+  &__empty-error-title {
+    margin: 0 0 var(--app-spacing-xs);
+    font-size: var(--app-font-size-base);
+    font-weight: var(--app-font-weight-semibold);
+    color: var(--app-text-primary);
+  }
+
+  &__empty-error-desc {
+    margin: 0;
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
+    line-height: 1.5;
+  }
+
+  &__section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-sm);
+    padding: var(--app-spacing-md);
+    border-radius: var(--app-radius-md);
+    background: var(--el-bg-color);
+    border: 1px solid var(--el-border-color-lighter);
+    box-shadow: 0 1px 3px rgb(15 23 42 / 6%);
+  }
+
+  /**
+   * 提醒列表：与 `VisaReminderProTablePanel` / `ProTable` 配合 flex，
+   * 让表体占据 KPI 之下的剩余视高（加载骨架与空态仍由 ProTable 内部处理）。
+   */
+  &__section--reminders {
+    flex: 1;
+    min-height: 0;
+
+    > :last-child {
+      flex: 1;
+      min-height: 0;
+    }
+  }
+
+  &__section-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-spacing-sm);
+  }
+
+  /** 主表区：次要全表链、高级筛选与刷新成组 */
+  &__reminder-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: var(--app-spacing-sm);
+  }
+
+  /** 分页提醒全表页入口（侧栏不收束时的书签/老路径；视觉弱于主按钮） */
+  &__full-list-link {
+    font-size: var(--app-font-size-sm);
+    color: var(--app-text-secondary);
+    text-decoration: none;
+    align-self: center;
+    white-space: nowrap;
+
+    &:hover {
+      color: var(--el-color-primary);
+      text-decoration: underline;
+    }
+  }
+
+  &__filter-badge {
+    margin-inline-start: var(--app-spacing-xs);
+    vertical-align: middle;
+  }
+
+  &__section-title {
+    margin: 0;
+    font-size: var(--app-font-size-lg);
+    font-weight: var(--app-font-weight-semibold);
+    color: var(--app-text-primary);
+  }
+
+}

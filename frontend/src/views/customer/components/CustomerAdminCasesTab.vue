@@ -10,6 +10,7 @@ import ProTable from '@/components/ProTable.vue'
 import { useConfirm } from '@/composables/useConfirm'
 import { AdminCaseStatusLabel } from '@/constants/enum-labels'
 import { AdminCaseStatus } from '@/constants/enums'
+import { P } from '@/constants/permissions'
 import type { AdminCaseItem } from '@/types/admin-case'
 import type { ProTableColumn } from '@/types/components'
 import { useLocaleFormatter } from '@/utils/locale-format'
@@ -102,7 +103,7 @@ function handleAdd() {
 }
 
 function handleRowClick(row: AdminCaseItem) {
-  router.push(`/admin-cases/${row.id}`)
+  router.push(`/customers/admin-cases/${row.id}`)
 }
 
 /**
@@ -113,7 +114,7 @@ function handleRowClick(row: AdminCaseItem) {
  */
 async function handleDelete(row: AdminCaseItem) {
   const ok = await confirmDelete(row.caseName)
-  if (!ok) return
+  if (!ok) {return}
 
   try {
     await deleteAdminCase(row.id)
@@ -129,7 +130,7 @@ function handleSaved() {
 }
 
 function isExpired(dateStr: string | null): boolean {
-  if (!dateStr) return false
+  if (!dateStr) {return false}
   return new Date(dateStr).getTime() < Date.now()
 }
 
@@ -140,7 +141,7 @@ function isExpired(dateStr: string | null): boolean {
  * @returns 命中临近到期区间时返回 true
  */
 function isExpiringSoon(dateStr: string | null): boolean {
-  if (!dateStr) return false
+  if (!dateStr) {return false}
   const diff = new Date(dateStr).getTime() - Date.now()
   const days = diff / (1000 * 60 * 60 * 24)
   return days >= 0 && days <= 30
@@ -151,7 +152,7 @@ function isExpiringSoon(dateStr: string | null): boolean {
   <div class="admin-cases-tab">
     <div class="admin-cases-tab__toolbar">
       <span class="admin-cases-tab__count">{{ t('detailViews.customer.caseCount', { count: total }) }}</span>
-      <el-button type="primary" :icon="Plus" size="small" @click="handleAdd">
+      <el-button v-permission="P.ADMIN_CASE_CREATE" type="primary" :icon="Plus" size="small" @click="handleAdd">
         {{ t('detailViews.customer.addCase') }}
       </el-button>
     </div>
@@ -188,10 +189,10 @@ function isExpiringSoon(dateStr: string | null): boolean {
       </template>
 
       <template #actions="{ row }">
-        <el-button type="primary" link size="small" @click.stop="handleRowClick(row)">
+        <el-button v-permission="P.ADMIN_CASE_DETAIL" type="primary" link size="small" @click.stop="handleRowClick(row)">
           {{ t('common.detail') }}
         </el-button>
-        <el-button type="danger" link size="small" @click.stop="handleDelete(row)">
+        <el-button v-permission="P.ADMIN_CASE_DELETE" type="danger" link size="small" @click.stop="handleDelete(row)">
           {{ t('common.delete') }}
         </el-button>
       </template>

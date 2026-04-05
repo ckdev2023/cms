@@ -1,0 +1,169 @@
+.customer-form-drawer__form :deep(.el-form-item) {
+  margin-bottom: 16px;
+}
+
+.customer-form-drawer__section {
+  margin-bottom: 22px;
+}
+
+.customer-form-drawer__section:last-of-type {
+  margin-bottom: 10px;
+}
+
+.customer-form-drawer__section-title {
+  margin: 0 0 12px;
+  padding: 0;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--el-text-color-primary);
+  letter-spacing: 0.02em;
+}
+
+.customer-form-drawer__section-title--in-panel {
+  margin-bottom: 8px;
+}
+
+.customer-form-drawer__section-title--visa {
+  margin-top: 0;
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.customer-form-drawer__section-title.is-inactive {
+  color: var(--el-text-color-secondary);
+  font-weight: 500;
+}
+
+.customer-form-drawer__section-lead {
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+.customer-form-drawer__section--panel {
+  padding: 14px 16px 16px;
+  border-radius: 10px;
+  background-color: var(--el-fill-color-lighter);
+  border: 1px solid var(--el-border-color-lighter);
+}
+
+.customer-form-drawer__row-tight-top :deep(.el-form-item) {
+  margin-bottom: 12px;
+}
+
+.customer-form-drawer__callout {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background-color: var(--el-color-info-light-9);
+  border-left: 3px solid var(--el-color-info);
+}
+
+.customer-form-drawer__callout-text {
+  display: block;
+  line-height: 1.5;
+}
+
+.customer-form-drawer__callout-text--stack {
+  margin-top: 8px;
+}
+
+.customer-form-drawer__photo-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+}
+
+.customer-form-drawer__photo-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.customer-form-drawer__photo-hint,
+.customer-form-drawer__photo-perm-hint {
+  display: block;
+  margin-top: 8px;
+  line-height: 1.5;
+}
+
+.customer-form-drawer__footer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
+.customer-form-drawer__footer-actions :deep(.el-button + .el-button) {
+  margin-left: 0;
+}
+
+.customer-form-dialog__extension {
+  margin-top: 0;
+}
+
+.customer-form-dialog__extension :deep(.el-form-item) {
+  margin-bottom: 14px;
+}
+
+.customer-form-dialog__extension :deep(.el-form-item__content),
+.customer-form-dialog__visa-row :deep(.el-form-item__content) {
+  flex: 1;
+  min-width: 0;
+}
+
+.customer-form-dialog__field-fill {
+  width: 100%;
+}
+
+.customer-form-dialog__accompanying-row {
+  margin-top: 12px;
+}
+
+.customer-form-dialog__visa-row {
+  margin-top: 12px;
+}
+
+.customer-form-dialog__visa-inner-row {
+  width: 100%;
+}
+
+.customer-form-dialog__extension-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin: 0 0 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--el-border-color-lighter);
+}
+
+.customer-form-dialog__visa-panel {
+  padding: 10px 12px 8px;
+  border-radius: 8px;
+  background-color: var(--el-fill-color-light);
+  border: 1px solid var(--el-border-color-lighter);
+}
+
+.customer-form-dialog__visa-panel.is-inactive {
+  opacity: 0.85;
+}
+
+.customer-form-dialog__visa-panel-hint {
+  display: block;
+  text-align: center;
+  line-height: 1.45;
+  margin: 2px 0 0;
+  padding: 0 4px 4px;
+}
+
+.customer-form-dialog__remind-days {
+  width: 100%;
+}
+
+.customer-form-dialog__visa-row :deep(.el-form-item) {
+  margin-bottom: 12px;
+}

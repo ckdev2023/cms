@@ -129,7 +129,7 @@ function handleEdit(row: TaxContractItem) {
  */
 async function handleDelete(row: TaxContractItem) {
   const ok = await confirmDelete(row.contractName)
-  if (!ok) return
+  if (!ok) {return}
 
   try {
     await deleteTaxContract(row.id)
@@ -149,11 +149,11 @@ function handleSaved() {
  */
 function doSearch() {
   const params: Partial<SearchFilters> = {}
-  if (searchForm.keyword) params.keyword = searchForm.keyword
+  if (searchForm.keyword) {params.keyword = searchForm.keyword}
   if (searchForm.contractStatus)
-    params.contractStatus = searchForm.contractStatus
+    {params.contractStatus = searchForm.contractStatus}
   if (searchForm.billingCycle)
-    params.billingCycle = searchForm.billingCycle
+    {params.billingCycle = searchForm.billingCycle}
   handleSearch(params)
 }
 
@@ -184,12 +184,12 @@ function handleSortChange(sort: { prop: string; order: string }) {
 }
 
 function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
+  if (!dateStr) {return '-'}
   return new Date(dateStr).toLocaleDateString(appStore.locale === 'zh-CN' ? 'zh-CN' : 'ja-JP')
 }
 
 function formatCurrency(value: number) {
-  if (value === null || value === undefined) return '-'
+  if (value === null || value === undefined) {return '-'}
   return `¥${Number(value).toLocaleString(appStore.locale === 'zh-CN' ? 'zh-CN' : 'ja-JP')}`
 }
 
@@ -225,14 +225,14 @@ const billingCycleOptions = computed(() =>
  * @returns `true` 表示需要展示临期提醒样式
  */
 function isContractExpiringSoon(dateStr: string | null): boolean {
-  if (!dateStr) return false
+  if (!dateStr) {return false}
   const diff = new Date(dateStr).getTime() - Date.now()
   const days = diff / (1000 * 60 * 60 * 24)
   return days >= 0 && days <= 30
 }
 
 function isContractExpired(dateStr: string | null): boolean {
-  if (!dateStr) return false
+  if (!dateStr) {return false}
   return new Date(dateStr).getTime() < Date.now()
 }
 </script>

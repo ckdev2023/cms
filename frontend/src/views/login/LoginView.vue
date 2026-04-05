@@ -40,7 +40,7 @@ const localeOptions = computed(() => [
  */
 async function handleLogin() {
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   loading.value = true
   try {

@@ -8,6 +8,7 @@ import { deleteFile, downloadFile, getFilePreviewUrl, getFiles, uploadFile } fro
 import type { BusinessType } from '@/constants/enums'
 import type { FileItem } from '@/types/file'
 import { useLocaleFormatter } from '@/utils/locale-format'
+import { runSequentially } from '@/utils/run-sequentially'
 
 const props = defineProps<{
   businessType: BusinessType
@@ -65,7 +66,9 @@ function handleClickUpload() {
  */
 async function handleFileChange(e: Event) {
   const input = e.target as HTMLInputElement
-  if (!input.files?.length) return
+  if (!input.files?.length) {
+    return
+  }
 
   const selected = Array.from(input.files)
   input.value = ''
@@ -73,6 +76,7 @@ async function handleFileChange(e: Event) {
   uploading.value = true
   let successCount = 0
   try {
+    const toUpload: File[] = []
     for (const file of selected) {
       if (file.size > MAX_SIZE_MB * 1024 * 1024) {
         ElMessage.warning(t('dialogs.fileUpload.fileTooLarge', { name: file.name, maxSize: MAX_SIZE_MB }))
@@ -83,6 +87,9 @@ async function handleFileChange(e: Event) {
         ElMessage.warning(t('dialogs.fileUpload.invalidFileType', { name: file.name }))
         continue
       }
+      toUpload.push(file)
+    }
+    await runSequentially(toUpload, async (file) => {
       await uploadFile({
         file,
         businessType: props.businessType,
@@ -90,7 +97,7 @@ async function handleFileChange(e: Event) {
         relatedId: props.relatedId,
       })
       successCount++
-    }
+    })
     if (successCount > 0) {
       ElMessage.success(t('dialogs.fileUpload.success', { count: successCount }))
       fetchFiles()
@@ -150,9 +157,9 @@ async function handleDelete(file: FileItem) {
  * @returns 适合表格展示的大小文本
  */
 function formatSize(bytes: number | null): string {
-  if (bytes === null || bytes === undefined) return '-'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes === null || bytes === undefined) {return '-'}
+  if (bytes < 1024) {return `${bytes} B`}
+  if (bytes < 1024 * 1024) {return `${(bytes / 1024).toFixed(1)} KB`}
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
@@ -211,7 +218,7 @@ defineExpose({ refresh: fetchFiles })
           <el-link
             v-if="isPreviewable(row)"
             type="primary"
-            :underline="false"
+            underline="never"
             @click="handlePreview(row)"
           >
             {{ row.fileName }}

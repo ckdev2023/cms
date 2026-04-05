@@ -41,6 +41,12 @@ export class Customer extends BaseEntity {
   @Column({ type: 'varchar', length: 120, nullable: true })
   email: string | null;
 
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  wechatId: string | null;
+
+  @Column({ type: 'varchar', length: 50, nullable: true })
+  lineId: string | null;
+
   @Column({ type: 'varchar', length: 500, nullable: true })
   address: string | null;
 
@@ -54,6 +60,12 @@ export class Customer extends BaseEntity {
 
   @Column({ type: 'varchar', length: 20, default: CustomerStatus.ACTIVE })
   status: CustomerStatus;
+
+  /**
+   * 客户头像对应的 `files` 主键；须为 `business_type=CUSTOMER` 的图片类附件。
+   */
+  @Column({ name: 'photo_file_id', type: 'uuid', nullable: true })
+  photoFileId: string | null;
 
   @Column({ type: 'uuid', nullable: true })
   createdBy: string | null;

@@ -58,11 +58,11 @@ const {
  */
 function doSearch() {
   const params: Record<string, unknown> = {}
-  if (searchForm.keyword) params.keyword = searchForm.keyword
-  if (searchForm.loginType) params.loginType = searchForm.loginType
-  if (searchForm.result) params.result = searchForm.result
-  if (dateRange.value?.[0]) params.startDate = dateRange.value[0]
-  if (dateRange.value?.[1]) params.endDate = dateRange.value[1]
+  if (searchForm.keyword) {params.keyword = searchForm.keyword}
+  if (searchForm.loginType) {params.loginType = searchForm.loginType}
+  if (searchForm.result) {params.result = searchForm.result}
+  if (dateRange.value?.[0]) {params.startDate = dateRange.value[0]}
+  if (dateRange.value?.[1]) {params.endDate = dateRange.value[1]}
   handleSearch(params)
 }
 

@@ -81,7 +81,7 @@ function handleEdit(row: InvoiceListItem) {
  */
 async function handleDelete(row: InvoiceListItem) {
   const ok = await confirmDelete(row.invoiceNo)
-  if (!ok) return
+  if (!ok) {return}
 
   try {
     await deleteInvoice(row.id)
@@ -103,9 +103,9 @@ function handleSaved() {
  */
 function buildSearchParams(): Partial<InvoiceSearchParams> {
   const params: Partial<InvoiceSearchParams> = {}
-  if (searchForm.keyword) params.keyword = searchForm.keyword
-  if (searchForm.status) params.status = searchForm.status
-  if (searchForm.invoiceType) params.invoiceType = searchForm.invoiceType
+  if (searchForm.keyword) {params.keyword = searchForm.keyword}
+  if (searchForm.status) {params.status = searchForm.status}
+  if (searchForm.invoiceType) {params.invoiceType = searchForm.invoiceType}
   return params
 }
 
@@ -154,14 +154,14 @@ function handleRowClick(row: InvoiceListItem) {
  * @returns 需要展示临近到期提醒时返回 true
  */
 function isDueSoon(dateStr: string | null): boolean {
-  if (!dateStr) return false
+  if (!dateStr) {return false}
   const diff = new Date(dateStr).getTime() - Date.now()
   const days = diff / (1000 * 60 * 60 * 24)
   return days >= 0 && days <= 7
 }
 
 function isOverdue(dateStr: string | null): boolean {
-  if (!dateStr) return false
+  if (!dateStr) {return false}
   return new Date(dateStr).getTime() < Date.now()
 }
 
@@ -176,9 +176,9 @@ function isClosedStatus(status: InvoiceStatus): boolean {
  * @returns 对应的样式类名；无需提醒时返回 undefined
  */
 function dueDateClass(row: InvoiceListItem): string | undefined {
-  if (!row.dueDate || isClosedStatus(row.status)) return undefined
-  if (isDueSoon(row.dueDate)) return 'due-warning'
-  if (isOverdue(row.dueDate)) return 'due-danger'
+  if (!row.dueDate || isClosedStatus(row.status)) {return undefined}
+  if (isDueSoon(row.dueDate)) {return 'due-warning'}
+  if (isOverdue(row.dueDate)) {return 'due-danger'}
   return undefined
 }
 

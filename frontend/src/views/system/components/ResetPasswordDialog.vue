@@ -50,7 +50,7 @@ watch(
  */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid || !props.user) return
+  if (!valid || !props.user) {return}
 
   submitting.value = true
   try {

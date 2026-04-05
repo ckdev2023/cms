@@ -68,7 +68,7 @@ function handleClose() {
  */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   if (formModel.startYm > formModel.endYm) {
     ElMessage.warning(t('dialogs.periodGenerate.invalidRange'))

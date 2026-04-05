@@ -21,6 +21,19 @@ describe('calendarDaysLeft', () => {
     const today = new Date('2026-06-16');
     expect(calendarDaysLeft(new Date('2026-06-15'), today)).toBe(-1);
   });
+
+  it('accepts PostgreSQL date-only string (YYYY-MM-DD) without throwing', () => {
+    const today = new Date('2026-01-01');
+    expect(calendarDaysLeft('2026-04-01', today)).toBe(90);
+  });
+
+  it('treats numeric epoch ms consistently with the same instant as Date', () => {
+    const today = new Date(2026, 0, 1);
+    const expire = new Date(2026, 3, 1);
+    expect(calendarDaysLeft(expire.getTime(), today)).toBe(
+      calendarDaysLeft(expire, today),
+    );
+  });
 });
 
 describe('resolveVisaAlertLevel', () => {

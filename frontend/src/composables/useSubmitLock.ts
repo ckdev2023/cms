@@ -15,7 +15,7 @@ export function useSubmitLock() {
    * @returns 锁空闲时返回任务结果；锁已占用时返回 undefined
    */
   async function withLock<T>(fn: () => Promise<T>): Promise<T | undefined> {
-    if (submitting.value) return undefined
+    if (submitting.value) {return undefined}
     submitting.value = true
     try {
       return await fn()

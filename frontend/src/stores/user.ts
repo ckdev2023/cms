@@ -73,8 +73,8 @@ export const useUserStore = defineStore('user', () => {
    */
   function hasPermission(perm: string): boolean {
     const perms = permissions.value
-    if (perms.includes('*')) return true
-    if (perms.includes(perm)) return true
+    if (perms.includes('*')) {return true}
+    if (perms.includes(perm)) {return true}
     const [mod] = perm.split(':')
     return perms.includes(`${mod}:*`)
   }

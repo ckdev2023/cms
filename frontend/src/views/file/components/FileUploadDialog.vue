@@ -8,6 +8,7 @@ import { uploadFile } from '@/api/file'
 import { BusinessTypeLabel } from '@/constants/enum-labels'
 import { BusinessType } from '@/constants/enums'
 import type { UploadFileParams } from '@/types/file'
+import { runSequentially } from '@/utils/run-sequentially'
 
 const emit = defineEmits<{ saved: [] }>()
 defineOptions({ name: 'FileUploadDialog' })
@@ -96,9 +97,19 @@ const canSubmit = computed(
   () => selectedFiles.value.length > 0 && !uploading.value,
 )
 
+/**
+ * 将字节数格式化为可读的文件大小字符串（B / KB / MB）。
+ *
+ * @param bytes - 原始字节数（非负）
+ * @returns 带单位后缀的展示用字符串
+ */
 function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024) {
+    return `${bytes} B`
+  }
+  if (bytes < 1024 * 1024) {
+    return `${(bytes / 1024).toFixed(1)} KB`
+  }
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
@@ -108,12 +119,15 @@ function formatSize(bytes: number): string {
  * 上传成功后关闭弹窗并通知父级刷新；若中途失败，则保留已成功数量用于提示部分成功结果。
  */
 async function handleSubmit() {
-  if (!canSubmit.value) return
+  if (!canSubmit.value) {
+    return
+  }
   uploading.value = true
 
   let successCount = 0
   try {
-    for (const file of selectedFiles.value) {
+    const filesSnapshot = [...selectedFiles.value]
+    await runSequentially(filesSnapshot, async (file) => {
       const params: UploadFileParams = {
         file,
         businessType: businessType.value,
@@ -121,7 +135,7 @@ async function handleSubmit() {
       }
       await uploadFile(params)
       successCount++
-    }
+    })
     ElMessage.success(t('dialogs.fileUpload.success', { count: successCount }))
     visible.value = false
     emit('saved')

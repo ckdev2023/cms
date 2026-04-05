@@ -12,12 +12,12 @@ import {
   Put,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
   ApiOperation,
   ApiParam,
-  ApiQuery,
   ApiTags,
 } from '@nestjs/swagger';
 import type { Request } from 'express';
@@ -27,6 +27,7 @@ import { PermissionCodes } from '../../common/constants/permission-codes';
 import { ApiResponse } from '../../common/helpers/api-response.helper';
 import { Permissions } from '../auth/decorators';
 import { AuditAction } from '../log/decorators';
+import { VisaCaseDataScopeQueryGuard } from '../visa-case/guards/visa-case-data-scope-query.guard';
 import { CustomerService } from './customer.service';
 import { CreateCustomerDto, QueryCustomerDto, UpdateCustomerDto } from './dto';
 
@@ -63,41 +64,18 @@ export class CustomerController {
    * 按筛选条件分页读取客户列表。
    *
    * @param query - 包含分页、关键字、状态与排序条件的查询参数
+   * @param req - 携带当前登录用户 ID 的认证请求对象
    * @returns 符合统一分页结构的客户列表响应体
    */
   @Get()
+  @UseGuards(VisaCaseDataScopeQueryGuard)
   @Permissions(PermissionCodes.CUSTOMER_LIST)
   @ApiOperation({ summary: '顧客一覧取得' })
-  async findAll(@Query() query: QueryCustomerDto) {
-    const result = await this.customerService.findAll(query);
-    return ApiResponse.paginated(
-      result.items,
-      result.total,
-      result.page,
-      result.pageSize,
-    );
-  }
-
-  /**
-   * 查询 90 天内在留期限到期的客户提醒列表。
-   *
-   * @param page - 页码
-   * @param pageSize - 每页条数
-   * @returns 按到期日升序排列的提醒分页列表
-   */
-  @Get('residence-expiry-reminders')
-  @Permissions(PermissionCodes.CUSTOMER_LIST)
-  @ApiOperation({ summary: '在留期限提醒一覧' })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'pageSize', required: false, type: Number })
-  async findResidenceExpiryReminders(
-    @Query('page') page?: number,
-    @Query('pageSize') pageSize?: number,
+  async findAll(
+    @Query() query: QueryCustomerDto,
+    @Req() req: AuthenticatedRequest,
   ) {
-    const result = await this.customerService.findResidenceExpiryReminders(
-      page ? Number(page) : 1,
-      pageSize ? Number(pageSize) : 20,
-    );
+    const result = await this.customerService.findAll(query, req.user.id);
     return ApiResponse.paginated(
       result.items,
       result.total,
@@ -110,14 +88,18 @@ export class CustomerController {
    * 读取单个客户的完整详情及关联资料。
    *
    * @param id - 客户主键 ID
-   * @returns 指定客户的详情实体
+   * @param req - 携带当前登录用户 ID 的认证请求对象（用于附加主展示签证案件摘要）
+   * @returns 指定客户的详情实体及只读 `listPrimaryVisaCase` / `listPrimaryVisaCaseSource` / `primaryCustomerIdForListFallback` 字段
    */
   @Get(':id')
   @Permissions(PermissionCodes.CUSTOMER_DETAIL)
   @ApiOperation({ summary: '顧客詳細取得' })
   @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
-  async findOne(@Param('id', ParseUUIDPipe) id: string) {
-    return this.customerService.findOne(id);
+  async findOne(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    return this.customerService.findOneWithListPrimaryVisaCase(id, req.user.id);
   }
 
   /**

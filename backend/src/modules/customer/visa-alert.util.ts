@@ -1,21 +1,46 @@
 import { VisaAlertLevel } from '../../common/constants/enums';
 
 /**
+ * 从 date 列返回值（Date 或 `YYYY-MM-DD` 字符串）解析出用于自然日运算的年月日分量。
+ *
+ * @param value - TypeORM/pg 返回的在留期限日期
+ * @returns 以 UTC 日界参与 `Date.UTC` 的年、月（0–11）、日
+ */
+function resolveCalendarYmd(
+  value: Date | string | number,
+): [number, number, number] {
+  if (typeof value === 'string') {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
+    if (m) {
+      return [Number(m[1]), Number(m[2]) - 1, Number(m[3])];
+    }
+    const d = new Date(value);
+    return [d.getFullYear(), d.getMonth(), d.getDate()];
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const d = new Date(value);
+    return [d.getFullYear(), d.getMonth(), d.getDate()];
+  }
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return [value.getFullYear(), value.getMonth(), value.getDate()];
+  }
+  const d = new Date(value as unknown as string | number);
+  return [d.getFullYear(), d.getMonth(), d.getDate()];
+}
+
+/**
  * 计算目标日期距今日的自然日差（不含时刻），用于在留期限到期提醒判定。
  *
- * @param expireDate - 在留期限日（仅使用日期部分，忽略时刻）
+ * @param expireDate - 在留期限日（仅使用日期部分，忽略时刻）；兼容 PostgreSQL `date` 返回的字符串
  * @param today - 当前日期基准，默认取系统当天
  * @returns 到期日与今日之间的自然日差（正值表示未到期，负值表示已过期）
  */
 export function calendarDaysLeft(
-  expireDate: Date,
+  expireDate: Date | string | number,
   today: Date = new Date(),
 ): number {
-  const expire = Date.UTC(
-    expireDate.getFullYear(),
-    expireDate.getMonth(),
-    expireDate.getDate(),
-  );
+  const [ey, em, ed] = resolveCalendarYmd(expireDate);
+  const expire = Date.UTC(ey, em, ed);
   const now = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
   return Math.round((expire - now) / 86_400_000);
 }

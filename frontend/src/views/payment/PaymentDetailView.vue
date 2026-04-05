@@ -8,6 +8,7 @@ import PageDetail from '@/components/PageDetail.vue'
 import { InvoiceStatusLabel, PaymentMethodLabel, PaymentStatusLabel } from '@/constants/enum-labels'
 import { InvoiceStatus, PaymentMethod, PaymentStatus } from '@/constants/enums'
 import type { PaymentDetail } from '@/types/payment'
+import { mergeCustomerDetailReturnQuery } from '@/utils/customer-detail-return-navigation'
 import { useLocaleFormatter } from '@/utils/locale-format'
 
 import PaymentReversalDialog from './components/PaymentReversalDialog.vue'
@@ -58,10 +59,23 @@ function goToInvoice(invoiceId: string) {
   router.push(`/finance/invoices/${invoiceId}`)
 }
 
+/**
+ *
+ */
+/**
+ * 跳转收款记录关联客户主档详情，并写入客户中心返回锚点。
+ */
 function goToCustomer() {
-  if (payment.value?.customerId) {
-    router.push(`/customers/${payment.value.customerId}`)
+  if (!payment.value?.customerId) {
+    return
   }
+  const query: Record<string, string> = {}
+  mergeCustomerDetailReturnQuery(query, route)
+  if (Object.keys(query).length > 0) {
+    void router.push({ path: `/customers/${payment.value.customerId}`, query })
+    return
+  }
+  void router.push(`/customers/${payment.value.customerId}`)
 }
 
 const statusTagType: Record<string, 'primary' | 'success' | 'info' | 'warning' | 'danger'> = {

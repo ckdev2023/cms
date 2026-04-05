@@ -42,7 +42,7 @@ watch(
 )
 
 const periodLabel = computed(() => {
-  if (!period.value) return ''
+  if (!period.value) {return ''}
   const [y, m] = period.value.periodYm.split('-')
   return t('detailViews.taxContract.periodsTab.periodLabel', {
     year: y,
@@ -51,23 +51,23 @@ const periodLabel = computed(() => {
 })
 
 const documentProgress = computed(() => {
-  if (!period.value) return ''
+  if (!period.value) {return ''}
   const docs = period.value.documents
-  if (docs.length === 0) return t('dialogs.periodDetail.noDocumentSummary')
+  if (docs.length === 0) {return t('dialogs.periodDetail.noDocumentSummary')}
   const received = docs.filter((d) => d.received).length
   return t('dialogs.periodDetail.receivedSummary', { received, total: docs.length })
 })
 
 const workItemProgress = computed(() => {
-  if (!period.value) return ''
+  if (!period.value) {return ''}
   const items = period.value.workItems
-  if (items.length === 0) return t('dialogs.periodDetail.noWorkSummary')
+  if (items.length === 0) {return t('dialogs.periodDetail.noWorkSummary')}
   const completed = items.filter((w) => w.completed).length
   return t('dialogs.periodDetail.completedSummary', { completed, total: items.length })
 })
 
 const nextStatuses = computed<MonthlyStatus[]>(() => {
-  if (!period.value) return []
+  if (!period.value) {return []}
   const map: Record<MonthlyStatus, MonthlyStatus[]> = {
     [MonthlyStatus.NOT_STARTED]: [MonthlyStatus.IN_PROGRESS],
     [MonthlyStatus.IN_PROGRESS]: [

@@ -20,6 +20,7 @@ import {
 } from '@/constants/enums'
 import type { CreateInvoiceItemParams, InvoiceDetail } from '@/types/invoice'
 import type { InvoicePaymentItem } from '@/types/payment'
+import { mergeCustomerDetailReturnQuery } from '@/utils/customer-detail-return-navigation'
 import { useLocaleFormatter } from '@/utils/locale-format'
 
 import InvoiceFormDialog from './components/InvoiceFormDialog.vue'
@@ -114,10 +115,23 @@ function goToPayment(paymentId: string) {
   router.push(`/finance/payments/${paymentId}`)
 }
 
+/**
+ *
+ */
+/**
+ * 跳转请求书关联客户主档详情，并写入客户中心返回锚点。
+ */
 function goToCustomer() {
-  if (invoice.value?.customerId) {
-    router.push(`/customers/${invoice.value.customerId}`)
+  if (!invoice.value?.customerId) {
+    return
   }
+  const query: Record<string, string> = {}
+  mergeCustomerDetailReturnQuery(query, route)
+  if (Object.keys(query).length > 0) {
+    void router.push({ path: `/customers/${invoice.value.customerId}`, query })
+    return
+  }
+  void router.push(`/customers/${invoice.value.customerId}`)
 }
 
 const statusTagType: Record<string, 'primary' | 'success' | 'info' | 'warning' | 'danger'> = {

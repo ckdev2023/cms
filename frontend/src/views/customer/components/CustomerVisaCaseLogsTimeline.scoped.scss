@@ -1,0 +1,81 @@
+.case-logs-tab__log-card {
+  :deep(.el-card__body) {
+    padding: 12px 16px;
+  }
+}
+
+.case-logs-tab__log-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.case-logs-tab__log-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.case-logs-tab__log-author {
+  font-size: var(--app-font-size-sm);
+  color: var(--app-text-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.case-logs-tab__log-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.case-logs-tab__log-content {
+  font-size: var(--app-font-size-base);
+  line-height: 1.6;
+  color: var(--app-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.case-logs-tab__log-details {
+  margin-top: 8px;
+  padding: 8px 12px;
+  background: var(--el-fill-color-lighter);
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.case-logs-tab__detail-row {
+  font-size: var(--app-font-size-sm);
+  line-height: 1.5;
+}
+
+.case-logs-tab__detail-label {
+  color: var(--app-text-secondary);
+  font-weight: 500;
+
+  &--warning {
+    color: var(--el-color-warning);
+  }
+}
+
+.case-logs-tab__detail-value {
+  color: var(--app-text-primary);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.case-logs-tab__log-updated {
+  margin-top: var(--app-spacing-sm);
+  font-size: var(--app-font-size-xs);
+  color: var(--app-text-disabled);
+}
+
+.case-logs-tab__pagination {
+  display: flex;
+  justify-content: center;
+  margin-top: 16px;
+}

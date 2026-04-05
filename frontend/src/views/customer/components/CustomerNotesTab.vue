@@ -9,8 +9,13 @@ import { createNote, deleteNote, getNotes, updateNote } from '@/api/customer'
 import { useConfirm } from '@/composables/useConfirm'
 import { NoteTypeLabel } from '@/constants/enum-labels'
 import { NoteType } from '@/constants/enums'
-import type { NoteItem, NoteQueryParams } from '@/types/customer'
+import { P } from '@/constants/permissions'
+import { useUserStore } from '@/stores/user'
+import type { NoteItem, NoteQueryParams, UpdateNoteParams } from '@/types/customer'
 import { useLocaleFormatter } from '@/utils/locale-format'
+
+import CustomerNotesAntiDoubleWriteAlert from './CustomerNotesAntiDoubleWriteAlert.vue'
+import CustomerNoteStructuredDetails from './CustomerNoteStructuredDetails.vue'
 
 const props = defineProps<{
   customerId: string
@@ -21,6 +26,22 @@ defineOptions({ name: 'CustomerNotesTab' })
 const { confirmDelete } = useConfirm()
 const { t } = useI18n({ useScope: 'global' })
 const { formatDateTime } = useLocaleFormatter()
+const userStore = useUserStore()
+
+/**
+ * 复用案件日志 Tab 的 i18n 文案键，渲染客户备注表单中结构化字段标签。
+ *
+ * @param key - `detailViews.customer.visaCaseLogsTab` 下的子键
+ * @param params - vue-i18n 插值参数
+ * @returns 翻译后的展示字符串
+ */
+function L(key: string, params?: Record<string, unknown>): string {
+  return t(`detailViews.customer.visaCaseLogsTab.${key}`, params ?? {})
+}
+
+/** 与 NoteController 一致：新建/更新需 `customer:edit`，删除需 `customer:delete` */
+const canEditNote = computed(() => userStore.hasPermission(P.CUSTOMER_EDIT))
+const canDeleteNote = computed(() => userStore.hasPermission(P.CUSTOMER_DELETE))
 
 const loading = ref(false)
 const notes = ref<NoteItem[]>([])
@@ -40,6 +61,10 @@ const showForm = ref(false)
 const formModel = reactive({
   content: '',
   noteType: NoteType.GENERAL,
+  submittedItems: '',
+  missingItems: '',
+  nextAction: '',
+  nextFollowUpAt: '',
 })
 
 const formRules = computed<FormRules>(() => ({
@@ -47,6 +72,9 @@ const formRules = computed<FormRules>(() => ({
     { required: true, message: t('common.enterField', { field: t('detailViews.customer.notesTab.content') }), trigger: 'blur' },
     { max: 5000, message: t('validation.maxChars', { max: 5000 }), trigger: 'blur' },
   ],
+  submittedItems: [{ max: 2000, message: t('validation.maxChars', { max: 2000 }), trigger: 'blur' }],
+  missingItems: [{ max: 2000, message: t('validation.maxChars', { max: 2000 }), trigger: 'blur' }],
+  nextAction: [{ max: 1000, message: t('validation.maxChars', { max: 1000 }), trigger: 'blur' }],
 }))
 
 const isEdit = computed(() => !!editingNote.value)
@@ -105,9 +133,14 @@ function handlePageChange(page: number) {
  * 打开新增备注表单，并重置编辑态与默认备注类型。
  */
 function openCreateForm() {
+  if (!canEditNote.value) {return}
   editingNote.value = null
   formModel.content = ''
   formModel.noteType = NoteType.GENERAL
+  formModel.submittedItems = ''
+  formModel.missingItems = ''
+  formModel.nextAction = ''
+  formModel.nextFollowUpAt = ''
   showForm.value = true
 }
 
@@ -117,9 +150,16 @@ function openCreateForm() {
  * @param note - 当前准备编辑的备注记录
  */
 function openEditForm(note: NoteItem) {
+  if (!canEditNote.value) {return}
   editingNote.value = note
   formModel.content = note.content
   formModel.noteType = note.noteType
+  formModel.submittedItems = note.submittedItems ?? ''
+  formModel.missingItems = note.missingItems ?? ''
+  formModel.nextAction = note.nextAction ?? ''
+  formModel.nextFollowUpAt = note.nextFollowUpAt
+    ? note.nextFollowUpAt.slice(0, 16)
+    : ''
   showForm.value = true
 }
 
@@ -137,21 +177,35 @@ function cancelForm() {
  * @throws {Error} 备注保存请求失败时由请求层统一提示并继续抛出
  */
 async function handleSubmit() {
+  if (!canEditNote.value) {return}
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   submitting.value = true
   try {
     if (isEdit.value && editingNote.value) {
-      await updateNote(props.customerId, editingNote.value.id, {
+      const body: UpdateNoteParams = {
         content: formModel.content,
         noteType: formModel.noteType,
-      })
+        submittedItems: formModel.submittedItems,
+        missingItems: formModel.missingItems,
+        nextAction: formModel.nextAction,
+        nextFollowUpAt: formModel.nextFollowUpAt
+          ? new Date(formModel.nextFollowUpAt).toISOString()
+          : null,
+      }
+      await updateNote(props.customerId, editingNote.value.id, body)
       ElMessage.success(t('detailViews.customer.notesTab.updatedSuccess'))
     } else {
       await createNote(props.customerId, {
         content: formModel.content,
         noteType: formModel.noteType,
+        submittedItems: formModel.submittedItems || undefined,
+        missingItems: formModel.missingItems || undefined,
+        nextAction: formModel.nextAction || undefined,
+        nextFollowUpAt: formModel.nextFollowUpAt
+          ? new Date(formModel.nextFollowUpAt).toISOString()
+          : undefined,
       })
       ElMessage.success(t('detailViews.customer.notesTab.createdSuccess'))
     }
@@ -172,8 +226,9 @@ async function handleSubmit() {
  * @throws {Error} 备注删除请求失败时由请求层统一提示并继续抛出
  */
 async function handleDelete(note: NoteItem) {
+  if (!canDeleteNote.value) {return}
   const confirmed = await confirmDelete(t('detailViews.customer.notesTab.noteDeleteName'))
-  if (!confirmed) return
+  if (!confirmed) {return}
 
   try {
     await deleteNote(props.customerId, note.id)
@@ -188,6 +243,8 @@ async function handleDelete(note: NoteItem) {
 
 <template>
   <div class="notes-tab">
+    <CustomerNotesAntiDoubleWriteAlert />
+
     <div class="notes-tab__toolbar">
       <div class="notes-tab__filter">
         <el-select
@@ -206,12 +263,12 @@ async function handleDelete(note: NoteItem) {
         </el-select>
         <span class="notes-tab__count">{{ t('detailViews.customer.notesTab.countLabel', { count: total }) }}</span>
       </div>
-      <el-button type="primary" @click="openCreateForm">
+      <el-button v-if="canEditNote" type="primary" @click="openCreateForm">
         {{ t('detailViews.customer.notesTab.add') }}
       </el-button>
     </div>
 
-    <el-card v-if="showForm" shadow="never" class="notes-tab__form-card">
+    <el-card v-if="showForm && canEditNote" shadow="never" class="notes-tab__form-card">
       <template #header>
         <span>{{ isEdit ? t('detailViews.customer.notesTab.editTitle') : t('detailViews.customer.notesTab.createTitle') }}</span>
       </template>
@@ -243,6 +300,48 @@ async function handleDelete(note: NoteItem) {
             show-word-limit
           />
         </el-form-item>
+
+        <el-divider content-position="left">
+          {{ t('detailViews.customer.notesTab.structuredSectionTitle') }}
+        </el-divider>
+        <el-form-item :label="L('submittedItems')" prop="submittedItems">
+          <el-input
+            v-model="formModel.submittedItems"
+            type="textarea"
+            :rows="2"
+            :placeholder="L('submittedItemsPlaceholder')"
+            maxlength="2000"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item :label="L('missingItems')" prop="missingItems">
+          <el-input
+            v-model="formModel.missingItems"
+            type="textarea"
+            :rows="2"
+            :placeholder="L('missingItemsPlaceholder')"
+            maxlength="2000"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item :label="L('nextAction')" prop="nextAction">
+          <el-input
+            v-model="formModel.nextAction"
+            :placeholder="L('nextActionPlaceholder')"
+            maxlength="1000"
+            show-word-limit
+          />
+        </el-form-item>
+        <el-form-item :label="L('nextFollowUpAt')" prop="nextFollowUpAt">
+          <el-date-picker
+            v-model="formModel.nextFollowUpAt"
+            type="datetime"
+            value-format="YYYY-MM-DDTHH:mm"
+            style="width: 100%"
+            clearable
+          />
+        </el-form-item>
+
         <div class="notes-tab__form-actions">
           <el-button @click="cancelForm">{{ t('common.cancel') }}</el-button>
           <el-button type="primary" :loading="submitting" @click="handleSubmit">
@@ -276,8 +375,9 @@ async function handleDelete(note: NoteItem) {
                   {{ note.creatorName }}
                 </span>
               </div>
-              <div class="notes-tab__note-actions">
+              <div v-if="canEditNote || canDeleteNote" class="notes-tab__note-actions">
                 <el-button
+                  v-if="canEditNote"
                   :icon="Edit"
                   size="small"
                   text
@@ -287,6 +387,7 @@ async function handleDelete(note: NoteItem) {
                   {{ t('common.edit') }}
                 </el-button>
                 <el-button
+                  v-if="canDeleteNote"
                   :icon="Delete"
                   size="small"
                   text
@@ -298,6 +399,12 @@ async function handleDelete(note: NoteItem) {
               </div>
             </div>
             <div class="notes-tab__note-content">{{ note.content }}</div>
+            <CustomerNoteStructuredDetails
+              :submitted-items="note.submittedItems"
+              :missing-items="note.missingItems"
+              :next-action="note.nextAction"
+              :next-follow-up-at="note.nextFollowUpAt"
+            />
             <div v-if="note.updatedAt !== note.createdAt" class="notes-tab__note-updated">
               {{ t('detailViews.customer.notesTab.updatedAt') }}: {{ formatDateTime(note.updatedAt) }}
             </div>

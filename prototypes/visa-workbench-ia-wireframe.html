@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>签证工作台 · 信息架构线框原型（建议稿）</title>
+    <style>
+      :root {
+        --bg: #f4f5f7;
+        --panel: #fff;
+        --border: #c5c9d4;
+        --text: #1a1d26;
+        --muted: #5c6370;
+        --accent: #2563eb;
+        --wire: #94a3b8;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        font: 14px/1.45 system-ui, -apple-system, 'Segoe UI', sans-serif;
+        color: var(--text);
+        background: var(--bg);
+      }
+      .banner {
+        background: #1e293b;
+        color: #e2e8f0;
+        padding: 10px 20px;
+        font-size: 13px;
+      }
+      .banner strong {
+        color: #fff;
+      }
+      .layout {
+        display: grid;
+        grid-template-columns: 220px 1fr;
+        min-height: calc(100vh - 44px);
+      }
+      aside {
+        background: var(--panel);
+        border-right: 1px solid var(--border);
+        padding: 16px 0;
+      }
+      .nav-title {
+        padding: 0 16px 8px;
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--muted);
+      }
+      .nav-item {
+        display: block;
+        padding: 10px 16px;
+        color: var(--text);
+        text-decoration: none;
+        border-left: 3px solid transparent;
+      }
+      .nav-item:hover {
+        background: #f1f5f9;
+      }
+      .nav-item.active {
+        background: #eff6ff;
+        border-left-color: var(--accent);
+        font-weight: 600;
+      }
+      .nav-item.sub {
+        padding-left: 28px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .nav-item.sub.active {
+        color: var(--accent);
+      }
+      main {
+        padding: 20px 24px 32px;
+        overflow: auto;
+      }
+      .page-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 700;
+      }
+      .scope {
+        display: flex;
+        gap: 0;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        overflow: hidden;
+        background: var(--panel);
+      }
+      .scope button {
+        border: none;
+        background: transparent;
+        padding: 8px 14px;
+        font-size: 13px;
+        cursor: pointer;
+        color: var(--muted);
+      }
+      .scope button + button {
+        border-left: 1px solid var(--border);
+      }
+      .scope button.on {
+        background: #e0e7ff;
+        color: var(--accent);
+        font-weight: 600;
+      }
+      /* 建议：统计与列表筛选同一套维度 —— 紧凑一条，可点击同步筛选 */
+      .kpi-strip {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        padding: 10px 12px;
+        background: var(--panel);
+        border: 1px dashed var(--wire);
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+      .kpi-strip .label {
+        font-size: 12px;
+        color: var(--muted);
+        margin-right: 4px;
+      }
+      .chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        background: #fafafa;
+        font-size: 12px;
+        cursor: pointer;
+        user-select: none;
+      }
+      .chip:hover {
+        border-color: var(--accent);
+      }
+      .chip.on {
+        border-color: var(--accent);
+        background: #eff6ff;
+      }
+      .chip .n {
+        font-weight: 700;
+        font-variant-numeric: tabular-nums;
+      }
+      .section {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+      }
+      .section-head {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .section-head h2 {
+        margin: 0;
+        font-size: 15px;
+      }
+      .toolbar {
+        display: flex;
+        gap: 8px;
+      }
+      .btn {
+        padding: 6px 12px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--panel);
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .btn.primary {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+      .filters {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+      .pill {
+        padding: 6px 12px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        font-size: 12px;
+        cursor: pointer;
+        background: #fff;
+      }
+      .pill.on {
+        background: var(--accent);
+        color: #fff;
+        border-color: var(--accent);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th,
+      td {
+        border: 1px solid var(--border);
+        padding: 10px 8px;
+        text-align: left;
+      }
+      th {
+        background: #f8fafc;
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .ghost-row td {
+        color: var(--muted);
+        font-style: italic;
+      }
+      details {
+        margin-top: 16px;
+        border: 1px dashed var(--wire);
+        border-radius: 8px;
+        padding: 10px 14px;
+        background: #fafafa;
+      }
+      summary {
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .legend {
+        margin-top: 20px;
+        padding: 14px 16px;
+        background: #fffbeb;
+        border: 1px solid #fcd34d;
+        border-radius: 8px;
+        font-size: 12px;
+        color: #78350f;
+        max-width: 900px;
+      }
+      .legend h3 {
+        margin: 0 0 8px;
+        font-size: 13px;
+      }
+      .legend ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="banner">
+      <strong>线框原型</strong> — 非生产界面。用浏览器直接打开本文件即可查看。建议：左侧为「客户中心」二级入口，主区以<strong>提醒列表</strong>为视觉焦点；统计与筛选共用维度，避免三层 Tab 重复同一语义。
+    </div>
+    <div class="layout">
+      <aside>
+        <div class="nav-title">客户中心</div>
+        <a class="nav-item active" href="#">今日工作台</a>
+        <a class="nav-item sub" href="#">└ 签证提醒列表</a>
+        <a class="nav-item sub" href="#">└ 在留到期（档案）</a>
+        <div class="nav-title" style="margin-top: 14px">名录与案件</div>
+        <a class="nav-item" href="#">客户列表</a>
+        <a class="nav-item" href="#">签证案件台帐</a>
+        <div class="nav-title" style="margin-top: 14px">导入与行政</div>
+        <a class="nav-item" href="#">历史签证导入</a>
+        <a class="nav-item" href="#">行政案件补件</a>
+      </aside>
+      <main>
+        <div class="page-head">
+          <h1>今日工作台 · 签证</h1>
+          <div class="scope" role="group" aria-label="数据范围">
+            <button type="button">本人</button>
+            <button type="button">团队</button>
+            <button type="button" class="on">全部</button>
+          </div>
+        </div>
+
+        <div class="kpi-strip" id="kpiStrip">
+          <span class="label">在办摘要（点选与下方筛选联动）</span>
+          <span class="chip on" data-filter="all"><span class="n">1</span> 在办合计</span>
+          <span class="chip" data-filter="supplement"><span class="n">0</span> 补件待客</span>
+          <span class="chip" data-filter="today"><span class="n">0</span> 今日跟进</span>
+          <span class="chip" data-filter="d7"><span class="n">0</span> 7日内窗口</span>
+          <span class="chip" data-filter="unassigned"><span class="n">0</span> 未指派</span>
+          <span class="chip" data-filter="other"><span class="n">1</span> 其他在办</span>
+        </div>
+
+        <section class="section">
+          <div class="section-head">
+            <h2>提醒列表</h2>
+            <div class="toolbar">
+              <button type="button" class="btn">高级筛选</button>
+              <button type="button" class="btn primary">刷新</button>
+            </div>
+          </div>
+          <div class="filters" id="filterPills">
+            <span class="pill on" data-filter="all">全部</span>
+            <span class="pill" data-filter="supplement">补件提醒</span>
+            <span class="pill" data-filter="today">今日待跟进</span>
+            <span class="pill" data-filter="d7">7日内到期</span>
+            <span class="pill" data-filter="2m">2个月内</span>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>客户</th>
+                <th>案件类型</th>
+                <th>提醒类型</th>
+                <th>案件状态</th>
+                <th>期限日</th>
+                <th>剩余</th>
+                <th>担当</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr class="ghost-row">
+                <td colspan="8">（示意：列表区域尽量占满首屏 — 空状态亦保持表格骨架）</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+
+        <details>
+          <summary>可选：其它次要模块（示意）</summary>
+          <p style="margin: 12px 0 0; font-size: 13px; color: var(--muted)">
+            产品内工作台已去掉案件状态分布、合并待办速览、提醒分桶预览等折叠块，仅保留 KPI + 提醒主表。
+          </p>
+        </details>
+
+        <div class="legend">
+          <h3>本稿相对现状的主要变化</h3>
+          <ul>
+            <li>用<strong>左侧子菜单</strong>替代「一级 Segmented + 二级 Tab」叠床架屋；同一心智的页面不再占两层导航。</li>
+            <li>统计从大卡片改为<strong>一条可点击摘要带</strong>，与列表筛选<strong>同一套桶维度</strong>，避免「上面点卡片、下面再点一遍」。</li>
+            <li><strong>提醒列表</strong>上移到首屏视觉中心；与实现一致时可去掉工作台下方次要折叠区。</li>
+          </ul>
+        </div>
+      </main>
+    </div>
+    <script>
+      /**
+       * 轻量演示：点击 chip / pill 同步高亮（仅原型，无真实数据）。
+       */
+      const chips = document.querySelectorAll('#kpiStrip .chip')
+      const pills = document.querySelectorAll('#filterPills .pill')
+
+      function syncSelection(key) {
+        chips.forEach((el) => {
+          el.classList.toggle('on', el.getAttribute('data-filter') === key)
+        })
+        pills.forEach((el) => {
+          el.classList.toggle('on', el.getAttribute('data-filter') === key)
+        })
+      }
+
+      chips.forEach((el) => {
+        el.addEventListener('click', () => syncSelection(el.getAttribute('data-filter')))
+      })
+      pills.forEach((el) => {
+        el.addEventListener('click', () => syncSelection(el.getAttribute('data-filter')))
+      })
+    </script>
+  </body>
+</html>

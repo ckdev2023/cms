@@ -144,7 +144,7 @@ function buildPayload(): CreateDepositOffsetParams {
  */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   if (form.amount > props.balance) {
     ElMessage.warning(t('dialogs.depositOffset.exceedBalance'))

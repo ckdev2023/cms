@@ -48,9 +48,9 @@ export function uploadFile(params: UploadFileParams): Promise<ApiResponse<FileIt
   const formData = new FormData()
   formData.append('file', params.file)
   formData.append('businessType', params.businessType)
-  if (params.customerId) formData.append('customerId', params.customerId)
-  if (params.relatedId) formData.append('relatedId', params.relatedId)
-  if (params.description) formData.append('description', params.description)
+  if (params.customerId) {formData.append('customerId', params.customerId)}
+  if (params.relatedId) {formData.append('relatedId', params.relatedId)}
+  if (params.description) {formData.append('description', params.description)}
 
   return request<FileItem>({
     url: '/files/upload',

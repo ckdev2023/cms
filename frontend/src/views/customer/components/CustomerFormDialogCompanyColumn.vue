@@ -27,7 +27,7 @@ const { t } = useI18n()
       {{ t('dialogs.customerForm.companyInfo') }}
     </div>
     <el-row :gutter="12" class="customer-form-dialog__extension-inner-row">
-      <el-col :span="12">
+      <el-col :span="24">
         <el-form-item
           :label="t('dialogs.customerForm.corporationNumber')"
           prop="corporationNumber"
@@ -41,7 +41,7 @@ const { t } = useI18n()
           />
         </el-form-item>
       </el-col>
-      <el-col :span="12">
+      <el-col :span="24">
         <el-form-item
           :label="t('dialogs.customerForm.fiscalMonth')"
           prop="fiscalMonth"
@@ -96,6 +96,7 @@ const { t } = useI18n()
 
 .customer-form-dialog__fiscal-month {
   width: 100%;
+  max-width: 280px;
 }
 
 .customer-form-dialog__field-fill {

@@ -3,6 +3,7 @@ import { Column, Entity, Index, JoinTable, ManyToMany } from 'typeorm';
 import { UserStatus } from '../../../common/constants/enums';
 import { BaseEntity } from '../../../common/entities/base.entity';
 import { Role } from './role.entity';
+import { Team } from './team.entity';
 
 /**
  * 定义系统登录用户的持久化实体，并维护账户状态与角色绑定关系。
@@ -41,4 +42,7 @@ export class User extends BaseEntity {
     inverseJoinColumn: { name: 'role_id', referencedColumnName: 'id' },
   })
   roles: Role[];
+
+  @ManyToMany(() => Team, (team) => team.members, { eager: false })
+  teams: Team[];
 }

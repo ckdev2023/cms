@@ -55,7 +55,7 @@ watch(
  * @returns 在请求完成后同步更新按钮区的可流转状态集合
  */
 async function fetchTransitions() {
-  if (!props.caseId) return
+  if (!props.caseId) {return}
   loading.value = true
   try {
     const res = await getAdminCaseTransitions(props.caseId)

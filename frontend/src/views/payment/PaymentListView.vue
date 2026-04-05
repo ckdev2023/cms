@@ -86,9 +86,9 @@ function handleSaved() {
  */
 function doSearch() {
   const params: Partial<PaymentQueryParams> = {}
-  if (searchForm.keyword) params.keyword = searchForm.keyword
-  if (searchForm.status) params.status = searchForm.status
-  if (searchForm.paymentMethod) params.paymentMethod = searchForm.paymentMethod
+  if (searchForm.keyword) {params.keyword = searchForm.keyword}
+  if (searchForm.status) {params.status = searchForm.status}
+  if (searchForm.paymentMethod) {params.paymentMethod = searchForm.paymentMethod}
   handleSearch(params)
 }
 

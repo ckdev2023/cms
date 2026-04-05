@@ -77,6 +77,10 @@ export interface NoteTemplate {
   noteType: string;
 }
 
+/**
+ * 演示账号绑定 `STAFF` / `FINANCE` 角色；签证域新权限（如 `visaCase:import`）在 `seed.ts` 的 `ROLE_PERMISSIONS` 中维护。
+ * 环境升级后请执行 `npm run seed`，以便为既有角色补写缺失的 `role_permissions` 关联。
+ */
 export const TEST_USERS: ReadonlyArray<TestUserSeed> = [
   {
     username: 'tanaka',

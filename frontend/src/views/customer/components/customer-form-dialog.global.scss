@@ -1,0 +1,18 @@
+/* 抽屉 teleports 到 body，宽度与动效需非 scoped 才能稳定命中根节点 */
+.customer-form-dialog.el-drawer.rtl,
+.customer-form-dialog.el-drawer.ltr {
+  width: min(960px, 100vw) !important;
+}
+
+.customer-form-dialog.el-drawer .el-drawer__body {
+  min-height: 0;
+  padding: 12px 20px 16px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .customer-form-dialog.el-drawer {
+    transition: none !important;
+  }
+}

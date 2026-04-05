@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { QuestionFilled } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -21,6 +22,8 @@ interface Props {
   stripe?: boolean
   border?: boolean
   height?: string | number
+  /** 表格体最大高度（与 `height` 二选一为主；设置后表头在表格内滚动时保持固定）。 */
+  maxHeight?: string | number
   emptyText?: string
   actionsWidth?: number | string
   rowClickable?: boolean
@@ -39,6 +42,7 @@ const props = withDefaults(defineProps<Props>(), {
   stripe: true,
   border: false,
   height: undefined,
+  maxHeight: undefined,
   emptyText: undefined,
   actionsWidth: 160,
   rowClickable: false,
@@ -102,6 +106,7 @@ function rowClassName(): string {
         :stripe="stripe"
         :border="border"
         :height="height"
+        :max-height="maxHeight"
         :row-class-name="rowClassName"
         @sort-change="handleSortChange"
         @selection-change="handleSelectionChange"
@@ -125,7 +130,7 @@ function rowClassName(): string {
           v-for="col in columns"
           :key="col.prop"
           :prop="col.prop"
-          :label="col.label"
+          :label="col.headerTooltip ? '' : col.label"
           :width="col.width"
           :min-width="col.minWidth"
           :fixed="col.fixed"
@@ -133,6 +138,16 @@ function rowClassName(): string {
           :align="col.align || 'left'"
           :show-overflow-tooltip="col.showOverflowTooltip !== false"
         >
+          <template v-if="col.headerTooltip" #header>
+            <el-tooltip :content="col.headerTooltip" placement="top">
+              <span class="pro-table__header-label-hint">
+                {{ col.label }}
+                <el-icon class="pro-table__header-hint-icon" :size="14">
+                  <QuestionFilled />
+                </el-icon>
+              </span>
+            </el-tooltip>
+          </template>
           <template v-if="col.slot" #default="scope">
             <slot :name="col.slot" v-bind="scope" />
           </template>
@@ -248,6 +263,19 @@ function rowClassName(): string {
     align-items: center;
     padding-top: var(--app-spacing-base);
     margin-top: var(--app-spacing-xs);
+  }
+
+  &__header-label-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: help;
+    vertical-align: middle;
+  }
+
+  &__header-hint-icon {
+    color: var(--el-text-color-secondary);
+    flex-shrink: 0;
   }
 }
 </style>

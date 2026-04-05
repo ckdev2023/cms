@@ -5,6 +5,7 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsOptional,
@@ -22,6 +23,8 @@ import {
   FamilyRelation,
   ServiceType,
 } from '../../../common/constants/enums';
+
+const FAMILY_RELATION_VALUES = ['SPOUSE', 'CHILD', 'PARENT', 'OTHER'] as const;
 
 /**
  * 定义客户新增请求中的公司补充信息，统一约束法人编号、决算月与代表者姓名等字段。
@@ -63,6 +66,16 @@ export class PersonInfoDto {
   @MaxLength(100)
   residenceStatus?: string;
 
+  @ApiPropertyOptional({
+    maxLength: 64,
+    description:
+      '护照号码（自然人 person_info 主档，可空、不设唯一；半角大写归一由服务端处理）',
+  })
+  @IsOptional()
+  @IsString()
+  @MaxLength(64)
+  passportNumber?: string;
+
   @ApiPropertyOptional({ example: '2026-12-31', description: '在留期限日' })
   @IsOptional()
   @IsDateString({}, { message: '在留期限日の形式が無効です' })
@@ -74,13 +87,16 @@ export class PersonInfoDto {
   isFamilyMember?: boolean;
 
   @ApiPropertyOptional({
-    enum: FamilyRelation,
+    enum: FAMILY_RELATION_VALUES,
+    enumName: 'FamilyRelation',
     description: '家族関係（isFamilyMember=true 時必須）',
   })
-  @ValidateIf((o: { isFamilyMember?: boolean }) => o.isFamilyMember === true)
+  @ValidateIf(
+    (personInfo: { isFamilyMember?: boolean }, familyRelation: unknown) =>
+      personInfo.isFamilyMember === true || familyRelation !== undefined,
+  )
   @IsNotEmpty({ message: '家族関係は家族成員の場合に必須です' })
-  @IsEnum(FamilyRelation, { message: '家族関係の値が無効です' })
-  @IsOptional()
+  @IsIn(FAMILY_RELATION_VALUES, { message: '家族関係の値が無効です' })
   familyRelation?: FamilyRelation;
 
   @ApiPropertyOptional({
@@ -125,6 +141,18 @@ export class CreateCustomerDto {
   @MaxLength(120)
   email?: string;
 
+  @ApiPropertyOptional({ maxLength: 50, description: '微信 ID（可空）' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  wechatId?: string;
+
+  @ApiPropertyOptional({ maxLength: 50, description: 'LINE ID（可空）' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  lineId?: string;
+
   @ApiPropertyOptional({ maxLength: 500 })
   @IsOptional()
   @IsString()
@@ -139,6 +167,15 @@ export class CreateCustomerDto {
   @IsOptional()
   @IsUUID('4', { message: '担当者IDの形式が無効です' })
   ownerUserId?: string;
+
+  @ApiPropertyOptional({
+    format: 'uuid',
+    description:
+      '顔写真ファイルID（files、CUSTOMER 種別の画像のみ；新規時は顧客未紐付けファイルのみ可）',
+  })
+  @IsOptional()
+  @IsUUID('4', { message: '顔写真ファイルIDの形式が無効です' })
+  photoFileId?: string;
 
   @ApiPropertyOptional({ type: CompanyInfoDto })
   @IsOptional()

@@ -30,6 +30,17 @@ export class PersonInfo {
   @Column({ type: 'varchar', length: 100, nullable: true })
   residenceStatus: string | null;
 
+  /**
+   * 自然人护照号码主档字段（可空、不设库级唯一；口径见 docs/17 §1.12）。
+   */
+  @Column({
+    name: 'passport_number',
+    type: 'varchar',
+    length: 64,
+    nullable: true,
+  })
+  passportNumber: string | null;
+
   @Index('IDX_person_info_residence_expire_date', {
     where: '"residence_expire_date" IS NOT NULL',
   })

@@ -1,6 +1,10 @@
 import { BadRequestException, ConflictException } from '@nestjs/common';
 
-import { CustomerType, ServiceType } from '../../common/constants/enums';
+import {
+  BusinessType,
+  CustomerType,
+  ServiceType,
+} from '../../common/constants/enums';
 import type { CustomerServiceTestContext } from './customer.service.spec.mocks';
 import {
   createMockCustomer,
@@ -80,6 +84,72 @@ function registerCreateBasicSuccessTests(
       }),
     );
     expect(result).toBeDefined();
+  });
+}
+
+function registerCreateWithPhotoTests(
+  context: CustomerServiceTestContext,
+): void {
+  it('should create with photoFileId and link file to customer', async () => {
+    const mockCreated = createMockPersonalCustomer({ id: 'cust-photo' });
+    context.setupCodeGenQueryBuilder(null);
+    context.setupFindOneAfterCreate(mockCreated);
+
+    const fileRepo = context.getFileRepo();
+    fileRepo.findOne.mockResolvedValue({
+      id: 'file-1',
+      businessType: BusinessType.CUSTOMER,
+      customerId: null,
+      fileExt: '.jpg',
+      mimeType: 'image/jpeg',
+    });
+
+    await context.getService().create(
+      {
+        customerType: CustomerType.PERSONAL,
+        customerName: '写真太郎',
+        serviceType: ServiceType.ADMIN,
+        photoFileId: 'file-1',
+      },
+      'user-1',
+    );
+
+    expect(fileRepo.findOne).toHaveBeenCalledWith({
+      where: { id: 'file-1' },
+    });
+    expect(fileRepo.update).toHaveBeenCalledWith(
+      { id: 'file-1' },
+      { customerId: 'cust-new' },
+    );
+  });
+}
+
+function registerCreatePersonPassportTests(
+  context: CustomerServiceTestContext,
+): void {
+  it('should create a personal customer with passportNumber on personInfo', async () => {
+    const mockCreated = createMockPersonalCustomer();
+    context.setupCodeGenQueryBuilder(null);
+    context.setupFindOneAfterCreate(mockCreated);
+
+    await context.getService().create(
+      {
+        customerType: CustomerType.PERSONAL,
+        customerName: 'パスポート太郎',
+        serviceType: ServiceType.ADMIN,
+        personInfo: {
+          passportNumber: ' ab12 ',
+        },
+      },
+      'user-1',
+    );
+
+    expect(context.getPersonInfoRepo().create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        passportNumber: 'AB12',
+      }),
+    );
+    expect(context.getPersonInfoRepo().save).toHaveBeenCalled();
   });
 }
 
@@ -272,6 +342,8 @@ function registerCreateGuardTests(context: CustomerServiceTestContext): void {
 
 function registerCreateSuccessTests(context: CustomerServiceTestContext): void {
   registerCreateBasicSuccessTests(context);
+  registerCreateWithPhotoTests(context);
+  registerCreatePersonPassportTests(context);
   registerCreatePrimaryCustomerTests(context);
 }
 

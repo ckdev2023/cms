@@ -1,334 +1,345 @@
 <script setup lang="ts">
-import type { FormInstance, FormRules } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import type { UploadRequestOptions } from 'element-plus'
 import { ElMessage } from 'element-plus'
-import { computed, nextTick, provide, reactive, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
+import { computed, ref } from 'vue'
 
-import { createCustomer, getCustomers, updateCustomer } from '@/api/customer'
-import { FamilyRelationLabel, ServiceTypeLabel } from '@/constants/enum-labels'
-import { CustomerType } from '@/constants/enums'
-import type { CustomerItem } from '@/types/customer'
+import { getFilePreviewUrl,uploadFile } from '@/api/file'
+import {
+  type CustomerFormDialogEmitDecl,
+  type CustomerFormDialogProps,
+  useCustomerFormDialog,
+} from '@/composables/useCustomerFormDialog'
+import { BusinessType } from '@/constants/enums'
+import { P } from '@/constants/permissions'
+import { useUserStore } from '@/stores/user'
+import CustomerAccompanyingFamilyBlock from '@/views/customer/components/CustomerAccompanyingFamilyBlock.vue'
 import CustomerFormDialogCompanyColumn from '@/views/customer/components/CustomerFormDialogCompanyColumn.vue'
 import CustomerFormDialogPersonalColumn from '@/views/customer/components/CustomerFormDialogPersonalColumn.vue'
-import { customerFormModelKey } from '@/views/customer/customerFormDialogInjection'
-import {
-  buildBaseFormValues,
-  buildCompanyFormValues,
-  buildCustomerFormPayload,
-  buildPersonFormValues,
-  createDefaultFormModel,
-  type FormModel,
-  hasCompanyExtension,
-} from '@/views/customer/customerFormDialogModel'
 
-const props = defineProps<{
-  modelValue: boolean
-  editData: CustomerItem | null
-}>()
-const emit = defineEmits<{
-  'update:modelValue': [val: boolean]
-  saved: []
-}>()
+const props = defineProps<CustomerFormDialogProps>()
+const emit = defineEmits<CustomerFormDialogEmitDecl>()
 defineOptions({ name: 'CustomerFormDialog' })
-const { t } = useI18n()
 
-const formRef = ref<FormInstance>()
-const submitting = ref(false)
+const userStore = useUserStore()
+const photoUploading = ref(false)
 
-const isEdit = computed(() => !!props.editData)
-const dialogTitle = computed(() =>
-  isEdit.value ? t('dialogs.customerForm.editTitle') : t('dialogs.customerForm.createTitle'),
-)
+const {
+  accompanyingFamilyFeatureActive,
+  companyColumnDisabled,
+  dialogTitle,
+  familyRelationOptions,
+  form,
+  formRef,
+  handleClose,
+  handleSubmit,
+  isEdit,
+  personalColumnDisabled,
+  primaryCustomerLoading,
+  primaryCustomerOptions,
+  rules,
+  searchPrimaryCustomers,
+  serviceTypeOptions,
+  staffLoading,
+  staffOptions,
+  submitting,
+  t,
+} = useCustomerFormDialog(props, emit)
 
-const form = reactive<FormModel>(createDefaultFormModel())
-provide(customerFormModelKey, form)
+const canUploadCustomerPhoto = computed((): boolean => {
+  if (!userStore.hasPermission(P.FILE_UPLOAD)) {
+    return false
+  }
+  return isEdit.value
+    ? userStore.hasPermission(P.CUSTOMER_EDIT)
+    : userStore.hasPermission(P.CUSTOMER_CREATE)
+})
 
-const rules = computed<FormRules>(() => ({
-  customerName: [
-    { required: true, message: t('common.enterField', { field: t('dialogs.customerForm.customerName') }), trigger: 'blur' },
-    { max: 200, message: t('validation.maxChars', { max: 200 }), trigger: 'blur' },
-  ],
-  serviceType: [{ required: true, message: t('common.selectField', { field: t('dialogs.customerForm.serviceType') }), trigger: 'change' }],
-  email: [{ type: 'email', message: t('validation.invalidEmail'), trigger: 'blur' }],
-  fiscalMonth: [
-    {
-      validator: (_rule, value, callback) => {
-        const companySideActive =
-          hasCompanyExtension(form) ||
-          (isEdit.value && form.customerType === CustomerType.COMPANY)
-        if (!companySideActive) {
-          callback()
-          return
-        }
-        if (value === undefined || value === null || value === '') {
-          callback()
-          return
-        }
-        const n = Number(value)
-        if (Number.isNaN(n) || n < 1 || n > 12) {
-          callback(new Error(t('validation.numberRange', { min: 1, max: 12 })))
-          return
-        }
-        callback()
-      },
-      trigger: 'blur',
-    },
-  ],
-  familyRelation: [
-    {
-      validator: (_rule, value, callback) => {
-        if (form.isFamilyMember && !value) {
-          callback(new Error(t('common.selectField', { field: t('dialogs.customerForm.familyRelation') })))
-          return
-        }
-        callback()
-      },
-      trigger: 'change',
-    },
-  ],
-  remindDaysBefore: [
-    {
-      validator: (_rule, value, callback) => {
-        if (value === undefined || value === null || value === '') {
-          callback()
-          return
-        }
-        const n = Number(value)
-        if (Number.isNaN(n) || n < 1 || n > 365) {
-          callback(new Error(t('validation.numberRange', { min: 1, max: 365 })))
-          return
-        }
-        callback()
-      },
-      trigger: 'blur',
-    },
-  ],
-}))
-
-/** 编辑时仅允许改与当前客户类型一致的一栏；新建时两栏可同时填写并一并提交 */
-const personalColumnDisabled = computed(() => isEdit.value && form.customerType === CustomerType.COMPANY)
-const companyColumnDisabled = computed(() => isEdit.value && form.customerType === CustomerType.PERSONAL)
-
-const serviceTypeOptions = Object.entries(ServiceTypeLabel).map(([value, label]) => ({
-  value,
-  label,
-}))
-
-const familyRelationOptions = Object.entries(FamilyRelationLabel).map(([value, label]) => ({
-  value,
-  label,
-}))
-
-const primaryCustomerOptions = ref<{ value: string; label: string }[]>([])
-const primaryCustomerLoading = ref(false)
+const customerFormPhotoPreviewSrc = computed((): string => {
+  const id = form.photoFileId?.trim()
+  return id ? getFilePreviewUrl(id) : ''
+})
 
 /**
- * 远程搜索可用的主客户列表。
+ * 使用文件中心上传接口写入 CUSTOMER 业务图片，并在成功后回填表单中的 `photoFileId`。
  *
- * @param query - 搜索关键字
+ * @param options - Element Plus `el-upload` 自定义上传选项（含本地文件与回调）
+ * @returns Promise，在上传结束或失败后落定
  */
-async function searchPrimaryCustomers(query: string): Promise<void> {
-  if (!query) {
-    primaryCustomerOptions.value = []
+async function handleCustomerPhotoHttpRequest(options: UploadRequestOptions): Promise<void> {
+  const raw = options.file
+  const file = raw instanceof File ? raw : null
+  if (!file) {
+    options.onError?.(
+      { name: 'Error', message: 'missing file', status: 0, method: 'POST', url: '' } as Parameters<
+        NonNullable<UploadRequestOptions['onError']>
+      >[0],
+    )
     return
   }
-  primaryCustomerLoading.value = true
+  photoUploading.value = true
   try {
-    const res = await getCustomers({ keyword: query, pageSize: 20 })
-    const editId = props.editData?.id
-    primaryCustomerOptions.value = res.data.items
-      .filter((c) => c.id !== editId)
-      .map((c) => ({ value: c.id, label: `${c.customerName}（${c.customerCode}）` }))
-  } finally {
-    primaryCustomerLoading.value = false
-  }
-}
-
-watch(
-  () => props.modelValue,
-  (visible) => {
-    if (visible) {
-      nextTick(() => {
-        if (props.editData) {
-          populateForm(props.editData)
-        } else {
-          resetForm()
-        }
-      })
-    }
-  },
-)
-
-watch(
-  () => [
-    form.corporationNumber,
-    form.representativeName,
-    form.fiscalMonth,
-    form.nationality,
-    form.residenceStatus,
-    form.residenceExpireDate,
-    form.customerType,
-    form.isFamilyMember,
-    form.familyRelation,
-    form.remindDaysBefore,
-  ],
-  () => {
-    if (!props.modelValue) return
-    nextTick(() => {
-      formRef.value?.clearValidate([
-        'fiscalMonth',
-        'corporationNumber',
-        'representativeName',
-        'nationality',
-        'residenceStatus',
-        'residenceExpireDate',
-        'familyRelation',
-        'remindDaysBefore',
-      ])
+    const res = await uploadFile({
+      file,
+      businessType: BusinessType.CUSTOMER,
+      customerId: props.editData?.id,
     })
-  },
-  { deep: true },
-)
-
-/**
- * 将待编辑客户数据展开到表单模型，兼容公司客户和个人客户字段。
- *
- * @param data - 当前正在编辑的客户记录
- */
-function populateForm(data: CustomerItem) {
-  Object.assign(
-    form,
-    buildBaseFormValues(data),
-    buildCompanyFormValues(data),
-    buildPersonFormValues(data),
-  )
-}
-
-/**
- * 将客户表单恢复为默认初始值，并清空上一次校验结果。
- */
-function resetForm() {
-  Object.assign(form, createDefaultFormModel())
-  primaryCustomerOptions.value = []
-  nextTick(() => formRef.value?.clearValidate())
-}
-
-/**
- * 校验客户表单并提交创建或更新请求。
- *
- * 成功后会关闭弹窗，并通知父组件刷新客户列表或详情页数据。
- *
- * @throws {Error} 客户保存请求失败时由请求层统一提示并继续抛出
- */
-async function handleSubmit() {
-  const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
-
-  submitting.value = true
-  try {
-    const payload = buildCustomerFormPayload(form, isEdit.value)
-    if (isEdit.value && props.editData) {
-      await updateCustomer(props.editData.id, payload)
-      ElMessage.success(t('dialogs.customerForm.updated'))
-    } else {
-      await createCustomer(payload)
-      ElMessage.success(t('dialogs.customerForm.created'))
-    }
-    emit('update:modelValue', false)
-    emit('saved')
+    form.photoFileId = res.data.id
+    ElMessage.success(t('dialogs.customerForm.customerPhotoUploadSuccess'))
+    options.onSuccess?.(res.data)
   } catch {
-    // request interceptor already shows error
+    options.onError?.(
+      { name: 'Error', message: 'upload failed', status: 0, method: 'POST', url: '' } as Parameters<
+        NonNullable<UploadRequestOptions['onError']>
+      >[0],
+    )
   } finally {
-    submitting.value = false
+    photoUploading.value = false
   }
 }
 
-function handleClose() {
-  emit('update:modelValue', false)
+/** 清空表单中的头像文件引用（保存时以 `photoFileId: null` 提交）。 */
+function clearCustomerFormPhoto(): void {
+  form.photoFileId = ''
 }
+
+defineExpose({ formRef })
 </script>
 
 <template>
-  <el-dialog
+  <el-drawer
     :model-value="modelValue"
     :title="dialogTitle"
-    width="960px"
-    class="customer-form-dialog"
+    direction="rtl"
+    size="960px"
     destroy-on-close
+    append-to-body
+    class="customer-form-dialog customer-form-drawer"
     @close="handleClose"
   >
     <el-form
       ref="formRef"
+      class="customer-form-drawer__form"
       :model="form"
       :rules="rules"
       label-width="120px"
       label-position="right"
     >
-      <el-form-item :label="t('dialogs.customerForm.customerName')" prop="customerName">
-        <el-input
-          v-model="form.customerName"
-          :placeholder="t('common.enterField', { field: t('dialogs.customerForm.customerName') })"
-          maxlength="200"
-        />
-      </el-form-item>
-
-      <el-row :gutter="16">
-        <el-col :span="12">
-          <el-form-item :label="t('common.phone')" prop="phone">
-            <el-input v-model="form.phone" placeholder="03-1234-5678" maxlength="50" />
-          </el-form-item>
-        </el-col>
-        <el-col :span="12">
-          <el-form-item :label="t('common.email')" prop="email">
-            <el-input v-model="form.email" placeholder="example@mail.com" maxlength="120" />
-          </el-form-item>
-        </el-col>
-      </el-row>
-
-      <el-form-item :label="t('dialogs.customerForm.address')" prop="address">
-        <el-input
-          v-model="form.address"
-          :placeholder="t('common.enterField', { field: t('dialogs.customerForm.address') })"
-          maxlength="500"
-        />
-      </el-form-item>
-
-      <el-form-item :label="t('dialogs.customerForm.serviceType')" prop="serviceType">
-        <el-select
-          v-model="form.serviceType"
-          class="customer-form-dialog__field-fill"
-          :placeholder="t('common.selectField', { field: t('dialogs.customerForm.serviceType') })"
-        >
-          <el-option
-            v-for="opt in serviceTypeOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
+      <section
+        class="customer-form-drawer__section"
+        :aria-label="t('dialogs.customerForm.sectionIdentityTitle')"
+      >
+        <h3 class="customer-form-drawer__section-title">
+          {{ t('dialogs.customerForm.sectionIdentityTitle') }}
+        </h3>
+        <el-form-item :label="t('dialogs.customerForm.customerName')" prop="customerName">
+          <el-input
+            v-model="form.customerName"
+            :placeholder="t('common.enterField', { field: t('dialogs.customerForm.customerName') })"
+            maxlength="200"
           />
-        </el-select>
-      </el-form-item>
+        </el-form-item>
 
-      <el-row :gutter="20" class="customer-form-dialog__extension" align="top">
-        <CustomerFormDialogPersonalColumn
-          :personal-column-disabled="personalColumnDisabled"
+        <el-form-item :label="t('dialogs.customerForm.customerPhoto')">
+          <div class="customer-form-drawer__photo-block">
+            <el-avatar :size="72" :src="customerFormPhotoPreviewSrc || undefined">
+              {{ form.customerName?.trim().charAt(0) || '?' }}
+            </el-avatar>
+            <div class="customer-form-drawer__photo-actions">
+              <el-upload
+                v-if="canUploadCustomerPhoto"
+                :show-file-list="false"
+                accept="image/jpeg,image/png,image/gif,image/webp,.jpg,.jpeg,.png,.gif,.webp"
+                :disabled="photoUploading"
+                :http-request="handleCustomerPhotoHttpRequest"
+              >
+                <el-button type="primary" plain :loading="photoUploading" :icon="Plus">
+                  {{ t('dialogs.customerForm.customerPhotoUpload') }}
+                </el-button>
+              </el-upload>
+              <el-button
+                v-if="canUploadCustomerPhoto && form.photoFileId?.trim()"
+                type="danger"
+                link
+                @click="clearCustomerFormPhoto"
+              >
+                {{ t('dialogs.customerForm.customerPhotoClear') }}
+              </el-button>
+            </div>
+          </div>
+          <el-text
+            v-if="!canUploadCustomerPhoto"
+            size="small"
+            type="warning"
+            class="customer-form-drawer__photo-perm-hint"
+          >
+            {{ t('dialogs.customerForm.customerPhotoNoUploadPermission') }}
+          </el-text>
+          <el-text v-else size="small" type="info" class="customer-form-drawer__photo-hint">
+            {{ t('dialogs.customerForm.customerPhotoHint') }}
+          </el-text>
+        </el-form-item>
+      </section>
+
+      <section
+        class="customer-form-drawer__section"
+        :aria-label="t('dialogs.customerForm.sectionContactTitle')"
+      >
+        <h3 class="customer-form-drawer__section-title">
+          {{ t('dialogs.customerForm.sectionContactTitle') }}
+        </h3>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item :label="t('common.phone')" prop="phone">
+              <el-input v-model="form.phone" placeholder="03-1234-5678" maxlength="50" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="t('common.email')" prop="email">
+              <el-input v-model="form.email" placeholder="example@mail.com" maxlength="120" />
+            </el-form-item>
+          </el-col>
+        </el-row>
+
+        <el-row :gutter="16" class="customer-form-drawer__row-tight-top">
+          <el-col :span="12">
+            <el-form-item :label="t('dialogs.customerForm.wechatId')" prop="wechatId">
+              <el-input
+                v-model="form.wechatId"
+                :placeholder="t('dialogs.customerForm.wechatIdPlaceholder')"
+                maxlength="50"
+              />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="t('dialogs.customerForm.lineId')" prop="lineId">
+              <el-input
+                v-model="form.lineId"
+                :placeholder="t('dialogs.customerForm.lineIdPlaceholder')"
+                maxlength="50"
+              />
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <div class="customer-form-drawer__callout" role="note">
+          <el-text size="small" type="info" class="customer-form-drawer__callout-text">
+            {{ t('dialogs.customerForm.wechatLineContactHint') }}
+          </el-text>
+        </div>
+
+        <el-form-item :label="t('dialogs.customerForm.address')" prop="address">
+          <el-input
+            v-model="form.address"
+            :placeholder="t('common.enterField', { field: t('dialogs.customerForm.address') })"
+            maxlength="500"
+          />
+        </el-form-item>
+      </section>
+
+      <section
+        class="customer-form-drawer__section"
+        :aria-label="t('dialogs.customerForm.sectionServiceTitle')"
+      >
+        <h3 class="customer-form-drawer__section-title">
+          {{ t('dialogs.customerForm.sectionServiceTitle') }}
+        </h3>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item :label="t('dialogs.customerForm.serviceType')" prop="serviceType">
+              <el-select
+                v-model="form.serviceType"
+                class="customer-form-dialog__field-fill"
+                :placeholder="t('common.selectField', { field: t('dialogs.customerForm.serviceType') })"
+              >
+                <el-option
+                  v-for="opt in serviceTypeOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
+            <el-form-item :label="t('dialogs.customerForm.ownerUserId')" prop="ownerUserId">
+              <el-select
+                v-model="form.ownerUserId"
+                filterable
+                clearable
+                :loading="staffLoading"
+                class="customer-form-dialog__field-fill"
+                :placeholder="t('dialogs.customerForm.ownerUserIdPlaceholder')"
+              >
+                <el-option
+                  v-for="opt in staffOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
+            </el-form-item>
+          </el-col>
+        </el-row>
+        <div class="customer-form-drawer__callout" role="note">
+          <el-text size="small" type="info" class="customer-form-drawer__callout-text">
+            {{ t('dialogs.customerForm.ownerUserIdHint') }}
+          </el-text>
+          <el-text
+            v-if="!staffLoading && staffOptions.length === 0"
+            size="small"
+            type="warning"
+            class="customer-form-drawer__callout-text customer-form-drawer__callout-text--stack"
+          >
+            {{ t('dialogs.customerForm.ownerUserIdListEmptyHint') }}
+          </el-text>
+        </div>
+      </section>
+
+      <section
+        class="customer-form-drawer__section customer-form-drawer__section--panel"
+        :aria-label="t('dialogs.customerForm.sectionExtensionTitle')"
+      >
+        <h3 class="customer-form-drawer__section-title customer-form-drawer__section-title--in-panel">
+          {{ t('dialogs.customerForm.sectionExtensionTitle') }}
+        </h3>
+        <p class="customer-form-drawer__section-lead">
+          <el-text size="small" type="info">
+            {{ t('dialogs.customerForm.sectionExtensionHint') }}
+          </el-text>
+        </p>
+        <el-row :gutter="20" class="customer-form-dialog__extension" align="top">
+          <CustomerFormDialogPersonalColumn
+            :personal-column-disabled="personalColumnDisabled"
+            :family-relation-options="familyRelationOptions"
+            :primary-customer-options="primaryCustomerOptions"
+            :primary-customer-loading="primaryCustomerLoading"
+            @search-primary-customers="searchPrimaryCustomers"
+          />
+          <CustomerFormDialogCompanyColumn
+            :company-column-disabled="companyColumnDisabled"
+          />
+        </el-row>
+      </section>
+
+      <el-row
+        v-if="accompanyingFamilyFeatureActive"
+        :gutter="20"
+        class="customer-form-dialog__accompanying-row"
+      >
+        <CustomerAccompanyingFamilyBlock
+          :disabled="personalColumnDisabled"
           :family-relation-options="familyRelationOptions"
-          :primary-customer-options="primaryCustomerOptions"
-          :primary-customer-loading="primaryCustomerLoading"
-          @search-primary-customers="searchPrimaryCustomers"
-        />
-        <CustomerFormDialogCompanyColumn
-          :company-column-disabled="companyColumnDisabled"
         />
       </el-row>
 
       <el-row :gutter="20" class="customer-form-dialog__visa-row">
         <el-col :span="24">
-          <div
-            class="customer-form-dialog__extension-title customer-form-dialog__extension-title--visa"
+          <h3
+            class="customer-form-drawer__section-title customer-form-drawer__section-title--visa"
             :class="{ 'is-inactive': personalColumnDisabled }"
           >
             {{ t('dialogs.customerForm.visaInfoTitle') }}
-          </div>
+          </h3>
           <div
             class="customer-form-dialog__visa-panel"
             :class="{ 'is-inactive': personalColumnDisabled }"
@@ -375,83 +386,15 @@ function handleClose() {
     </el-form>
 
     <template #footer>
-      <el-button @click="handleClose">{{ t('common.cancel') }}</el-button>
-      <el-button type="primary" :loading="submitting" @click="handleSubmit">
-        {{ isEdit ? t('common.update') : t('common.create') }}
-      </el-button>
+      <div class="customer-form-drawer__footer-actions">
+        <el-button @click="handleClose">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="submitting" @click="handleSubmit">
+          {{ isEdit ? t('common.update') : t('common.create') }}
+        </el-button>
+      </div>
     </template>
-  </el-dialog>
+  </el-drawer>
 </template>
 
-<style scoped>
-.customer-form-dialog__extension {
-  margin-top: 4px;
-}
-
-.customer-form-dialog__extension :deep(.el-form-item) {
-  margin-bottom: 14px;
-}
-
-.customer-form-dialog__extension :deep(.el-form-item__content),
-.customer-form-dialog__visa-row :deep(.el-form-item__content) {
-  flex: 1;
-  min-width: 0;
-}
-
-.customer-form-dialog__field-fill {
-  width: 100%;
-}
-
-.customer-form-dialog__visa-row {
-  margin-top: 2px;
-}
-
-.customer-form-dialog__visa-inner-row {
-  width: 100%;
-}
-
-.customer-form-dialog__extension-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin: 0 0 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-}
-
-.customer-form-dialog__extension-title--visa {
-  margin-top: 12px;
-}
-
-.customer-form-dialog__extension-title.is-inactive {
-  color: var(--el-text-color-secondary);
-  font-weight: 500;
-}
-
-.customer-form-dialog__visa-panel {
-  padding: 10px 12px 8px;
-  border-radius: 8px;
-  background-color: var(--el-fill-color-light);
-  border: 1px solid var(--el-border-color-lighter);
-}
-
-.customer-form-dialog__visa-panel.is-inactive {
-  opacity: 0.85;
-}
-
-.customer-form-dialog__visa-panel-hint {
-  display: block;
-  text-align: center;
-  line-height: 1.45;
-  margin: 2px 0 0;
-  padding: 0 4px 4px;
-}
-
-.customer-form-dialog__remind-days {
-  width: 100%;
-}
-
-.customer-form-dialog__visa-row :deep(.el-form-item) {
-  margin-bottom: 12px;
-}
-</style>
+<style scoped lang="scss" src="./customer-form-dialog.scoped.scss"></style>
+<style lang="scss" src="./customer-form-dialog.global.scss"></style>

@@ -18,10 +18,13 @@ export function createMockCustomer(
     customerName: 'テスト株式会社',
     phone: '03-1234-5678',
     email: 'test@example.com',
+    wechatId: null,
+    lineId: null,
     address: '東京都千代田区',
     serviceType: ServiceType.BOTH,
     ownerUserId: 'user-1',
     status: CustomerStatus.ACTIVE,
+    photoFileId: null,
     createdBy: 'user-1',
     updatedBy: 'user-1',
     createdAt: new Date(),
@@ -61,6 +64,7 @@ export function createMockPersonalCustomer(
       customerId: 'cust-2',
       nationality: '日本',
       residenceStatus: '永住者',
+      passportNumber: null,
       residenceExpireDate: new Date('2028-12-31'),
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -74,6 +78,8 @@ export type CustomerServiceTestContext = {
   getCustomerRepo: () => Record<string, jest.Mock>;
   getCompanyInfoRepo: () => Record<string, jest.Mock>;
   getPersonInfoRepo: () => Record<string, jest.Mock>;
+  getFileRepo: () => Record<string, jest.Mock>;
+  getVisaCaseRepo: () => Record<string, jest.Mock>;
   setupCodeGenQueryBuilder: (lastCustomer: Customer | null) => void;
   setupFindOneAfterCreate: (customer: Customer) => void;
 };
@@ -82,6 +88,7 @@ export function createFindAllQueryBuilder(result: [Customer[], number]) {
   return {
     leftJoinAndSelect: jest.fn().mockReturnThis(),
     andWhere: jest.fn().mockReturnThis(),
+    setParameter: jest.fn().mockReturnThis(),
     orderBy: jest.fn().mockReturnThis(),
     skip: jest.fn().mockReturnThis(),
     take: jest.fn().mockReturnThis(),

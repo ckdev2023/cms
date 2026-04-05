@@ -42,11 +42,38 @@ export interface AuditLogQueryParams extends PaginationParams {
   result?: string
 }
 
+/**
+ * 操作审计 CSV 导出查询参数（与列表筛选一致，另附单次行数上限）。
+ */
+export type AuditLogExportParams = Omit<AuditLogQueryParams, 'page' | 'pageSize'> & {
+  limit?: number
+}
+
 export interface LoginLogQueryParams extends PaginationParams {
   userId?: string
   username?: string
   loginType?: string
   result?: string
+  startDate?: string
+  endDate?: string
+}
+
+export interface ExportLogItem {
+  id: string
+  userId: string
+  username: string | null
+  displayName: string | null
+  exportType: string
+  exportParams: Record<string, unknown> | null
+  fileName: string | null
+  status: string
+  occurredAt: string
+}
+
+export interface ExportLogQueryParams extends PaginationParams {
+  userId?: string
+  exportType?: string
+  status?: string
   startDate?: string
   endDate?: string
 }

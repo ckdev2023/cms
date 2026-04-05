@@ -394,31 +394,30 @@ async function seedInvoices(
       `INSERT INTO invoices (
          id,
          customer_id,
-         invoice_number,
-         title,
+         invoice_no,
          invoice_type,
-         status,
          total_amount,
-         tax_amount,
-         subtotal,
+         currency,
+         status,
+         remark,
          created_by
        )
-       VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9)
+       VALUES (gen_random_uuid(), $1, $2, $3, $4, 'JPY', $5, $6, $7)
        RETURNING id`,
       [
         customerId,
         invoice.invoiceNumber,
-        invoice.title,
         invoice.invoiceType,
-        invoice.status,
         invoice.totalAmount,
-        invoice.taxAmount,
-        invoice.subtotal,
+        invoice.status,
+        invoice.title,
         createdBy,
       ],
     )) as IdRow[];
 
     const invoiceId = insertedRows[0].id;
+
+    let sortOrder = 0;
 
     for (const item of invoice.items) {
       await queryRunner.query(
@@ -429,7 +428,7 @@ async function seedInvoices(
            quantity,
            unit_price,
            amount,
-           tax_rate
+           sort_order
          )
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6)`,
         [
@@ -438,9 +437,10 @@ async function seedInvoices(
           item.quantity,
           item.unitPrice,
           item.amount,
-          item.taxRate,
+          sortOrder,
         ],
       );
+      sortOrder += 1;
     }
 
     seedDemoLogger.log(

@@ -9,10 +9,10 @@ import axios from 'axios'
 export function pickApiErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
     const data = error.response?.data as { message?: string } | undefined
-    if (data?.message) return data.message
-    if (error.message) return error.message
+    if (data?.message) {return data.message}
+    if (error.message) {return error.message}
     return ''
   }
-  if (error instanceof Error) return error.message
+  if (error instanceof Error) {return error.message}
   return ''
 }

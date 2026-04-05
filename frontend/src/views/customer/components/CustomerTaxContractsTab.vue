@@ -144,7 +144,7 @@ function handleRowClick(row: TaxContractItem) {
  */
 async function handleDelete(row: TaxContractItem) {
   const ok = await confirmDelete(row.contractName)
-  if (!ok) return
+  if (!ok) {return}
 
   try {
     await deleteTaxContract(row.id)

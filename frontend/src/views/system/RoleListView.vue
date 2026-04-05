@@ -73,7 +73,7 @@ async function handleDelete(row: SystemRole) {
   }
 
   const ok = await confirmDelete(row.roleName)
-  if (!ok) return
+  if (!ok) {return}
 
   try {
     await deleteRole(row.id)
@@ -90,7 +90,7 @@ function handleSaved() {
 
 function doSearch() {
   const params: Record<string, unknown> = {}
-  if (searchForm.keyword) params.keyword = searchForm.keyword
+  if (searchForm.keyword) {params.keyword = searchForm.keyword}
   handleSearch(params)
 }
 
@@ -117,7 +117,7 @@ function handleSortChange(sort: { prop: string; order: string }) {
 }
 
 function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
+  if (!dateStr) {return '-'}
   return new Date(dateStr).toLocaleDateString(appStore.locale === 'zh-CN' ? 'zh-CN' : 'ja-JP')
 }
 </script>

@@ -13,6 +13,7 @@ import { FinanceModule } from './modules/finance/finance.module';
 import { LogModule } from './modules/log/log.module';
 import { SystemModule } from './modules/system/system.module';
 import { TaxModule } from './modules/tax/tax.module';
+import { VisaCaseModule } from './modules/visa-case/visa-case.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { TaxModule } from './modules/tax/tax.module';
     SystemModule,
     LogModule,
     DashboardModule,
+    VisaCaseModule,
   ],
   controllers: [HealthController],
 })

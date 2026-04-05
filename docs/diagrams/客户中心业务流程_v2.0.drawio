@@ -1,0 +1,206 @@
+<mxfile host="app.diagrams.net" modified="2026-04-05T12:00:00.000Z" agent="cms-docs-v2" version="22.0.0" type="device">
+  <diagram id="customer-center-flow-v2" name="客户中心 2.0 所内担当视角">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1500" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="t0" value="客户中心业务流程 2.0&#xa;内部员工入口（非对客门户）· 时间按「期限与待办」切" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=14;fontStyle=1" vertex="1" parent="1">
+          <mxGeometry x="40" y="16" width="520" height="48" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pool1" value="1 进门第一眼（最想先看到什么）" style="swimlane;horizontal=0;startSize=28;fillColor=#e3f2fd;strokeColor=#1565c0;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="72" width="1420" height="132" as="geometry" />
+        </mxCell>
+        <mxCell id="p1a" value="今日 / 本周&#xa;要跟进的人" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;" vertex="1" parent="pool1">
+          <mxGeometry x="16" y="40" width="150" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="p1b" value="在留 · 期限类&#xa;提醒" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;" vertex="1" parent="pool1">
+          <mxGeometry x="190" y="40" width="150" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="p1c" value="进行中案件&#xa;「下一步该谁做」&#xa;与状态对齐（材料 / 提出·补正 / 预约）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#bbdefb;strokeColor=#1565c0;" vertex="1" parent="pool1">
+          <mxGeometry x="364" y="32" width="220" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="p1d" value="列表 / 卡片可信赖主档摘要&#xa;姓名·商号 · 联系方式 · 担当&#xa;主要在留或关键日期 · 当前主案件一句" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#90caf9;strokeColor=#0d47a1;fontStyle=0" vertex="1" parent="pool1">
+          <mxGeometry x="608" y="32" width="280" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="p1e" value="一眼筛出&#xa;「我现在该处理的那一批」&#xa;（筛选 / 工作台桶 / 提醒页）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f9a825;" vertex="1" parent="pool1">
+          <mxGeometry x="912" y="32" width="200" height="88" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pool2" value="2 留痕分工（交接时命根子）" style="swimlane;horizontal=0;startSize=28;fillColor=#fff8e1;strokeColor=#ff8f00;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="220" width="1420" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="p2a" value="客户备注 Tab&#xa;轻量备忘 · 不隶属于某一案件的信息" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe0b2;strokeColor=#e65100;" vertex="1" parent="pool2">
+          <mxGeometry x="16" y="36" width="280" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p2b" value="签证域 → 案件日志（结构化）&#xa;谁·何时·对客户或入管的判断 · 下次何时跟&#xa;与案件绑定；与行政实务「进行到哪一步」对齐" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffcc80;strokeColor=#e65100;fontStyle=1" vertex="1" parent="pool2">
+          <mxGeometry x="320" y="28" width="420" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="p2c" value="文件 / 审计等跨模块留痕&#xa;（不仅客户中心）" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#9e9e9e;fontSize=11;" vertex="1" parent="pool2">
+          <mxGeometry x="760" y="36" width="220" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pool3" value="3 典型一天：Hub 入口 → 客户详情（与实现对应）" style="swimlane;horizontal=0;startSize=28;fillColor=#e8f5e9;strokeColor=#2e7d32;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="336" width="1420" height="200" as="geometry" />
+        </mxCell>
+        <mxCell id="p3a" value="员工登录&#xa;内部后台" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#c8e6c9;strokeColor=#2e7d32;" vertex="1" parent="pool3">
+          <mxGeometry x="16" y="44" width="110" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p3b" value="侧栏进入&#xa;「客户中心」&#xa;顶栏多 Tab Hub" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f9a825;" vertex="1" parent="pool3">
+          <mxGeometry x="150" y="36" width="150" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="p3c" value="根路径 /customers&#xa;常重定向至签证工作台&#xa;（有权限时；可改 Tab）" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#757575;fontSize=11;" vertex="1" parent="pool3">
+          <mxGeometry x="320" y="36" width="200" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="p3d" value="早上扫一遍&#xa;「该跟进」" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d6a7;strokeColor=#1b5e20;fontSize=11;" vertex="1" parent="pool3">
+          <mxGeometry x="540" y="120" width="120" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p3e" value="客户列表&#xa;筛选·排序·关键字&#xa;新建客户" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d6a7;strokeColor=#1b5e20;" vertex="1" parent="pool3">
+          <mxGeometry x="16" y="120" width="150" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p3f" value="签证工作台&#xa;KPI · 案件桶" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d6a7;strokeColor=#1b5e20;" vertex="1" parent="pool3">
+          <mxGeometry x="186" y="120" width="130" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p3g" value="签证提醒&#xa;（案件维度）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d6a7;strokeColor=#1b5e20;" vertex="1" parent="pool3">
+          <mxGeometry x="336" y="120" width="120" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p3h" value="全局案件&#xa;登记册等" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#a5d6a7;strokeColor=#1b5e20;" vertex="1" parent="pool3">
+          <mxGeometry x="476" y="120" width="110" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p3i" value="主档在留&#xa;N 日内视图&#xa;（同列表 + 默认筛）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1c4e9;strokeColor=#5e35b1;" vertex="1" parent="pool3">
+          <mxGeometry x="606" y="120" width="150" height="64" as="geometry" />
+        </mxCell>
+        <mxCell id="p3j" value="打开客户详情&#xa;/customers/:id&#xa;（深链 query 可定位签证子块）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffccbc;strokeColor=#bf360c;fontStyle=1" vertex="1" parent="pool3">
+          <mxGeometry x="800" y="108" width="200" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="p3k" value="电话 / 来所后&#xa;立刻记一笔 →&#xa;备注或案件日志" style="shape=note;whiteSpace=wrap;html=1;fillColor=#fff59d;strokeColor=#f57f17;size=14;fontSize=11;" vertex="1" parent="pool3">
+          <mxGeometry x="1020" y="108" width="160" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="p3l" value="与税理士等交接：&#xa;案件日志 + 主档 + 附件" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#eceff1;strokeColor=#546e7a;fontSize=11;" vertex="1" parent="pool3">
+          <mxGeometry x="1200" y="116" width="200" height="56" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pool4" value="4 客户详情内：主档与案件对齐" style="swimlane;horizontal=0;startSize=28;fillColor=#fce4ec;strokeColor=#c2185b;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="552" width="1420" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="p4a" value="基本信息&#xa;主档 · 个人 / 法人扩展&#xa;核对身份与在留、更新主档" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f8bbd0;strokeColor=#880e4f;" vertex="1" parent="pool4">
+          <mxGeometry x="16" y="40" width="170" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="p4b" value="客户备注" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="pool4">
+          <mxGeometry x="206" y="48" width="100" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p4c" value="签证域 Tab&#xa;（权限与开关）&#xa;主展示：进行中的签证案件" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f48fb1;strokeColor=#ad1457;fontStyle=1" vertex="1" parent="pool4">
+          <mxGeometry x="326" y="32" width="160" height="88" as="geometry" />
+        </mxCell>
+        <mxCell id="p4d" value="行政案件 Tab&#xa;与主档 customer_id 绑定" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="pool4">
+          <mxGeometry x="506" y="48" width="140" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p4e" value="税务合同 Tab" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="pool4">
+          <mxGeometry x="666" y="48" width="110" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p4f" value="财务 Tab&#xa;（能力渐进）" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="pool4">
+          <mxGeometry x="796" y="48" width="100" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p4g" value="文件 Tab&#xa;查历史 · 找附件" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="pool4">
+          <mxGeometry x="916" y="48" width="110" height="56" as="geometry" />
+        </mxCell>
+        <mxCell id="p4h" value="签证域内子块&#xa;案件 · 家属 · 资料路径&#xa;案件日志 · 材料清单&#xa;管材料状态 · 缺项 / 已交可见" style="shape=parallelogram;perimeter=parallelogramPerimeter;whiteSpace=wrap;html=1;fillColor=#fff9c4;strokeColor=#f9a825;" vertex="1" parent="pool4">
+          <mxGeometry x="200" y="136" width="360" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="p4i" value="产品冻结主路径：&#xa;新建客户 → 详情 → 签证域内建案&#xa;（非列表侧「合并向导」默认替代）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1bee7;strokeColor=#6a1b9a;fontStyle=2;fontSize=11;" vertex="1" parent="pool4">
+          <mxGeometry x="600" y="136" width="320" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="p4j" value="列表 / 提醒 / 工作台&#xa;状态与期限变化应能反映&#xa;便于提出 · 补正阶段扫一眼" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#e0f7fa;strokeColor=#00838f;fontSize=11;" vertex="1" parent="pool4">
+          <mxGeometry x="940" y="136" width="260" height="72" as="geometry" />
+        </mxCell>
+
+        <mxCell id="pool5" value="5 一条「正常」业务流程（叙事顺序 · 接案 → 收尾）" style="swimlane;horizontal=0;startSize=28;fillColor=#ede7f6;strokeColor=#4527a0;fontStyle=1;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="40" y="792" width="1420" height="120" as="geometry" />
+        </mxCell>
+        <mxCell id="s1" value="发现客户&#xa;老客户：列表 / 工作台 / 提醒&#xa;新客户：新建 → 称呼·联系方式·担当·类型落干净" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1c4e9;strokeColor=#4527a0;" vertex="1" parent="pool5">
+          <mxGeometry x="16" y="36" width="200" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="s2" value="建案与范围&#xa;详情 → 签证域建案&#xa;委托事项 · 期限意识起点" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1c4e9;strokeColor=#4527a0;" vertex="1" parent="pool5">
+          <mxGeometry x="236" y="36" width="180" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="s3" value="材料与说明&#xa;资料路径 · 材料清单状态&#xa;缺什么 / 客户已交 → 案件侧可见" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1c4e9;strokeColor=#4527a0;" vertex="1" parent="pool5">
+          <mxGeometry x="436" y="36" width="200" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="s4" value="日常跟进&#xa;每次沟通或所内判断&#xa;→ 案件日志（下次跟进日·下一步）" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1c4e9;strokeColor=#4527a0;" vertex="1" parent="pool5">
+          <mxGeometry x="656" y="36" width="200" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="s5" value="提出与补正&#xa;状态推进 · 期限变化&#xa;列表 / 提醒反映；必要时文件 / 模板" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1c4e9;strokeColor=#4527a0;" vertex="1" parent="pool5">
+          <mxGeometry x="876" y="36" width="200" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="s6" value="结案与档案&#xa;主档仍在 · 历史案件与文件可追溯&#xa;新委托 → 新一轮建案" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b39ddb;strokeColor=#311b92;fontStyle=1" vertex="1" parent="pool5">
+          <mxGeometry x="1096" y="36" width="200" height="72" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_s1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;" edge="1" parent="pool5" source="s1" target="s2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;" edge="1" parent="pool5" source="s2" target="s3">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;" edge="1" parent="pool5" source="s3" target="s4">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;" edge="1" parent="pool5" source="s4" target="s5">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_s5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;" edge="1" parent="pool5" source="s5" target="s6">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_h1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;" edge="1" parent="pool3" source="p3a" target="p3b">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_h2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;" edge="1" parent="pool3" source="p3b" target="p3c">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_h3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" edge="1" parent="pool3" source="p3c" target="p3d">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_h4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" edge="1" parent="pool3" source="p3e" target="p3j">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_h5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" edge="1" parent="pool3" source="p3f" target="p3j">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_h6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" edge="1" parent="pool3" source="p3g" target="p3j">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_h7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" edge="1" parent="pool3" source="p3h" target="p3j">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_h8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" edge="1" parent="pool3" source="p3i" target="p3j">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_h9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;dashed=1;" edge="1" parent="pool3" source="p3d" target="p3j">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_d1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;endArrow=block;endFill=1;" edge="1" parent="pool4" source="p4c" target="p4h">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="bridge" value="进入详情后（第 4 层）↓" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=11;fontColor=#616161;" vertex="1" parent="1">
+          <mxGeometry x="640" y="532" width="200" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e_loop" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;dashed=1;strokeColor=#4527a0;endArrow=block;endFill=0;exitX=1;exitY=0.5;entryX=1;entryY=0.5;" edge="1" parent="pool5" source="s6" target="s1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1320" y="108" />
+              <mxPoint x="1320" y="72" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="loop_lbl" value="同一客户新委托" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;fontSize=10;fontColor=#4527a0;fontStyle=2" vertex="1" parent="pool5">
+          <mxGeometry x="1240" y="52" width="100" height="20" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

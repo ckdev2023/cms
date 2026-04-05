@@ -36,7 +36,7 @@ export function useIdleTimeout() {
    */
   function startTimer() {
     clearTimer()
-    if (!userStore.isLoggedIn) return
+    if (!userStore.isLoggedIn) {return}
     timer = setTimeout(handleTimeout, IDLE_TIMEOUT_MS)
   }
 
@@ -46,7 +46,7 @@ export function useIdleTimeout() {
    * 副作用：会清理当前登录态，并跳转到带有空闲原因标识的登录页。
    */
   async function handleTimeout() {
-    if (!userStore.isLoggedIn) return
+    if (!userStore.isLoggedIn) {return}
     await userStore.logout()
     await router.push({ path: '/login', query: { reason: 'idle' } })
   }

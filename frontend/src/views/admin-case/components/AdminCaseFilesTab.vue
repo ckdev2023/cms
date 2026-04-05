@@ -14,6 +14,7 @@ import { downloadFile, getFilePreviewUrl, uploadFile } from '@/api/file'
 import { BusinessType } from '@/constants/enums'
 import type { AdminCaseDocumentItem } from '@/types/admin-case'
 import { useLocaleFormatter } from '@/utils/locale-format'
+import { runSequentially } from '@/utils/run-sequentially'
 
 const props = defineProps<{
   caseId: string
@@ -76,7 +77,9 @@ function handleClickUpload() {
  */
 async function handleFileChange(e: Event) {
   const input = e.target as HTMLInputElement
-  if (!input.files?.length) return
+  if (!input.files?.length) {
+    return
+  }
 
   const selected = Array.from(input.files)
   input.value = ''
@@ -84,6 +87,7 @@ async function handleFileChange(e: Event) {
 
   let successCount = 0
   try {
+    const toUpload: File[] = []
     for (const file of selected) {
       if (file.size > MAX_SIZE_MB * 1024 * 1024) {
         ElMessage.warning(t('dialogs.fileUpload.fileTooLarge', { name: file.name, maxSize: MAX_SIZE_MB }))
@@ -94,7 +98,9 @@ async function handleFileChange(e: Event) {
         ElMessage.warning(t('dialogs.fileUpload.invalidFileType', { name: file.name }))
         continue
       }
-
+      toUpload.push(file)
+    }
+    await runSequentially(toUpload, async (file) => {
       const uploadRes = await uploadFile({
         file,
         businessType: BusinessType.ADMIN,
@@ -106,7 +112,7 @@ async function handleFileChange(e: Event) {
         fileId: uploadRes.data.id,
       })
       successCount++
-    }
+    })
     if (successCount > 0) {
       ElMessage.success(t('dialogs.fileUpload.success', { count: successCount }))
       fetchDocuments()
@@ -128,7 +134,7 @@ async function handleFileChange(e: Event) {
  * @returns 下载请求完成后结束；失败时显示统一错误提示
  */
 async function handleDownload(doc: AdminCaseDocumentItem) {
-  if (!doc.file) return
+  if (!doc.file) {return}
   try {
     await downloadFile(doc.file.id, doc.file.fileName)
   } catch {
@@ -161,7 +167,7 @@ function handleEdit(doc: AdminCaseDocumentItem) {
  * @returns 保存完成后关闭弹窗并刷新当前文件列表
  */
 async function handleEditSubmit() {
-  if (!editingDoc.value) return
+  if (!editingDoc.value) {return}
   editLoading.value = true
   try {
     await updateAdminCaseDocument(props.caseId, editingDoc.value.id, {
@@ -205,9 +211,9 @@ async function handleDelete(doc: AdminCaseDocumentItem) {
  * @returns 已按 B、KB、MB 自动换算的文本结果
  */
 function formatSize(bytes: number | null): string {
-  if (bytes === null) return '-'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes === null) {return '-'}
+  if (bytes < 1024) {return `${bytes} B`}
+  if (bytes < 1024 * 1024) {return `${(bytes / 1024).toFixed(1)} KB`}
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
@@ -263,7 +269,7 @@ const isPdf = (doc: AdminCaseDocumentItem) => doc.file?.fileExt === '.pdf'
           <el-link
             v-if="isPreviewable(row)"
             type="primary"
-            :underline="false"
+            underline="never"
             @click="handlePreview(row)"
           >
             {{ row.file?.fileName ?? '-' }}

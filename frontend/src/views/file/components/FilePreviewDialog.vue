@@ -13,12 +13,12 @@ const visible = defineModel<boolean>({ default: false })
 const imageExtensions = new Set(['.jpg', '.jpeg', '.png', '.gif', '.webp'])
 
 const previewUrl = computed(() => {
-  if (!props.file) return ''
+  if (!props.file) {return ''}
   return getFilePreviewUrl(props.file.id)
 })
 
 const isImage = computed(() => {
-  if (!props.file?.fileExt) return false
+  if (!props.file?.fileExt) {return false}
   return imageExtensions.has(props.file.fileExt)
 })
 

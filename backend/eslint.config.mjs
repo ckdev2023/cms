@@ -55,10 +55,11 @@ export default tseslint.config(
 
       // ── Complexity / length guards (warn — signal for refactoring) ──
       'complexity': ['warn', { max: 15 }],
-      'max-depth': ['warn', { max: 4 }],
+      // 块嵌套过深易与状态机 bug 相伴；当前全仓在 max:4 下无违规，升级为阻断级
+      'max-depth': ['error', { max: 4 }],
       'max-lines': ['warn', { max: 500, skipBlankLines: true, skipComments: true }],
       'max-lines-per-function': [
-        'warn',
+        'error',
         { max: 80, skipBlankLines: true, skipComments: true },
       ],
 

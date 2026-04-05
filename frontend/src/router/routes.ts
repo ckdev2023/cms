@@ -33,16 +33,90 @@ export const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routes.dashboard', affix: true, permissions: [P.DASHBOARD_VIEW] },
       },
       {
-        path: 'customers',
-        name: 'CustomerList',
-        component: () => import('@/views/customer/CustomerListView.vue'),
-        meta: { titleKey: 'routes.customers', permissions: [P.CUSTOMER_LIST] },
+        path: 'customers/admin-cases/:id',
+        name: 'AdminCaseDetail',
+        component: () => import('@/views/admin-case/AdminCaseDetailView.vue'),
+        meta: { titleKey: 'routes.adminCaseDetail', hidden: true, permissions: [P.ADMIN_CASE_DETAIL] },
       },
       {
-        path: 'customers/residence-reminders',
-        name: 'ResidenceReminderList',
-        component: () => import('@/views/customer/ResidenceReminderListView.vue'),
-        meta: { titleKey: 'routes.residenceReminders', permissions: [P.CUSTOMER_LIST] },
+        path: 'customers',
+        component: () => import('@/layouts/CustomerCenterLayout.vue'),
+        meta: { titleKey: 'routes.customers', breadcrumb: false },
+        children: [
+          {
+            path: '',
+            name: 'CustomerList',
+            component: () => import('@/views/customer/CustomerListView.vue'),
+            meta: {
+              titleKey: 'routes.customers',
+              permissions: [P.CUSTOMER_LIST],
+              /** 内层 KeepAlive 承载缓存；外层与 route.name 解耦，避免误匹配 */
+              noCache: true,
+            },
+          },
+          {
+            path: 'residence-reminders',
+            name: 'ResidenceReminderList',
+            component: () => import('@/views/customer/CustomerListView.vue'),
+            meta: {
+              titleKey: 'routes.residenceReminders',
+              permissions: [P.CUSTOMER_LIST],
+              defaultResidenceExpireWithinDays: 90,
+              noCache: true,
+            },
+          },
+          {
+            path: 'workbench/visa',
+            name: 'VisaWorkbench',
+            component: () => import('@/views/visa/VisaWorkbenchView.vue'),
+            meta: {
+              titleKey: 'routes.workbenchVisa',
+              /** docs/21 §17.2：visaReminder:list 与 visaCase:list 二选一即可进入 */
+              permissions: [P.VISA_REMINDER_LIST, P.VISA_CASE_LIST],
+              noCache: true,
+            },
+          },
+          {
+            path: 'visa-reminders',
+            name: 'VisaReminderList',
+            component: () => import('@/views/visa/VisaReminderListView.vue'),
+            meta: { titleKey: 'routes.visaReminders', permissions: [P.VISA_REMINDER_LIST], noCache: true },
+          },
+          {
+            path: 'visa-cases',
+            name: 'VisaCaseRegistry',
+            component: () => import('@/views/visa/VisaCaseRegistryView.vue'),
+            meta: { titleKey: 'routes.visaCaseRegistry', permissions: [P.VISA_CASE_LIST], noCache: true },
+          },
+          {
+            path: 'visa-case-import',
+            name: 'VisaCaseImport',
+            component: () => import('@/views/visa/VisaCaseImportView.vue'),
+            meta: { titleKey: 'routes.visaCaseImport', permissions: [P.VISA_CASE_IMPORT], noCache: true },
+          },
+          {
+            path: 'admin-case-visa-supplement',
+            name: 'AdminCaseVisaSupplement',
+            component: () => import('@/views/visa/AdminCaseVisaSupplementView.vue'),
+            meta: {
+              titleKey: 'routes.adminCaseVisaSupplement',
+              permissions: [P.VISA_CASE_ADMIN_SUPPLEMENT],
+              noCache: true,
+            },
+          },
+          {
+            path: 'admin-cases',
+            name: 'AdminCaseList',
+            component: () => import('@/views/admin-case/AdminCaseListView.vue'),
+            meta: {
+              titleKey: 'routes.adminCases',
+              /** docs/21 §14.1 B8：仅行政案件权即可直达，勿叠加签证域权限 */
+              permissions: [P.ADMIN_CASE_LIST],
+              legacyEntryKind: 'adminCases',
+              noCache: true,
+            },
+          },
+        ],
       },
       {
         path: 'customers/:id',
@@ -51,16 +125,39 @@ export const routes: RouteRecordRaw[] = [
         meta: { titleKey: 'routes.customerDetail', hidden: true, permissions: [P.CUSTOMER_DETAIL] },
       },
       {
+        path: 'workbench/visa',
+        redirect: (to) => ({ path: '/customers/workbench/visa', query: to.query }),
+      },
+      {
+        path: 'visa-reminders',
+        redirect: (to) => ({ path: '/customers/visa-reminders', query: to.query }),
+      },
+      {
+        path: 'visa-cases',
+        redirect: (to) => ({ path: '/customers/visa-cases', query: to.query }),
+      },
+      {
+        path: 'visa-case-import',
+        redirect: (to) => ({ path: '/customers/visa-case-import', query: to.query }),
+      },
+      {
+        path: 'admin-case-visa-supplement',
+        redirect: (to) => ({ path: '/customers/admin-case-visa-supplement', query: to.query }),
+      },
+      {
         path: 'admin-cases',
-        name: 'AdminCaseList',
-        component: () => import('@/views/admin-case/AdminCaseListView.vue'),
-        meta: { titleKey: 'routes.adminCases', permissions: [P.ADMIN_CASE_LIST] },
+        redirect: (to) => ({ path: '/customers/admin-cases', query: to.query }),
       },
       {
         path: 'admin-cases/:id',
-        name: 'AdminCaseDetail',
-        component: () => import('@/views/admin-case/AdminCaseDetailView.vue'),
-        meta: { titleKey: 'routes.adminCaseDetail', hidden: true, permissions: [P.ADMIN_CASE_DETAIL] },
+        redirect: (to) => {
+          const raw = to.params.id
+          const id = Array.isArray(raw) ? raw[0] : raw
+          return {
+            path: `/customers/admin-cases/${String(id ?? '')}`,
+            query: to.query,
+          }
+        },
       },
       {
         path: 'tax-contracts',
@@ -150,6 +247,12 @@ export const routes: RouteRecordRaw[] = [
         name: 'LoginLogs',
         component: () => import('@/views/system/LoginLogListView.vue'),
         meta: { titleKey: 'routes.loginLogs', permissions: [P.LOG_LIST] },
+      },
+      {
+        path: 'system/export-logs',
+        name: 'ExportLogs',
+        component: () => import('@/views/system/ExportLogListView.vue'),
+        meta: { titleKey: 'routes.exportLogs', permissions: [P.LOG_LIST] },
       },
     ],
   },

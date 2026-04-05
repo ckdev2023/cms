@@ -47,7 +47,7 @@ async function fetchTypes() {
  * @returns 无返回值
  */
 async function fetchItems() {
-  if (!selectedType.value) return
+  if (!selectedType.value) {return}
   itemsLoading.value = true
   try {
     const res = await getDictByType(selectedType.value)

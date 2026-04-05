@@ -3,6 +3,7 @@ import * as bcrypt from 'bcryptjs';
 import type { QueryRunner } from 'typeorm';
 
 import { createAppDataSource } from '../data-source';
+import { seedMaterialTemplates } from './seed-material-templates';
 
 interface RoleSeed {
   roleName: string;
@@ -88,6 +89,41 @@ const PERMISSION_MODULES: ReadonlyArray<PermissionModuleSeed> = [
     label: 'ワークベンチ',
     actions: ['view'],
   },
+  {
+    module: 'visaCase',
+    label: 'ビザ案件',
+    actions: [
+      'list',
+      'detail',
+      'create',
+      'edit',
+      'import',
+      'adminCaseSupplement',
+      'dataScopeMine',
+      'dataScopeTeam',
+      'dataScopeAll',
+    ],
+  },
+  {
+    module: 'visaCaseLog',
+    label: 'ビザ案件ログ',
+    actions: ['create', 'edit', 'delete'],
+  },
+  {
+    module: 'customerFilePath',
+    label: '顧客資料パス',
+    actions: ['list', 'create', 'edit', 'delete'],
+  },
+  {
+    module: 'visaReminder',
+    label: 'ビザリマインダー',
+    actions: ['list'],
+  },
+  {
+    module: 'materialTemplate',
+    label: '材料テンプレート',
+    actions: ['manage'],
+  },
 ];
 
 const ACTION_LABELS: Record<string, string> = {
@@ -103,6 +139,12 @@ const ACTION_LABELS: Record<string, string> = {
   role_manage: 'ロール管理',
   dict_manage: '辞書管理',
   view: '閲覧',
+  manage: '管理',
+  import: '一括取込',
+  adminCaseSupplement: '行政→ビザ補録',
+  dataScopeMine: 'データ範囲（本人）',
+  dataScopeTeam: 'データ範囲（チーム）',
+  dataScopeAll: 'データ範囲（全件）',
 };
 
 const ROLE_PERMISSIONS: Record<string, string[]> = {
@@ -115,6 +157,19 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'file:upload',
     'file:download',
     'dashboard:view',
+    'visaCase:list',
+    'visaCase:detail',
+    'visaCase:create',
+    'visaCase:edit',
+    // P1：历史签证 CSV 导入（seed-demo 的 STAFF 演示账号可访问导入页与接口）
+    'visaCase:import',
+    'visaCase:adminCaseSupplement',
+    'visaCase:dataScopeAll',
+    'visaCaseLog:*',
+    'customerFilePath:*',
+    'visaReminder:list',
+    // P1：材料 checklist 模板管理（与 visa-case 材料接口一致）
+    'materialTemplate:manage',
   ],
   FINANCE: [
     'customer:list',
@@ -124,6 +179,11 @@ const ROLE_PERMISSIONS: Record<string, string[]> = {
     'file:upload',
     'file:download',
     'dashboard:view',
+    'visaCase:list',
+    'visaCase:detail',
+    'visaCase:dataScopeAll',
+    'visaReminder:list',
+    'customerFilePath:list',
   ],
 };
 
@@ -375,6 +435,7 @@ async function seed(): Promise<void> {
 
     await assignPermissionsToRoles(queryRunner, roleIds, permissionMap);
     await seedAdminUser(queryRunner, roleIds.ADMIN);
+    await seedMaterialTemplates(queryRunner);
 
     await queryRunner.commitTransaction();
     seedLogger.log('Seed completed successfully.');

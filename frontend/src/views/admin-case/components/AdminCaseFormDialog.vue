@@ -143,10 +143,10 @@ function buildPayload(): CreateAdminCaseParams {
     caseName: form.caseName,
   }
 
-  if (form.applicantName) payload.applicantName = form.applicantName
-  if (form.residenceStatus) payload.residenceStatus = form.residenceStatus
-  if (form.expireDate) payload.expireDate = form.expireDate
-  if (form.ownerUserId) payload.ownerUserId = form.ownerUserId
+  if (form.applicantName) {payload.applicantName = form.applicantName}
+  if (form.residenceStatus) {payload.residenceStatus = form.residenceStatus}
+  if (form.expireDate) {payload.expireDate = form.expireDate}
+  if (form.ownerUserId) {payload.ownerUserId = form.ownerUserId}
 
   return payload
 }
@@ -158,7 +158,7 @@ function buildPayload(): CreateAdminCaseParams {
  */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   submitting.value = true
   try {

@@ -64,7 +64,7 @@ const colSpan = computed(() => Math.floor(24 / props.columns))
  * 校验当前动态表单并在通过后抛出提交事件。
  */
 async function handleSubmit() {
-  if (!formRef.value) return
+  if (!formRef.value) {return}
   const valid = await formRef.value.validate().catch(() => false)
   if (valid) {
     emit('submit', props.model)

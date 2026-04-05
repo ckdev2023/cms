@@ -171,7 +171,7 @@ function addItem() {
 }
 
 function removeItem(index: number) {
-  if (form.items.length <= 1) return
+  if (form.items.length <= 1) {return}
   form.items.splice(index, 1)
 }
 
@@ -197,10 +197,10 @@ function buildPayload(): CreateInvoiceParams {
     })),
   }
 
-  if (form.dueDate) payload.dueDate = form.dueDate
-  if (form.relatedId) payload.relatedId = form.relatedId
-  if (form.relatedType) payload.relatedType = form.relatedType as BusinessType
-  if (form.remark) payload.remark = form.remark
+  if (form.dueDate) {payload.dueDate = form.dueDate}
+  if (form.relatedId) {payload.relatedId = form.relatedId}
+  if (form.relatedType) {payload.relatedType = form.relatedType as BusinessType}
+  if (form.remark) {payload.remark = form.remark}
 
   return payload
 }
@@ -210,7 +210,7 @@ function buildPayload(): CreateInvoiceParams {
  */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   const hasEmptyItem = form.items.some((it) => !it.description.trim())
   if (hasEmptyItem) {

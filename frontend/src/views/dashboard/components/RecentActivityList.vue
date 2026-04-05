@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { ChatLineSquare, Clock, Document } from '@element-plus/icons-vue'
 import { useI18n } from 'vue-i18n'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
 import type { RecentActivityItem } from '@/types/dashboard'
+import { mergeCustomerDetailReturnQuery } from '@/utils/customer-detail-return-navigation'
 import { useLocaleFormatter } from '@/utils/locale-format'
 
 import DashboardCard from './DashboardCard.vue'
@@ -13,6 +14,7 @@ defineProps<{
   loading: boolean
 }>()
 
+const route = useRoute()
 const router = useRouter()
 const { intlLocale } = useLocaleFormatter()
 const { t } = useI18n({ useScope: 'global' })
@@ -30,19 +32,35 @@ function formatTime(isoStr: string): string {
   const now = new Date()
   const diffMs = now.getTime() - d.getTime()
   const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return t('dashboard.recentActivity.justNow')
-  if (diffMin < 60) return t('dashboard.recentActivity.minutesAgo', { count: diffMin })
+  if (diffMin < 1) {return t('dashboard.recentActivity.justNow')}
+  if (diffMin < 60) {return t('dashboard.recentActivity.minutesAgo', { count: diffMin })}
   const diffH = Math.floor(diffMin / 60)
-  if (diffH < 24) return t('dashboard.recentActivity.hoursAgo', { count: diffH })
+  if (diffH < 24) {return t('dashboard.recentActivity.hoursAgo', { count: diffH })}
   const diffD = Math.floor(diffH / 24)
-  if (diffD < 7) return t('dashboard.recentActivity.daysAgo', { count: diffD })
+  if (diffD < 7) {return t('dashboard.recentActivity.daysAgo', { count: diffD })}
   return d.toLocaleDateString(intlLocale.value)
 }
 
+/**
+ *
+ * @param item
+ */
+/**
+ * 从仪表盘活动流进入客户主档详情，并写入返回锚点。
+ *
+ * @param item - 活动流行数据
+ */
 function handleClick(item: RecentActivityItem) {
-  if (item.customerId) {
-    router.push(`/customers/${item.customerId}`)
+  if (!item.customerId) {
+    return
   }
+  const query: Record<string, string> = {}
+  mergeCustomerDetailReturnQuery(query, route)
+  if (Object.keys(query).length > 0) {
+    void router.push({ path: `/customers/${item.customerId}`, query })
+    return
+  }
+  void router.push(`/customers/${item.customerId}`)
 }
 </script>
 

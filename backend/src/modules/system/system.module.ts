@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 
 import { Permission } from '../auth/entities/permission.entity';
 import { Role } from '../auth/entities/role.entity';
+import { Team } from '../auth/entities/team.entity';
 import { User } from '../auth/entities/user.entity';
 import { DictionaryController } from './dictionary.controller';
 import { RoleController } from './role.controller';
@@ -13,7 +14,7 @@ import { UserController } from './user.controller';
 import { UserService } from './user.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Role, Permission])],
+  imports: [TypeOrmModule.forFeature([User, Role, Permission, Team])],
   controllers: [
     SystemController,
     DictionaryController,

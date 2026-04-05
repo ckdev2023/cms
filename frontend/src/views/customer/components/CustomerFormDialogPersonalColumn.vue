@@ -1,7 +1,12 @@
 <script setup lang="ts">
-import { inject } from 'vue'
+import { inject, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import {
+  loadPersonResidenceStatusOptions,
+  mergeLegacyPersonResidenceStatusOption,
+  type PersonResidenceStatusOption,
+} from '@/utils/person-residence-status-options'
 import { customerFormModelKey } from '@/views/customer/customerFormDialogInjection'
 
 defineProps<{
@@ -17,12 +22,32 @@ const emit = defineEmits<{
 
 defineOptions({ name: 'CustomerFormDialogPersonalColumn' })
 
-const form = inject(customerFormModelKey)
-if (!form) {
+const formInjected = inject(customerFormModelKey)
+if (!formInjected) {
   throw new Error('CustomerFormDialogPersonalColumn 必须在 CustomerFormDialog 内使用')
 }
+const form = formInjected
 
 const { t } = useI18n()
+
+const residenceStatusOptions = ref<PersonResidenceStatusOption[]>([])
+
+onMounted(() => {
+  void (async () => {
+    await loadPersonResidenceStatusOptions(residenceStatusOptions)
+    mergeLegacyPersonResidenceStatusOption(residenceStatusOptions, form.residenceStatus)
+  })()
+})
+
+watch(
+  () => form.residenceStatus,
+  (v) => {
+    mergeLegacyPersonResidenceStatusOption(
+      residenceStatusOptions,
+      typeof v === 'string' ? v : '',
+    )
+  },
+)
 
 /**
  * 将主客户远程搜索关键字透传给父组件以触发列表加载。
@@ -31,6 +56,16 @@ const { t } = useI18n()
  */
 function onRemoteSearch(query: string): void {
   emit('searchPrimaryCustomers', query)
+}
+
+/**
+ * 将下拉选中值写回表单字符串，并截断至 100 字以契合同步后端在留资格 MaxLength。
+ *
+ * @param v - Element Plus 下拉的选中值，清空时为 null/undefined
+ */
+function onResidenceStatusSelect(v: string | null | undefined): void {
+  const s = (v ?? '').trim()
+  form.residenceStatus = s.length > 100 ? s.slice(0, 100) : s
 }
 </script>
 
@@ -42,8 +77,9 @@ function onRemoteSearch(query: string): void {
     >
       {{ t('dialogs.customerForm.personalInfo') }}
     </div>
+    <!-- 半宽栏内不再二次分栏，避免输入区被压到约 1/4 抽屉宽度 -->
     <el-row :gutter="12" class="customer-form-dialog__extension-inner-row">
-      <el-col :span="12">
+      <el-col :span="24">
         <el-form-item
           :label="t('dialogs.customerForm.nationality')"
           prop="nationality"
@@ -57,17 +93,42 @@ function onRemoteSearch(query: string): void {
           />
         </el-form-item>
       </el-col>
-      <el-col :span="12">
+      <el-col :span="24">
         <el-form-item
           :label="t('dialogs.customerForm.residenceStatus')"
           prop="residenceStatus"
         >
+          <el-select
+            :model-value="form.residenceStatus === '' ? undefined : form.residenceStatus"
+            class="customer-form-dialog__field-fill"
+            filterable
+            allow-create
+            default-first-option
+            clearable
+            :disabled="personalColumnDisabled"
+            :placeholder="t('common.selectField', { field: t('dialogs.customerForm.residenceStatus') })"
+            @update:model-value="onResidenceStatusSelect"
+          >
+            <el-option
+              v-for="opt in residenceStatusOptions"
+              :key="opt.value"
+              :label="opt.label"
+              :value="opt.value"
+            />
+          </el-select>
+        </el-form-item>
+      </el-col>
+      <el-col :span="24">
+        <el-form-item
+          :label="t('dialogs.customerForm.passportNumber')"
+          prop="passportNumber"
+        >
           <el-input
-            v-model="form.residenceStatus"
+            v-model="form.passportNumber"
             class="customer-form-dialog__field-fill"
             :disabled="personalColumnDisabled"
-            :placeholder="t('dialogs.customerForm.residenceStatus')"
-            maxlength="100"
+            :placeholder="t('dialogs.customerForm.passportNumberPlaceholder')"
+            maxlength="64"
           />
         </el-form-item>
       </el-col>
@@ -79,6 +140,13 @@ function onRemoteSearch(query: string): void {
     >
       {{ t('dialogs.customerForm.familyInfoTitle') }}
     </div>
+    <el-text
+      size="small"
+      type="info"
+      class="customer-form-dialog__family-semantics-hint"
+    >
+      {{ t('dialogs.customerForm.familyMemberSemanticsHint') }}
+    </el-text>
     <el-form-item
       :label="t('dialogs.customerForm.isFamilyMember')"
       prop="isFamilyMember"
@@ -161,5 +229,11 @@ function onRemoteSearch(query: string): void {
 
 .customer-form-dialog__field-fill {
   width: 100%;
+}
+
+.customer-form-dialog__family-semantics-hint {
+  display: block;
+  margin: 0 0 10px;
+  line-height: 1.5;
 }
 </style>

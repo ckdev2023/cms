@@ -151,7 +151,7 @@ function resetForm() {
 }
 
 function getCheckedPermissionIds(): string[] {
-  if (!treeRef.value) return []
+  if (!treeRef.value) {return []}
   const checkedKeys = treeRef.value.getCheckedKeys(false) as string[]
   return checkedKeys.filter((key) => !key.startsWith('module:'))
 }
@@ -163,7 +163,7 @@ function getCheckedPermissionIds(): string[] {
  */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   submitting.value = true
   try {
@@ -205,7 +205,7 @@ function handleClose() {
  * @returns 无返回值
  */
 function handleCheckAll(checkedValue: CheckboxValueType) {
-  if (!treeRef.value) return
+  if (!treeRef.value) {return}
   const checked = checkedValue === true
   if (checked) {
     const allLeafIds = permissionGroups.value.flatMap((g) =>

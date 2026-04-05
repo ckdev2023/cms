@@ -58,7 +58,7 @@ function cancelWorkForm() {
  */
 async function handleWorkSubmit() {
   const valid = await workFormRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   submitting.value = true
   try {
@@ -106,7 +106,7 @@ async function toggleWorkCompleted(item: TaxMonthlyWorkItemItem) {
  */
 async function handleWorkDelete(item: TaxMonthlyWorkItemItem) {
   const confirmed = await confirmDelete(item.itemName)
-  if (!confirmed) return
+  if (!confirmed) {return}
 
   try {
     await deleteTaxWorkItem(props.contractId, props.periodId, item.id)

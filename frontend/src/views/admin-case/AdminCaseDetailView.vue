@@ -8,6 +8,7 @@ import PageDetail from '@/components/PageDetail.vue'
 import { AdminCaseStatusLabel } from '@/constants/enum-labels'
 import { AdminCaseStatus } from '@/constants/enums'
 import type { AdminCaseDetail } from '@/types/admin-case'
+import { mergeCustomerDetailReturnQuery } from '@/utils/customer-detail-return-navigation'
 import { useLocaleFormatter } from '@/utils/locale-format'
 
 import AdminCaseFilesTab from './components/AdminCaseFilesTab.vue'
@@ -46,7 +47,7 @@ async function fetchCase() {
 }
 
 function goBack() {
-  router.push('/admin-cases')
+  router.push('/customers/admin-cases')
 }
 
 function handleEdit() {
@@ -57,10 +58,23 @@ function refreshCaseDetail() {
   fetchCase()
 }
 
+/**
+ *
+ */
+/**
+ * 跳转行政案件关联客户主档详情，并写入客户中心返回锚点。
+ */
 function goToCustomer() {
-  if (adminCase.value?.customerId) {
-    router.push(`/customers/${adminCase.value.customerId}`)
+  if (!adminCase.value?.customerId) {
+    return
   }
+  const query: Record<string, string> = {}
+  mergeCustomerDetailReturnQuery(query, route)
+  if (Object.keys(query).length > 0) {
+    void router.push({ path: `/customers/${adminCase.value.customerId}`, query })
+    return
+  }
+  void router.push(`/customers/${adminCase.value.customerId}`)
 }
 
 const statusTagType: Record<string, 'success' | 'info' | 'warning' | 'danger' | 'primary'> = {

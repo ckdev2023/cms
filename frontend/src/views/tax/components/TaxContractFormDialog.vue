@@ -162,9 +162,9 @@ function buildPayload(): CreateTaxContractParams {
     startDate: form.startDate,
   }
 
-  if (form.endDate) payload.endDate = form.endDate
-  if (form.monthlyFee !== undefined) payload.monthlyFee = form.monthlyFee
-  if (form.ownerUserId) payload.ownerUserId = form.ownerUserId
+  if (form.endDate) {payload.endDate = form.endDate}
+  if (form.monthlyFee !== undefined) {payload.monthlyFee = form.monthlyFee}
+  if (form.ownerUserId) {payload.ownerUserId = form.ownerUserId}
 
   return payload
 }
@@ -176,7 +176,7 @@ function buildPayload(): CreateTaxContractParams {
  */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   submitting.value = true
   try {

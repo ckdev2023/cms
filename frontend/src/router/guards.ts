@@ -3,6 +3,8 @@ import 'nprogress/nprogress.css'
 import NProgress from 'nprogress'
 import type { RouteLocationNormalized, RouteLocationRaw, Router } from 'vue-router'
 
+import { routePermissionsGranted } from '@/router/route-permission.util'
+
 const ACCESS_TOKEN_KEY = 'access_token'
 const FORBIDDEN_PATH = '/403'
 const HOME_PATH = '/'
@@ -146,11 +148,13 @@ async function ensureUserInfoLoaded(
 }
 
 /**
- * 判断当前用户是否缺少目标路由声明的任一权限码。
+ * 判断当前用户是否因权限不足而应被拦截（跳转 403）。
+ *
+ * `meta.permissions` 为多项时采用 **任一端满足即通过**（OR），与 `docs/21` §14.1 深链矩阵一致：如仅 `customer:list` 可打开旧在留、仅 `admin_case:list` 可打开行政列表、工作台需提醒或案件列表权之一。
  *
  * @param to - 即将进入的目标路由
  * @param token - 当前导航开始时读取到的 access token
- * @returns 目标路由要求权限且当前用户全部不满足时返回 true
+ * @returns 已声明权限且用户完全不满足时返回 true
  */
 async function lacksRequiredPermission(
   to: RouteLocationNormalized,
@@ -168,14 +172,14 @@ async function lacksRequiredPermission(
   const { useUserStore } = await import('@/stores/user')
   const userStore = useUserStore()
 
-  return !requiredPermissions.some((permission) => userStore.hasPermission(permission))
+  return !routePermissionsGranted(requiredPermissions, (p) => userStore.hasPermission(p))
 }
 
 /**
  * 提取路由元信息中的权限列表，并过滤掉非字符串或空字符串配置。
  *
  * @param to - 即将进入的目标路由
- * @returns 可用于权限校验的权限码数组
+ * @returns 供 `routePermissionsGranted` 使用的权限码数组（多项时为 OR）
  */
 function getRequiredPermissions(to: RouteLocationNormalized): string[] {
   const { permissions } = to.meta

@@ -34,7 +34,7 @@ export function useLocaleFormatter(): {
    * @returns 本地化日期文本；无值时返回 `-`
    */
   function formatDate(dateStr: string | null | undefined): string {
-    if (!dateStr) return '-'
+    if (!dateStr) {return '-'}
     return new Date(dateStr).toLocaleDateString(intlLocale.value)
   }
 
@@ -45,7 +45,7 @@ export function useLocaleFormatter(): {
    * @returns 包含日期与小时分钟的本地化时间文本；无值时返回 `-`
    */
   function formatDateTime(dateStr: string | null | undefined): string {
-    if (!dateStr) return '-'
+    if (!dateStr) {return '-'}
     const date = new Date(dateStr)
     return `${date.toLocaleDateString(intlLocale.value)} ${date.toLocaleTimeString(intlLocale.value, {
       hour: '2-digit',

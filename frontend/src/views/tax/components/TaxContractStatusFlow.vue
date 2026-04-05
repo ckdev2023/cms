@@ -42,7 +42,7 @@ watch(
  * @returns 完成请求后更新可执行流转按钮列表
  */
 async function fetchTransitions() {
-  if (!props.contractId) return
+  if (!props.contractId) {return}
   loading.value = true
   try {
     const res = await getTaxContractTransitions(props.contractId)

@@ -125,7 +125,7 @@ function cancelForm() {
  */
 async function handleSubmit() {
   const valid = await formRef.value?.validate().catch(() => false)
-  if (!valid) return
+  if (!valid) {return}
 
   submitting.value = true
   try {
@@ -160,7 +160,7 @@ async function handleSubmit() {
  */
 async function handleDelete(item: InterviewItem) {
   const confirmed = await confirmDelete(t('detailViews.adminCase.interviewsTab.deleteName'))
-  if (!confirmed) return
+  if (!confirmed) {return}
 
   try {
     await deleteInterview(props.caseId, item.id)

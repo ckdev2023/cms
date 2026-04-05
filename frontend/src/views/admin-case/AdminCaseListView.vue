@@ -87,7 +87,7 @@ function handleEdit(row: AdminCaseItem) {
  */
 async function handleDelete(row: AdminCaseItem) {
   const ok = await confirmDelete(row.caseName)
-  if (!ok) return
+  if (!ok) {return}
 
   try {
     await deleteAdminCase(row.id)
@@ -109,8 +109,8 @@ function handleSaved() {
  */
 function buildSearchParams(): Partial<AdminCaseQueryParams> {
   const params: Partial<AdminCaseQueryParams> = {}
-  if (searchForm.keyword) params.keyword = searchForm.keyword
-  if (searchForm.status) params.status = searchForm.status
+  if (searchForm.keyword) {params.keyword = searchForm.keyword}
+  if (searchForm.status) {params.status = searchForm.status}
   return params
 }
 
@@ -143,7 +143,7 @@ function handleSortChange(sort: AdminCaseSortChange) {
 }
 
 function handleRowClick(row: AdminCaseItem) {
-  router.push(`/admin-cases/${row.id}`)
+  router.push(`/customers/admin-cases/${row.id}`)
 }
 
 /**
@@ -153,7 +153,7 @@ function handleRowClick(row: AdminCaseItem) {
  * @returns 是否应显示即将到期提醒样式。
  */
 function isExpiringSoon(dateStr: string | null): boolean {
-  if (!dateStr) return false
+  if (!dateStr) {return false}
   const diff = new Date(dateStr).getTime() - Date.now()
   const days = diff / (1000 * 60 * 60 * 24)
   return days >= 0 && days <= 30
@@ -166,7 +166,7 @@ function isExpiringSoon(dateStr: string | null): boolean {
  * @returns 是否应显示已过期提醒样式。
  */
 function isExpired(dateStr: string | null): boolean {
-  if (!dateStr) return false
+  if (!dateStr) {return false}
   return new Date(dateStr).getTime() < Date.now()
 }
 

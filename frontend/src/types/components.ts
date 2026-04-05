@@ -21,6 +21,10 @@ export interface ProTableColumn {
   align?: 'left' | 'center' | 'right'
   showOverflowTooltip?: boolean
   slot?: string
+  /**
+   * 表头单元格旁展示提示图标，`content` 为完整说明（如列口径与主案件摘要差异，docs/31 §5.3）。
+   */
+  headerTooltip?: string
 }
 
 export interface ProFormField {

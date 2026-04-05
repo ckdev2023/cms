@@ -67,7 +67,7 @@ async function handleTransition(target: InvoiceStatus) {
     title: t('detailViews.invoice.statusFlow.confirmTitle'),
     message: t('detailViews.invoice.statusFlow.confirmChange', { status: label }),
   })
-  if (!ok) return
+  if (!ok) {return}
 
   await withLock(async () => {
     await updateInvoiceStatus(props.invoiceId, target)
@@ -113,11 +113,11 @@ const statusSteps: InvoiceStatus[] = [
  * @returns Element Plus Steps 组件需要的状态标识
  */
 function stepStatus(step: InvoiceStatus): 'finish' | 'process' | 'wait' | 'error' {
-  if (props.currentStatus === InvoiceStatus.VOID) return 'error'
+  if (props.currentStatus === InvoiceStatus.VOID) {return 'error'}
   const currentIdx = statusSteps.indexOf(props.currentStatus)
   const stepIdx = statusSteps.indexOf(step)
-  if (stepIdx < currentIdx) return 'finish'
-  if (stepIdx === currentIdx) return 'process'
+  if (stepIdx < currentIdx) {return 'finish'}
+  if (stepIdx === currentIdx) {return 'process'}
   return 'wait'
 }
 
@@ -128,9 +128,9 @@ function stepStatus(step: InvoiceStatus): 'finish' | 'process' | 'wait' | 'error
  * @returns 状态操作按钮对应的 Element Plus 类型
  */
 function buttonType(target: InvoiceStatus): '' | 'success' | 'danger' | 'warning' | 'primary' {
-  if (target === InvoiceStatus.VOID) return 'danger'
-  if (target === InvoiceStatus.SENT) return 'primary'
-  if (target === InvoiceStatus.PAID) return 'success'
+  if (target === InvoiceStatus.VOID) {return 'danger'}
+  if (target === InvoiceStatus.SENT) {return 'primary'}
+  if (target === InvoiceStatus.PAID) {return 'success'}
   return ''
 }
 </script>

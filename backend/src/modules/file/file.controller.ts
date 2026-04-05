@@ -35,11 +35,14 @@ import {
   AuditActionType,
   AuditTargetType,
   BusinessType,
+  ExportType,
+  OperationResult,
 } from '../../common/constants/enums';
 import { PermissionCodes } from '../../common/constants/permission-codes';
 import { ApiResponse } from '../../common/helpers/api-response.helper';
 import { Permissions } from '../auth/decorators';
 import { AuditAction } from '../log/decorators';
+import { LogService } from '../log/log.service';
 import { QueryFileDto, UpdateFileDto } from './dto';
 import { FileService } from './file.service';
 
@@ -53,7 +56,10 @@ type AuthenticatedRequest = Request & {
 @Controller('files')
 @ApiBearerAuth()
 export class FileController {
-  constructor(private readonly fileService: FileService) {}
+  constructor(
+    private readonly fileService: FileService,
+    private readonly logService: LogService,
+  ) {}
 
   /**
    * 接收 multipart 请求中的附件并写入文件模块上传流程。
@@ -186,6 +192,13 @@ export class FileController {
     const { absPath, fileName, mimeType } =
       await this.fileService.getDownloadInfo(id, userId, ip);
 
+    this.recordFileStreamExportLog(
+      userId,
+      ExportType.FILE_ATTACHMENT_STREAM,
+      id,
+      fileName,
+    );
+
     const encodedName = encodeURIComponent(fileName);
     res.setHeader('Content-Type', mimeType);
     res.setHeader(
@@ -214,10 +227,14 @@ export class FileController {
   ) {
     const userId = this.getUserId(req);
     const ip = this.getRequestIp(req);
-    const { absPath, mimeType } = await this.fileService.getPreviewInfo(
-      id,
+    const { absPath, mimeType, fileName } =
+      await this.fileService.getPreviewInfo(id, userId, ip);
+
+    this.recordFileStreamExportLog(
       userId,
-      ip,
+      ExportType.FILE_PREVIEW_STREAM,
+      id,
+      fileName,
     );
 
     res.setHeader('Content-Type', mimeType);
@@ -288,5 +305,35 @@ export class FileController {
    */
   private getRequestIp(req: Request): string | undefined {
     return req.ip || req.socket.remoteAddress;
+  }
+
+  /**
+   * 在附件流式响应写入前登记导出日志，失败时不阻断下载/预览主流程。
+   *
+   * @param userId - 当前登录用户主键
+   * @param exportType - 导出类型枚举值
+   * @param fileId - 附件主键 UUID
+   * @param fileName - 对外下载/预览使用的文件名
+   * @returns 无返回值
+   */
+  private recordFileStreamExportLog(
+    userId: string,
+    exportType: ExportType,
+    fileId: string,
+    fileName: string,
+  ): void {
+    const disposition =
+      exportType === ExportType.FILE_ATTACHMENT_STREAM
+        ? 'attachment'
+        : 'inline';
+    void this.logService
+      .createExportLog({
+        userId,
+        exportType,
+        exportParams: { fileId, disposition },
+        fileName,
+        status: OperationResult.SUCCESS,
+      })
+      .catch(() => undefined);
   }
 }

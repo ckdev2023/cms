@@ -2,11 +2,12 @@
 import { Warning } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { type NavigationFailure, useRouter } from 'vue-router'
+import { type NavigationFailure, useRoute, useRouter } from 'vue-router'
 
 import { AdminCaseStatusLabel, MonthlyStatusLabel } from '@/constants/enum-labels'
 import type { AdminCaseStatus, MonthlyStatus } from '@/constants/enums'
 import type { ExpiringItem } from '@/types/dashboard'
+import { mergeCustomerDetailReturnQuery } from '@/utils/customer-detail-return-navigation'
 
 import DashboardCard from './DashboardCard.vue'
 
@@ -24,6 +25,7 @@ interface ExpiringDisplayItem extends ExpiringItem {
   }
 }
 
+const route = useRoute()
 const router = useRouter()
 const { t } = useI18n({ useScope: 'global' })
 
@@ -34,7 +36,7 @@ const { t } = useI18n({ useScope: 'global' })
  * @returns 供标签组件直接消费的状态类型与展示文本
  */
 function resolveUrgencyTag(daysLeft: number): ExpiringDisplayItem['urgency'] {
-  if (daysLeft < 0) return { type: 'danger' as const, text: t('dashboard.expiring.overdue') }
+  if (daysLeft < 0) {return { type: 'danger' as const, text: t('dashboard.expiring.overdue') }}
   return {
     type: daysLeft <= 3 ? ('danger' as const) : daysLeft <= 7 ? ('warning' as const) : ('info' as const),
     text: t('dashboard.expiring.remainingDays', { days: daysLeft }),
@@ -75,7 +77,12 @@ const displayItems = computed<ExpiringDisplayItem[]>(() => props.items.map((item
  */
 function handleRowClick(item: ExpiringItem): Promise<void | NavigationFailure> {
   if (item.type === 'admin_case') {
-    return router.push(`/admin-cases/${item.id}`)
+    return router.push(`/customers/admin-cases/${item.id}`)
+  }
+  const query: Record<string, string> = {}
+  mergeCustomerDetailReturnQuery(query, route)
+  if (Object.keys(query).length > 0) {
+    return router.push({ path: `/customers/${item.customerId}`, query })
   }
   return router.push(`/customers/${item.customerId}`)
 }

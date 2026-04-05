@@ -107,7 +107,7 @@ async function handleDelete(item: TaxPeriodItem) {
   const confirmed = await confirmDelete(
     t('detailViews.taxContract.periodsTab.deleteName', { period: item.periodYm }),
   )
-  if (!confirmed) return
+  if (!confirmed) {return}
 
   try {
     await deleteTaxPeriod(props.contractId, item.id)
@@ -199,7 +199,7 @@ function materialStatusTagType(
 
 const isDeadlineUrgent = computed(() => {
   return (deadline: string | null): boolean => {
-    if (!deadline) return false
+    if (!deadline) {return false}
     const d = new Date(deadline)
     const now = new Date()
     const diff = d.getTime() - now.getTime()
@@ -210,7 +210,7 @@ const isDeadlineUrgent = computed(() => {
 
 const isDeadlineOverdue = computed(() => {
   return (deadline: string | null): boolean => {
-    if (!deadline) return false
+    if (!deadline) {return false}
     const d = new Date(deadline)
     const now = new Date()
     return d.getTime() < now.getTime()

@@ -41,6 +41,34 @@ export const PermissionCodes = {
   LOG_LIST: 'log:list',
 
   DASHBOARD_VIEW: 'dashboard:view',
+
+  VISA_CASE_LIST: 'visaCase:list',
+  VISA_CASE_DETAIL: 'visaCase:detail',
+  VISA_CASE_CREATE: 'visaCase:create',
+  VISA_CASE_EDIT: 'visaCase:edit',
+  VISA_CASE_IMPORT: 'visaCase:import',
+  /** P2-S3d：行政案件→签证案件补录工具（预览/提交） */
+  VISA_CASE_ADMIN_SUPPLEMENT: 'visaCase:adminCaseSupplement',
+
+  /** P2-S2d：允许在 Query 中使用 `dataScope=all` 及案件行级「全部」可读 */
+  VISA_CASE_DATA_SCOPE_ALL: 'visaCase:dataScopeAll',
+  /** P2-S2d：允许 `dataScope=team` 及团队范围内案件行读写 */
+  VISA_CASE_DATA_SCOPE_TEAM: 'visaCase:dataScopeTeam',
+  /** P2-S2d：仅允许 `dataScope=mine` 及本人负责案件行 */
+  VISA_CASE_DATA_SCOPE_MINE: 'visaCase:dataScopeMine',
+
+  VISA_CASE_LOG_CREATE: 'visaCaseLog:create',
+  VISA_CASE_LOG_EDIT: 'visaCaseLog:edit',
+  VISA_CASE_LOG_DELETE: 'visaCaseLog:delete',
+
+  CUSTOMER_FILE_PATH_LIST: 'customerFilePath:list',
+  CUSTOMER_FILE_PATH_CREATE: 'customerFilePath:create',
+  CUSTOMER_FILE_PATH_EDIT: 'customerFilePath:edit',
+  CUSTOMER_FILE_PATH_DELETE: 'customerFilePath:delete',
+
+  VISA_REMINDER_LIST: 'visaReminder:list',
+
+  MATERIAL_TEMPLATE_MANAGE: 'materialTemplate:manage',
 } as const;
 
 export type PermissionCode =

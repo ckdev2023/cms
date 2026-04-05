@@ -1,0 +1,21 @@
+.case-logs-tab {
+  &__case-selector { margin-bottom: 8px; }
+  &__trace-alert {
+    margin-bottom: 12px;
+  }
+  &__trace-alert__body {
+    margin: 0 0 8px;
+    font-size: var(--app-font-size-sm);
+    line-height: 1.55;
+    color: var(--app-text-regular);
+  }
+  &__toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  &__filter { display: flex; align-items: center; gap: 12px; }
+  &__count { font-size: var(--app-font-size-sm); color: var(--app-text-secondary); }
+  &__form-card { margin-bottom: 20px; }
+  &__form-label-row { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  &__snippet-trigger { padding: 0; height: auto; vertical-align: baseline; }
+  &__snippet-caret { margin-left: 2px; font-size: 12px; }
+  &__prefill-hint { margin-bottom: 12px; }
+  &__form-actions { display: flex; justify-content: flex-end; gap: 8px; }
+}

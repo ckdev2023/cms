@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Refresh, Search, View } from '@element-plus/icons-vue'
+import { Download, Refresh, Search, View } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 import { computed, reactive, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { getAuditLogs } from '@/api/log'
+import { exportAuditLogsCsv, getAuditLogs } from '@/api/log'
 import PageList from '@/components/PageList.vue'
 import ProTable from '@/components/ProTable.vue'
 import { useProTable } from '@/composables/useProTable'
@@ -14,7 +15,7 @@ import {
 } from '@/constants/enum-labels'
 import { AuditActionType, AuditTargetType, OperationResult } from '@/constants/enums'
 import type { ProTableColumn } from '@/types/components'
-import type { AuditLogItem, AuditLogQueryParams } from '@/types/log'
+import type { AuditLogExportParams, AuditLogItem, AuditLogQueryParams } from '@/types/log'
 import { useLocaleFormatter } from '@/utils/locale-format'
 
 defineOptions({ name: 'AuditLogListView' })
@@ -49,11 +50,14 @@ const {
   total,
   page,
   pageSize,
+  searchParams,
   handlePageChange,
   handleSizeChange,
   handleSearch,
   handleReset,
 } = useProTable<AuditLogItem>(getAuditLogs)
+
+const exportLoading = ref(false)
 
 const detailVisible = ref(false)
 const detailData = ref<AuditLogItem | null>(null)
@@ -64,19 +68,54 @@ function showDetail(row: AuditLogItem) {
 }
 
 /**
+ * 从当前表单与时间范围组装审计日志列表筛选参数。
+ *
+ * @returns 可供列表检索与 CSV 导出复用的查询字段集合
+ */
+function buildAuditFilterParams(): Record<string, unknown> {
+  const params: Record<string, unknown> = {}
+  if (searchForm.keyword) {params.keyword = searchForm.keyword}
+  if (searchForm.actionType) {params.actionType = searchForm.actionType}
+  if (searchForm.targetType) {params.targetType = searchForm.targetType}
+  if (searchForm.result) {params.result = searchForm.result}
+  if (dateRange.value?.[0]) {params.startDate = dateRange.value[0]}
+  if (dateRange.value?.[1]) {params.endDate = dateRange.value[1]}
+  return params
+}
+
+/**
  * 汇总筛选表单与时间范围，触发审计日志检索。
  *
  * @returns 无返回值
  */
 function doSearch() {
-  const params: Record<string, unknown> = {}
-  if (searchForm.keyword) params.keyword = searchForm.keyword
-  if (searchForm.actionType) params.actionType = searchForm.actionType
-  if (searchForm.targetType) params.targetType = searchForm.targetType
-  if (searchForm.result) params.result = searchForm.result
-  if (dateRange.value?.[0]) params.startDate = dateRange.value[0]
-  if (dateRange.value?.[1]) params.endDate = dateRange.value[1]
-  handleSearch(params)
+  handleSearch(buildAuditFilterParams())
+}
+
+/**
+ * 按当前表单、时间范围与表格排序导出审计 CSV，并依赖后端写入导出日志。
+ *
+ * @returns 无返回值
+ */
+async function handleExportCsv() {
+  exportLoading.value = true
+  try {
+    const extra = searchParams.value as Record<string, unknown>
+    const payload: AuditLogExportParams = {
+      ...buildAuditFilterParams(),
+      limit: 2000,
+    }
+    if (typeof extra.sortBy === 'string') {payload.sortBy = extra.sortBy}
+    if (extra.sortOrder === 'ASC' || extra.sortOrder === 'DESC') {
+      payload.sortOrder = extra.sortOrder
+    }
+    await exportAuditLogsCsv(payload)
+    ElMessage.success(t('pages.auditLogs.exportSuccess'))
+  } catch {
+    ElMessage.error(t('common.downloadFailed'))
+  } finally {
+    exportLoading.value = false
+  }
 }
 
 /**
@@ -102,21 +141,21 @@ function doReset() {
  * @returns 无返回值
  */
 function handleSortChange(sort: { prop: string; order: string }) {
-  const params: Record<string, unknown> = {}
+  const params: Record<string, unknown> = { ...buildAuditFilterParams() }
   if (sort.prop && sort.order) {
     params.sortBy = sort.prop
     params.sortOrder = sort.order === 'ascending' ? 'ASC' : 'DESC'
   }
-  handleSearch({ ...searchForm, ...params })
+  handleSearch(params)
 }
 
 function shortId(id: string | null) {
-  if (!id) return '-'
+  if (!id) {return '-'}
   return id.substring(0, 8) + '...'
 }
 
 function formatJson(value: Record<string, unknown> | null) {
-  if (!value) return '-'
+  if (!value) {return '-'}
   return JSON.stringify(value, null, 2)
 }
 
@@ -135,11 +174,23 @@ const actionTagType: Record<string, 'primary' | 'success' | 'warning' | 'danger'
   [AuditActionType.UPLOAD]: 'success',
   [AuditActionType.DOWNLOAD]: 'info',
   [AuditActionType.PASSWORD_CHANGE]: 'warning',
+  [AuditActionType.IMPORT]: 'info',
 }
 </script>
 
 <template>
   <PageList :title="t('pages.auditLogs.title')">
+    <template #headerExtra>
+      <el-button
+        type="primary"
+        plain
+        :icon="Download"
+        :loading="exportLoading"
+        @click="handleExportCsv"
+      >
+        {{ t('pages.auditLogs.exportCsv') }}
+      </el-button>
+    </template>
     <template #search>
       <el-form :model="searchForm" inline>
         <el-form-item :label="t('common.keyword')">
@@ -210,6 +261,15 @@ const actionTagType: Record<string, 'primary' | 'success' | 'warning' | 'danger'
         <el-form-item>
           <el-button type="primary" :icon="Search" :loading="loading" @click="doSearch">{{ t('common.search') }}</el-button>
           <el-button :icon="Refresh" @click="doReset">{{ t('common.reset') }}</el-button>
+          <el-button
+            type="success"
+            plain
+            :icon="Download"
+            :loading="exportLoading"
+            @click="handleExportCsv"
+          >
+            {{ t('pages.auditLogs.exportCsv') }}
+          </el-button>
         </el-form-item>
       </el-form>
     </template>

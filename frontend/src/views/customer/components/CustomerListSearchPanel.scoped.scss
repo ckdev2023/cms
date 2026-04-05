@@ -1,0 +1,330 @@
+.customer-list-search__residence-hint {
+  width: 100%;
+  margin-bottom: var(--app-spacing-sm);
+}
+
+.customer-list-search__form {
+  display: block;
+}
+
+/* 标签置顶时压缩标签与控件间距，避免卡片内过于松散 */
+.customer-list-search__form :deep(.el-form-item--label-top .el-form-item__label) {
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+
+.customer-list-search__form :deep(.el-form-item--label-top) {
+  margin-bottom: 0;
+}
+
+/* —— 顶栏：关键词 + 快捷下拉 + 主操作 + 更多筛选 —— */
+.customer-list-search__toolbar {
+  padding-bottom: var(--app-spacing-md);
+  margin-bottom: var(--app-spacing-md);
+  border-bottom: 1px solid var(--app-border-color-light);
+}
+
+.customer-list-search__toolbar-grid {
+  display: grid;
+  grid-template-columns: minmax(200px, 1.2fr) repeat(3, minmax(120px, 0.75fr)) auto auto;
+  gap: var(--app-spacing-sm) var(--app-spacing-md);
+  align-items: end;
+}
+
+.customer-list-search__toolbar-keyword {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+
+.customer-list-search__toolbar-label {
+  font-size: var(--app-font-size-sm);
+  font-weight: var(--app-font-weight-semibold);
+  color: var(--app-text-primary);
+  line-height: 1.3;
+}
+
+.customer-list-search__toolbar-input {
+  width: 100%;
+  max-width: 100%;
+}
+
+.customer-list-search__toolbar-input-icon {
+  color: var(--el-text-color-placeholder);
+}
+
+.customer-list-search__toolbar-field {
+  margin-bottom: 0 !important;
+}
+
+.customer-list-search__toolbar-field :deep(.el-form-item__label) {
+  padding-bottom: 4px;
+}
+
+.customer-list-search__toolbar-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--app-spacing-sm);
+  padding-bottom: 2px;
+}
+
+.customer-list-search__toolbar-more {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 2px;
+}
+
+.customer-list-search__more-badge :deep(.el-badge__content) {
+  transform: translate(8px, -4px);
+}
+
+/* —— 已选条件标签 —— */
+.customer-list-search__chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--app-spacing-sm) var(--app-spacing-md);
+  margin-bottom: 0;
+  padding: var(--app-spacing-sm) var(--app-spacing-base);
+  border-radius: var(--app-radius-md);
+  background: var(--el-fill-color-extra-light, var(--app-bg-page));
+  border: 1px solid var(--app-border-color-lighter);
+}
+
+.customer-list-search__chips-label {
+  flex: 0 0 auto;
+  font-size: var(--app-font-size-xs);
+  font-weight: var(--app-font-weight-semibold);
+  color: var(--app-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.customer-list-search__chips-list {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--app-spacing-xs);
+}
+
+.customer-list-search__chip {
+  max-width: 100%;
+
+  :deep(.el-tag__content) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+.customer-list-search__chips-clear {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+/* —— 抽屉内表单 —— */
+.customer-list-search__drawer-form {
+  display: block;
+}
+
+.customer-list-search__drawer-form :deep(.el-form-item--label-top .el-form-item__label) {
+  margin-bottom: 4px;
+  line-height: 1.35;
+}
+
+.customer-list-search__drawer-section {
+  margin-bottom: var(--app-spacing-md);
+}
+
+.customer-list-search__drawer-section:last-of-type {
+  margin-bottom: var(--app-spacing-sm);
+}
+
+.customer-list-search__surface {
+  height: 100%;
+  padding: var(--app-spacing-md) var(--app-spacing-base);
+  border-radius: var(--app-radius-md);
+  background: var(--app-bg-base);
+  border: 1px solid var(--app-border-color-lighter);
+  box-shadow: var(--app-shadow-xs);
+}
+
+.customer-list-search__surface .customer-list-search__select,
+.customer-list-search__surface .customer-list-search__select--wide {
+  width: 100%;
+  max-width: 100%;
+}
+
+.customer-list-search__surface :deep(.el-form-item__content) {
+  width: 100%;
+  max-width: 100%;
+}
+
+.customer-list-search__item--fill {
+  width: 100%;
+  min-width: 0;
+}
+
+.customer-list-search__section {
+  margin-bottom: 0;
+}
+
+.customer-list-search__section-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--app-spacing-sm);
+}
+
+.customer-list-search__section-title {
+  font-size: var(--app-font-size-base);
+  font-weight: var(--app-font-weight-semibold);
+  color: var(--app-text-primary);
+  margin: 0;
+  line-height: 1.35;
+}
+
+.customer-list-search__section > .customer-list-search__section-title {
+  margin-bottom: var(--app-spacing-sm);
+}
+
+.customer-list-search__hint-icon {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  cursor: help;
+  vertical-align: middle;
+}
+
+.customer-list-search__field-hint {
+  margin: 4px 0 0;
+  font-size: var(--app-font-size-xs);
+  color: var(--app-text-secondary);
+  line-height: 1.4;
+}
+
+.customer-list-search__row--advanced-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
+
+.customer-list-search__row--advanced-stack :deep(.el-form-item) {
+  margin-bottom: var(--app-spacing-sm);
+  margin-right: 0;
+  width: 100%;
+  max-width: 100%;
+}
+
+.customer-list-search__row--advanced-stack :deep(.customer-list-visa-case-type-filter__select) {
+  width: 100%;
+  max-width: 100%;
+}
+
+.customer-list-search__row--alert-fields {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0 var(--app-spacing-md);
+  align-items: start;
+}
+
+.customer-list-search__row--alert-fields :deep(.el-form-item) {
+  margin-bottom: var(--app-spacing-sm);
+  margin-right: 0;
+}
+
+.customer-list-search__label-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.customer-list-search__drawer-hint {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--app-spacing-xs);
+  margin-top: var(--app-spacing-xs);
+  padding: var(--app-spacing-sm) var(--app-spacing-base);
+  font-size: var(--app-font-size-xs);
+  color: var(--app-text-secondary);
+  line-height: 1.45;
+  border-radius: var(--app-radius-md);
+  background: var(--el-fill-color-extra-light, var(--app-bg-page));
+  border: 1px solid var(--app-border-color-lighter);
+}
+
+.customer-list-search__drawer-hint-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--el-color-info);
+}
+
+.customer-list-search__drawer-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--app-spacing-sm);
+  width: 100%;
+}
+
+/* 抽屉标题与全局 el-drawer 脚垫协调（非 scoped 穿透） */
+:deep(.customer-list-more-filters-drawer.el-drawer) {
+  .el-drawer__body {
+    padding-top: var(--app-spacing-sm);
+  }
+}
+
+/* 中宽屏：顶栏两行，关键词与「更多筛选」占满宽 */
+@media (max-width: 1200px) {
+  .customer-list-search__toolbar-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .customer-list-search__toolbar-keyword {
+    grid-column: 1 / -1;
+  }
+
+  .customer-list-search__toolbar-more {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+
+  .customer-list-search__toolbar-actions {
+    justify-content: flex-start;
+  }
+}
+
+/* 窄屏：顶栏单列 */
+@media (max-width: 1024px) {
+  .customer-list-search__toolbar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .customer-list-search__toolbar-keyword,
+  .customer-list-search__toolbar-more {
+    grid-column: 1 / -1;
+  }
+
+  .customer-list-search__toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .customer-list-search__chips {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .customer-list-search__chips-clear {
+    margin-left: 0;
+    align-self: flex-start;
+  }
+
+  .customer-list-search__section-title {
+    white-space: normal;
+  }
+}

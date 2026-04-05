@@ -113,7 +113,7 @@ async function handleDownload(row: FileItem) {
  */
 async function handleDelete(row: FileItem) {
   const ok = await confirmDelete(row.fileName)
-  if (!ok) return
+  if (!ok) {return}
 
   try {
     await deleteFile(row.id)
@@ -137,9 +137,9 @@ function handleSaved() {
  */
 function buildSearchParams(): FileListSearchParams {
   const params: FileListSearchParams = {}
-  if (searchForm.keyword) params.keyword = searchForm.keyword
-  if (searchForm.businessType) params.businessType = searchForm.businessType
-  if (searchForm.fileExt) params.fileExt = searchForm.fileExt
+  if (searchForm.keyword) {params.keyword = searchForm.keyword}
+  if (searchForm.businessType) {params.businessType = searchForm.businessType}
+  if (searchForm.fileExt) {params.fileExt = searchForm.fileExt}
 
   return params
 }
@@ -173,7 +173,7 @@ function handleSortChange(sort: FileSortChange) {
 }
 
 function formatDate(dateStr: string) {
-  if (!dateStr) return '-'
+  if (!dateStr) {return '-'}
   return new Date(dateStr).toLocaleDateString(appStore.locale === 'zh-CN' ? 'zh-CN' : 'ja-JP')
 }
 
@@ -184,14 +184,14 @@ function formatDate(dateStr: string) {
  * @returns 适合表格展示的文件大小文本
  */
 function formatSize(bytes: number | null): string {
-  if (bytes === null || bytes === undefined) return '-'
-  if (bytes < 1024) return `${bytes} B`
-  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes === null || bytes === undefined) {return '-'}
+  if (bytes < 1024) {return `${bytes} B`}
+  if (bytes < 1024 * 1024) {return `${(bytes / 1024).toFixed(1)} KB`}
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
 function formatExt(ext: string | null): string {
-  if (!ext) return '-'
+  if (!ext) {return '-'}
   return ext.replace('.', '').toUpperCase()
 }
 

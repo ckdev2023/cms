@@ -39,6 +39,29 @@ export const P = {
   LOG_LIST: 'log:list',
 
   DASHBOARD_VIEW: 'dashboard:view',
+
+  VISA_CASE_LIST: 'visaCase:list',
+  VISA_CASE_DETAIL: 'visaCase:detail',
+  VISA_CASE_CREATE: 'visaCase:create',
+  VISA_CASE_EDIT: 'visaCase:edit',
+  VISA_CASE_IMPORT: 'visaCase:import',
+  VISA_CASE_ADMIN_SUPPLEMENT: 'visaCase:adminCaseSupplement',
+  VISA_CASE_DATA_SCOPE_ALL: 'visaCase:dataScopeAll',
+  VISA_CASE_DATA_SCOPE_TEAM: 'visaCase:dataScopeTeam',
+  VISA_CASE_DATA_SCOPE_MINE: 'visaCase:dataScopeMine',
+
+  VISA_CASE_LOG_CREATE: 'visaCaseLog:create',
+  VISA_CASE_LOG_EDIT: 'visaCaseLog:edit',
+  VISA_CASE_LOG_DELETE: 'visaCaseLog:delete',
+
+  CUSTOMER_FILE_PATH_LIST: 'customerFilePath:list',
+  CUSTOMER_FILE_PATH_CREATE: 'customerFilePath:create',
+  CUSTOMER_FILE_PATH_EDIT: 'customerFilePath:edit',
+  CUSTOMER_FILE_PATH_DELETE: 'customerFilePath:delete',
+
+  VISA_REMINDER_LIST: 'visaReminder:list',
+
+  MATERIAL_TEMPLATE_MANAGE: 'materialTemplate:manage',
 } as const
 
 export type PermissionCode = (typeof P)[keyof typeof P]
