@@ -19,6 +19,7 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { getVisaReminders, getVisaWorkbenchAggregate } from '@/api/visa-case'
 import { VisaReminderTypeLabel } from '@/constants/enum-labels'
 import { VisaDataScope, VisaReminderType } from '@/constants/enums'
+import { permissionDirective } from '@/directives/permission'
 import { i18n } from '@/i18n'
 import { useUserStore } from '@/stores/user'
 import { useVisaWorkbenchHubStore } from '@/stores/visaWorkbenchHub'
@@ -82,6 +83,8 @@ const emptyVisaRemindersPage = {
 
 const mountPlugins = {
   stubs: { VisaDataScopeSegmented: true },
+  /** 与 `main.ts` 一致：`VisaReminderProTablePanel` 等子组件使用 `v-permission`。 */
+  directives: { permission: permissionDirective },
 }
 
 /**

@@ -32,6 +32,8 @@ import { VisaCaseLogService } from './visa-case-log.service';
 import { VisaCaseLookupService } from './visa-case-lookup.service';
 import { VisaCaseMaterialService } from './visa-case-material.service';
 import { VisaCaseReminderService } from './visa-case-reminder.service';
+import { VisaCaseReminderDomainStatsService } from './visa-case-reminder-domain-stats.service';
+import { VisaCaseSupplementLogCaseIdsService } from './visa-case-supplement-log-case-ids.service';
 
 /**
  * 注册签证案件域的持久化实体、服务与控制器，为客户上下文建案与案件管理提供完整能力。
@@ -67,6 +69,8 @@ import { VisaCaseReminderService } from './visa-case-reminder.service';
     VisaCaseDataScopeService,
     VisaCaseDataScopePermissionService,
     VisaCaseDataScopeQueryGuard,
+    VisaCaseSupplementLogCaseIdsService,
+    VisaCaseReminderDomainStatsService,
     VisaCaseReminderService,
     MaterialTemplateService,
     VisaCaseMaterialService,

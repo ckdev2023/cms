@@ -30,6 +30,8 @@ import { VisaCaseLogService } from './visa-case-log.service';
 import { VisaCaseLookupService } from './visa-case-lookup.service';
 import { VisaCaseMaterialService } from './visa-case-material.service';
 import { VisaCaseReminderService } from './visa-case-reminder.service';
+import { VisaCaseReminderDomainStatsService } from './visa-case-reminder-domain-stats.service';
+import { VisaCaseSupplementLogCaseIdsService } from './visa-case-supplement-log-case-ids.service';
 
 /** 测试双：`jest.Mock<any,any,any>`，保证 `mockResolvedValue` 等与 Jest 30 类型一致且可被类型服务解析。 */
 export type JestMockFn = jest.Mock<any, any, any>;
@@ -408,6 +410,8 @@ export async function createTestingContext(): Promise<ServiceTestContext> {
           assertVisaCaseRowAccessible: jest.fn().mockResolvedValue(undefined),
         },
       },
+      VisaCaseSupplementLogCaseIdsService,
+      VisaCaseReminderDomainStatsService,
       VisaCaseReminderService,
       MaterialTemplateService,
       VisaCaseMaterialService,

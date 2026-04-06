@@ -91,12 +91,16 @@ describe('useVisaWorkbenchHubStore', () => {
   })
 
   it('should set fetchFailed on error without throwing', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
     vi.mocked(getVisaWorkbenchAggregate).mockRejectedValue(new Error('network'))
 
     const store = useVisaWorkbenchHubStore()
     await expect(store.fetchAggregateStatsOnly(VisaDataScope.TEAM, { force: true })).resolves.toBeUndefined()
 
     expect(store.fetchFailed).toBe(true)
+    expect(warnSpy).toHaveBeenCalledOnce()
+    expect(String(warnSpy.mock.calls[0]?.[0])).toContain('[visaWorkbenchHub] fetchAggregateStatsOnly failed')
+    warnSpy.mockRestore()
   })
 
   it('should apply stats from full aggregate and refresh throttle anchor for scope', () => {

@@ -29,7 +29,7 @@ export function mapMinRankToVisaReminderType(
 }
 
 /**
- * 生成单条开放案件的主提醒桶序号 SQL 片段（0–3），语义与 `VisaCaseReminderService.resolveReminderBucket` 一致。
+ * 生成单条开放案件的主提醒桶序号 SQL 片段（0–3），语义与 `resolveVisaReminderBucket` 一致。
  *
  * @param alias - QueryBuilder 中 `visa_cases` 表别名（如 `vc`）
  * @param includeSupplementIdList - 是否将最新补件日志命中的案件 ID 并入补件判定

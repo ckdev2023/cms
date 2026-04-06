@@ -1,11 +1,11 @@
-/* eslint-disable max-lines-per-function, complexity, jsdoc/require-jsdoc -- S3c 分批写入编排 */
+/* eslint-disable max-lines-per-function -- S3c 分批写入编排 */
 import {
   BadRequestException,
   ConflictException,
   Injectable,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { QueryFailedError, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 
 import {
   AuditActionType,
@@ -13,10 +13,6 @@ import {
   OperationResult,
 } from '../../common/constants/enums';
 import { LogService } from '../log/log.service';
-import { CreateCustomerFilePathDto } from './dto/create-customer-file-path.dto';
-import { CreateVisaCaseDto } from './dto/create-visa-case.dto';
-import { CreateVisaCaseFamilyMemberDto } from './dto/create-visa-case-family-member.dto';
-import { CreateVisaCaseLogDto } from './dto/create-visa-case-log.dto';
 import { VisaCase } from './entities/visa-case.entity';
 import { VisaCaseImportBatch } from './entities/visa-case-import-batch.entity';
 import {
@@ -28,47 +24,27 @@ import {
 import { VisaCaseService } from './visa-case.service';
 import { VisaCaseFamilyMemberService } from './visa-case-family-member.service';
 import { VisaCaseFilePathService } from './visa-case-file-path.service';
+import type {
+  VisaCaseImportCommitResultDto,
+  VisaCaseImportCommitRowResultDto,
+} from './visa-case-import-commit.types';
+import { VisaCaseImportCommitRowWriter } from './visa-case-import-commit-row-writer';
 import type { VisaCaseImportPreviewRowDto } from './visa-case-import-preview.service';
 import { VisaCaseImportPreviewService } from './visa-case-import-preview.service';
 import { VisaCaseLogService } from './visa-case-log.service';
 
-/** 单行写入结果，供前端下载报告与对账。 */
-export interface VisaCaseImportCommitRowResultDto {
-  rowNumber: number;
-  recordType: string;
-  outcome: string;
-  message?: string;
-  errorCode?: string;
-  visaCaseId?: string;
-  entityId?: string;
-}
-
-/** 整批提交响应，含批次 ID 与汇总计数。 */
-export interface VisaCaseImportCommitResultDto {
-  importBatchId: string;
-  contentSha256: string;
-  fileName: string | null;
-  /** 操作者用户 UUID，与 `visa_case_import_batches.created_by` 及 `audit_logs.user_id` 一致。 */
-  createdBy: string | null;
-  /** 批次行写入时间 ISO8601，与 `visa_case_import_batches.created_at` 可对账。 */
-  createdAt: string;
-  summary: {
-    rowCount: number;
-    createdCaseCount: number;
-    skippedDuplicateCaseCount: number;
-    addedMemberCount: number;
-    createdFilePathCount: number;
-    createdLogCount: number;
-    failedRowCount: number;
-  };
-  rows: VisaCaseImportCommitRowResultDto[];
-}
+export type {
+  VisaCaseImportCommitResultDto,
+  VisaCaseImportCommitRowResultDto,
+} from './visa-case-import-commit.types';
 
 /**
  * 将校验通过的 CSV 按行落库，复用案件/家属/路径/日志既有服务，并登记批次与审计。
  */
 @Injectable()
 export class VisaCaseImportCommitService {
+  private readonly rowWriter: VisaCaseImportCommitRowWriter;
+
   constructor(
     private readonly previewService: VisaCaseImportPreviewService,
     private readonly visaCaseService: VisaCaseService,
@@ -80,7 +56,15 @@ export class VisaCaseImportCommitService {
     private readonly batchRepo: Repository<VisaCaseImportBatch>,
     @InjectRepository(VisaCase)
     private readonly visaCaseRepo: Repository<VisaCase>,
-  ) {}
+  ) {
+    this.rowWriter = new VisaCaseImportCommitRowWriter(
+      visaCaseService,
+      familyMemberService,
+      filePathService,
+      visaCaseLogService,
+      visaCaseRepo,
+    );
+  }
 
   /**
    * 先执行与预览相同的校验，再逐行调用既有写接口；失败行记入报告但不回滚已成功行。
@@ -179,7 +163,7 @@ export class VisaCaseImportCommitService {
         }),
       );
     } catch (e) {
-      if (this.isPgUniqueViolation(e)) {
+      if (this.rowWriter.isPgUniqueViolation(e)) {
         throw new ConflictException(
           `同一内容の CSV は既に取り込み済みです（code=${VisaCaseImportCommitErrorCode.CSV_ALREADY_IMPORTED}）`,
         );
@@ -255,16 +239,31 @@ export class VisaCaseImportCommitService {
     const r = pr.resolved;
 
     if (rt === VisaCaseImportRecordType.CASE) {
-      return this.commitCaseRow(base, pr, userId, legacyKeyToVisaCaseId);
+      return this.rowWriter.commitCaseRow(
+        base,
+        pr,
+        userId,
+        legacyKeyToVisaCaseId,
+      );
     }
     if (rt === VisaCaseImportRecordType.FAMILY_MEMBER) {
-      return this.commitFamilyRow(base, r, legacyKeyToVisaCaseId);
+      return this.rowWriter.commitFamilyRow(base, r, legacyKeyToVisaCaseId);
     }
     if (rt === VisaCaseImportRecordType.FILE_PATH) {
-      return this.commitFilePathRow(base, r, userId, legacyKeyToVisaCaseId);
+      return this.rowWriter.commitFilePathRow(
+        base,
+        r,
+        userId,
+        legacyKeyToVisaCaseId,
+      );
     }
     if (rt === VisaCaseImportRecordType.CASE_LOG) {
-      return this.commitCaseLogRow(base, r, userId, legacyKeyToVisaCaseId);
+      return this.rowWriter.commitCaseLogRow(
+        base,
+        r,
+        userId,
+        legacyKeyToVisaCaseId,
+      );
     }
 
     return {
@@ -274,287 +273,5 @@ export class VisaCaseImportCommitService {
         message: `未対応の record_type: ${pr.recordType}`,
       },
     };
-  }
-
-  private caseRefKey(
-    serviceCustomerId: string,
-    legacyRef: string | null,
-  ): string | null {
-    if (!legacyRef) {
-      return null;
-    }
-    return `${serviceCustomerId}\t${legacyRef}`;
-  }
-
-  private isPgUniqueViolation(err: unknown): boolean {
-    return (
-      err instanceof QueryFailedError &&
-      (err as QueryFailedError & { driverError?: { code?: string } })
-        .driverError?.code === '23505'
-    );
-  }
-
-  private async commitCaseRow(
-    base: { rowNumber: number; recordType: string },
-    pr: VisaCaseImportPreviewRowDto,
-    userId: string,
-    legacyKeyToVisaCaseId: Map<string, string>,
-  ): Promise<{ row: VisaCaseImportCommitRowResultDto }> {
-    const r = pr.resolved!;
-    const key = this.caseRefKey(r.serviceCustomerId, r.legacyCaseRef);
-
-    if (pr.status === VisaCaseImportRowStatus.DUPLICATE_SKIPPED) {
-      if (r.legacyCaseRef) {
-        const existing = await this.visaCaseRepo.findOne({
-          where: {
-            customerId: r.serviceCustomerId,
-            importReference: r.legacyCaseRef,
-          },
-        });
-        if (existing && key) {
-          legacyKeyToVisaCaseId.set(key, existing.id);
-        }
-        return {
-          row: {
-            ...base,
-            outcome: VisaCaseImportCommitOutcome.SKIPPED_DUPLICATE,
-            message: '既存案件のため案件行をスキップ',
-            visaCaseId: existing?.id,
-          },
-        };
-      }
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.SKIPPED_DUPLICATE,
-          message: '重複スキップ（legacy_case_ref なし）',
-        },
-      };
-    }
-
-    const c = r.case!;
-    const dto: CreateVisaCaseDto = {
-      customerId: r.serviceCustomerId,
-      caseType: c.caseType ?? undefined,
-      caseStatus: c.caseStatus,
-      isFamilyCase: c.isFamilyCase,
-      familyLinkMode: c.familyLinkMode ?? undefined,
-      internalPrimaryCustomerId: c.internalPrimaryCustomerId ?? undefined,
-      externalPrimaryName: c.externalPrimaryName ?? undefined,
-      externalPrimaryCaseType: c.externalPrimaryCaseType ?? undefined,
-      externalPrimaryExpireDate: c.externalPrimaryExpireDate ?? undefined,
-      externalPrimaryRelationToApplicant:
-        c.externalPrimaryRelationToApplicant ?? undefined,
-      expireDate: c.expireDate ?? undefined,
-      nextFollowUpAt: c.nextFollowUpAt ?? undefined,
-      materialStatus: c.materialStatus ?? undefined,
-      feeStatus: c.feeStatus ?? undefined,
-      memo: c.memo ?? undefined,
-      assignedTo: c.assignedTo ?? undefined,
-      importReference: r.legacyCaseRef ?? undefined,
-    };
-
-    try {
-      const created = await this.visaCaseService.create(
-        r.serviceCustomerId,
-        dto,
-        userId,
-      );
-      if (key) {
-        legacyKeyToVisaCaseId.set(key, created.id);
-      }
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.CASE_CREATED,
-          visaCaseId: created.id,
-          entityId: created.id,
-        },
-      };
-    } catch (e) {
-      if (this.isPgUniqueViolation(e) && r.legacyCaseRef) {
-        const existing = await this.visaCaseRepo.findOne({
-          where: {
-            customerId: r.serviceCustomerId,
-            importReference: r.legacyCaseRef,
-          },
-        });
-        if (existing && key) {
-          legacyKeyToVisaCaseId.set(key, existing.id);
-        }
-        return {
-          row: {
-            ...base,
-            outcome: VisaCaseImportCommitOutcome.SKIPPED_DUPLICATE,
-            message: '作成時に重複制約により既存案件に合流',
-            visaCaseId: existing?.id,
-          },
-        };
-      }
-      const msg = e instanceof Error ? e.message : String(e);
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.FAILED,
-          message: msg,
-        },
-      };
-    }
-  }
-
-  private async commitFamilyRow(
-    base: { rowNumber: number; recordType: string },
-    r: NonNullable<VisaCaseImportPreviewRowDto['resolved']>,
-    legacyKeyToVisaCaseId: Map<string, string>,
-  ): Promise<{ row: VisaCaseImportCommitRowResultDto }> {
-    const key = this.caseRefKey(r.serviceCustomerId, r.legacyCaseRef);
-    const visaCaseId = key ? legacyKeyToVisaCaseId.get(key) : undefined;
-    if (!visaCaseId) {
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.FAILED,
-          message:
-            '案件 ID を解決できません（先頭の CASE 行の失敗または順序不整合の可能性）',
-        },
-      };
-    }
-    const fm = r.familyMember!;
-    const dto: CreateVisaCaseFamilyMemberDto = {
-      customerId: fm.memberCustomerId,
-      memberRole: fm.memberRole,
-      isPrimary: fm.isPrimary,
-      displayNameSnapshot: fm.displayNameSnapshot,
-    };
-    try {
-      const created = await this.familyMemberService.addFamilyMember(
-        visaCaseId,
-        dto,
-      );
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.MEMBER_ADDED,
-          visaCaseId,
-          entityId: created.id,
-        },
-      };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.FAILED,
-          message: msg,
-        },
-      };
-    }
-  }
-
-  private async commitFilePathRow(
-    base: { rowNumber: number; recordType: string },
-    r: NonNullable<VisaCaseImportPreviewRowDto['resolved']>,
-    userId: string,
-    legacyKeyToVisaCaseId: Map<string, string>,
-  ): Promise<{ row: VisaCaseImportCommitRowResultDto }> {
-    const fp = r.filePath!;
-    let visaCaseId: string | undefined;
-    if (fp.scopedToCase && r.legacyCaseRef) {
-      const key = this.caseRefKey(r.serviceCustomerId, r.legacyCaseRef);
-      visaCaseId = key ? legacyKeyToVisaCaseId.get(key) : undefined;
-      if (!visaCaseId) {
-        return {
-          row: {
-            ...base,
-            outcome: VisaCaseImportCommitOutcome.FAILED,
-            message: '案件スコープのパスに対応する案件 ID が未解決です',
-          },
-        };
-      }
-    }
-    const dto: CreateCustomerFilePathDto = {
-      customerId: r.serviceCustomerId,
-      visaCaseId,
-      pathType: fp.pathType,
-      filePath: fp.filePath,
-      displayName: fp.displayName ?? undefined,
-      remark: fp.remark ?? undefined,
-    };
-    try {
-      const created = await this.filePathService.createFilePath(
-        r.serviceCustomerId,
-        dto,
-        userId,
-      );
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.FILE_PATH_CREATED,
-          visaCaseId,
-          entityId: created.id,
-        },
-      };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.FAILED,
-          message: msg,
-        },
-      };
-    }
-  }
-
-  private async commitCaseLogRow(
-    base: { rowNumber: number; recordType: string },
-    r: NonNullable<VisaCaseImportPreviewRowDto['resolved']>,
-    userId: string,
-    legacyKeyToVisaCaseId: Map<string, string>,
-  ): Promise<{ row: VisaCaseImportCommitRowResultDto }> {
-    const key = this.caseRefKey(r.serviceCustomerId, r.legacyCaseRef);
-    const visaCaseId = key ? legacyKeyToVisaCaseId.get(key) : undefined;
-    if (!visaCaseId) {
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.FAILED,
-          message: '案件ログに対応する案件 ID が未解決です',
-        },
-      };
-    }
-    const log = r.caseLog!;
-    const dto: CreateVisaCaseLogDto = {
-      logType: log.logType,
-      content: log.content,
-      submittedItems: log.submittedItems ?? undefined,
-      missingItems: log.missingItems ?? undefined,
-      nextAction: log.nextAction ?? undefined,
-      nextFollowUpAt: log.nextFollowUpAt ?? undefined,
-    };
-    try {
-      const created = await this.visaCaseLogService.createLog(
-        visaCaseId,
-        dto,
-        userId,
-      );
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.CASE_LOG_CREATED,
-          visaCaseId,
-          entityId: created.id,
-        },
-      };
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      return {
-        row: {
-          ...base,
-          outcome: VisaCaseImportCommitOutcome.FAILED,
-          message: msg,
-        },
-      };
-    }
   }
 }
