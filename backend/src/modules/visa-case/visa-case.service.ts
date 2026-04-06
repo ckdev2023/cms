@@ -84,6 +84,22 @@ export class VisaCaseService {
   ) {}
 
   /**
+   * 将案件类型字符串规范为可比对的形态：首尾空白去除后空串视为未设置（`null`）。
+   *
+   * @param value - 数据库或 DTO 中的 `caseType`
+   * @returns 去空白后的非空字符串，否则 `null`
+   */
+  private normalizeVisaCaseType(
+    value: string | null | undefined,
+  ): string | null {
+    if (value === undefined || value === null) {
+      return null;
+    }
+    const t = String(value).trim();
+    return t.length > 0 ? t : null;
+  }
+
+  /**
    * 按案件 id 加载负责人列并校验当前用户在该行上的读/写数据范围（P2-S2d / docs/21 §18.6）。
    *
    * @param userId - 当前登录用户主键
@@ -121,6 +137,9 @@ export class VisaCaseService {
    * @returns 已持久化且加载了负责人、创建人与家属关联信息的案件实体
    * @throws {NotFoundException} 目标客户或内部主申请人不存在时
    * @throws {BadRequestException} INTERNAL 模式缺少主申请人 ID 或 EXTERNAL 模式缺少主申请人姓名时
+   *
+   * 持久化成功且（如适用）挂载 INTERNAL 主申请人后，内联调用 `VisaCaseMaterialService.initialize`：
+   * 与 `POST /visa-cases/:id/materials/initialize` 幂等语义一致（已有材料行则跳过；无活跃模板则不落行）。
    */
   async create(
     customerId: string,
@@ -157,6 +176,8 @@ export class VisaCaseService {
         internalPrimaryCustomerId,
       );
     }
+
+    await this.materialService.initialize(saved.id, userId);
 
     this.logger.log(
       `Visa case created for customer ${customerId} by user ${userId}`,
@@ -381,6 +402,12 @@ export class VisaCaseService {
     );
 
     const { customerId: _ignored, ...updateFields } = dto;
+
+    const caseTypeChanged =
+      dto.caseType !== undefined &&
+      this.normalizeVisaCaseType(vc.caseType) !==
+        this.normalizeVisaCaseType(dto.caseType);
+
     const effectiveFamilyCase = updateFields.isFamilyCase ?? vc.isFamilyCase;
     const effectiveLinkMode = updateFields.familyLinkMode ?? vc.familyLinkMode;
 
@@ -432,8 +459,51 @@ export class VisaCaseService {
       );
     }
 
+    await this.maybeAutoInitializeMaterialItemsAfterCaseTypeChange(
+      id,
+      caseTypeChanged,
+      userId,
+      vc,
+    );
+
     this.logger.log(`Visa case ${id} updated by user ${userId}`);
     return this.findOne(id, userId);
+  }
+
+  /**
+   * 案件タイプが変更され、新タイプにアクティブテンプレートがあり、材料行が 0 件のときだけ `initialize` を呼ぶ。
+   *
+   * 既存行がある場合は上書きせず、フロントが `POST .../materials/reinitialize` で明示確認後に差し替える。
+   *
+   * @param visaCaseId - 签证案件主键
+   * @param caseTypeChanged - 本次 `update` 请求是否显式变更了 `caseType`（规范化后比对）
+   * @param userId - 当前操作用户 ID
+   * @param visaCaseAfterSave - 已 `save` 后的案件实体（含新 `caseType`）
+   * @returns Promise<void> 无返回值
+   */
+  private async maybeAutoInitializeMaterialItemsAfterCaseTypeChange(
+    visaCaseId: string,
+    caseTypeChanged: boolean,
+    userId: string,
+    visaCaseAfterSave: VisaCase,
+  ): Promise<void> {
+    if (!caseTypeChanged) {
+      return;
+    }
+    const nextType = this.normalizeVisaCaseType(visaCaseAfterSave.caseType);
+    if (!nextType) {
+      return;
+    }
+    const template =
+      await this.materialTemplateService.findActiveByCaseType(nextType);
+    if (!template) {
+      return;
+    }
+    const materialCount =
+      await this.materialService.countByVisaCase(visaCaseId);
+    if (materialCount === 0) {
+      await this.materialService.initialize(visaCaseId, userId);
+    }
   }
 
   /**
@@ -468,7 +538,15 @@ export class VisaCaseService {
     userId: string,
   ): Promise<FamilyMemberResponseDto> {
     await this.ensureVisaCaseRowAccessById(userId, visaCaseId, 'write');
-    return this.familyMemberService.addFamilyMember(visaCaseId, dto);
+    const created = await this.familyMemberService.addFamilyMember(
+      visaCaseId,
+      dto,
+    );
+    await this.materialService.backfillMemberScopedRowsAfterFamilyMemberChange(
+      visaCaseId,
+      userId,
+    );
+    return created;
   }
 
   /**
@@ -829,6 +907,27 @@ export class VisaCaseService {
   ): Promise<VisaCaseMaterialItemResponseDto[]> {
     await this.ensureVisaCaseRowAccessById(userId, visaCaseId, 'write');
     return this.materialService.initialize(visaCaseId, userId);
+  }
+
+  /**
+   * 在用户确认后删除该案全部材料实例并按当前案件类型的活跃模板重新生成。
+   *
+   * 与 `PUT /visa-cases/:id` 上案件类型变更且已有材料行时的静默禁止方針を対にする。
+   * 请求体校验（`confirm: true` 等）由控制器与 ValidationPipe 完成；审计拦截器会记录 body。
+   *
+   * @param visaCaseId - 签证案件 ID
+   * @param userId - 当前登录用户 ID
+   * @returns 再生成後の材料项列表
+   */
+  async reinitializeMaterials(
+    visaCaseId: string,
+    userId: string,
+  ): Promise<VisaCaseMaterialItemResponseDto[]> {
+    await this.ensureVisaCaseRowAccessById(userId, visaCaseId, 'write');
+    return this.materialService.reinitializeFromActiveTemplate(
+      visaCaseId,
+      userId,
+    );
   }
 
   /**

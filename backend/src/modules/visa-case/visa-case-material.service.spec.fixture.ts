@@ -30,13 +30,41 @@ export type VisaCaseMaterialFixture = {
  * @returns 服务实例与各 Repository mock
  */
 export async function createVisaCaseMaterialFixture(): Promise<VisaCaseMaterialFixture> {
-  const materialItemRepo = createMockRepo();
   const visaCaseRepo = createMockRepo();
   const familyMemberRepo = createMockRepo();
   const customerRepo = createMockRepo();
 
   const templateRepo = createMockRepo();
   const templateItemRepo = createMockRepo();
+
+  const materialItemRef: { repo?: RepoMock } = {};
+  const materialItemRepo = Object.assign(createMockRepo(), {
+    manager: {
+      transaction: jest.fn(
+        async (
+          cb: (m: {
+            delete: jest.Mock;
+            getRepository: (e: unknown) => RepoMock;
+          }) => Promise<unknown>,
+        ) => {
+          const mgr = {
+            delete: jest.fn().mockResolvedValue({ affected: 1 }),
+            getRepository: (entity: unknown) => {
+              if (entity === VisaCaseFamilyMember) {
+                return familyMemberRepo;
+              }
+              if (entity === VisaCase) {
+                return visaCaseRepo;
+              }
+              return materialItemRef.repo!;
+            },
+          };
+          return cb(mgr);
+        },
+      ),
+    },
+  }) as unknown as RepoMock;
+  materialItemRef.repo = materialItemRepo;
 
   const module: TestingModule = await Test.createTestingModule({
     providers: [

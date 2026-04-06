@@ -1,94 +1,154 @@
+/**
+ * 客户表单抽屉内容区：分区卡片、提示条、照片区与页脚按钮（令牌见 customer-form-dialog.global.scss）。
+ */
+.customer-form-drawer__form {
+  padding: 24px 32px 32px;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: var(--apple-card-shadow, rgba(0, 0, 0, 0.22) 3px 5px 30px 0);
+}
+
 .customer-form-drawer__form :deep(.el-form-item) {
   margin-bottom: 16px;
 }
 
 .customer-form-drawer__section {
-  margin-bottom: 22px;
+  margin-bottom: 28px;
+  padding-bottom: 4px;
 }
 
 .customer-form-drawer__section:last-of-type {
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.customer-form-drawer__section + .customer-form-drawer__section {
+  padding-top: 22px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .customer-form-drawer__section-title {
-  margin: 0 0 12px;
+  margin: 0 0 16px;
   padding: 0;
   border: none;
-  font-size: 14px;
+  font-family: var(--apple-font-display, -apple-system, blinkmacsystemfont, 'SF Pro Display', sans-serif);
+  font-size: 17px;
   font-weight: 600;
-  line-height: 1.4;
-  color: var(--el-text-color-primary);
-  letter-spacing: 0.02em;
+  line-height: 1.24;
+  color: var(--apple-black, #1d1d1f);
+  letter-spacing: -0.374px;
 }
 
 .customer-form-drawer__section-title--in-panel {
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .customer-form-drawer__section-title--visa {
   margin-top: 0;
-  margin-bottom: 10px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .customer-form-drawer__section-title.is-inactive {
-  color: var(--el-text-color-secondary);
+  color: var(--apple-gray-48, rgba(0, 0, 0, 0.48));
   font-weight: 500;
 }
 
 .customer-form-drawer__section-lead {
-  margin: 0 0 14px;
-  line-height: 1.5;
+  margin: 0 0 16px;
+  line-height: 1.47;
+  letter-spacing: -0.224px;
+
+  :deep(.el-text) {
+    color: var(--apple-gray-80, rgba(0, 0, 0, 0.8)) !important;
+  }
 }
 
 .customer-form-drawer__section--panel {
-  padding: 14px 16px 16px;
-  border-radius: 10px;
-  background-color: var(--el-fill-color-lighter);
-  border: 1px solid var(--el-border-color-lighter);
+  padding: 22px 24px 24px;
+  border-radius: 12px;
+  background-color: var(--apple-filter-bg, #fafafc);
+  border: 1px solid var(--apple-border-subtle, rgba(0, 0, 0, 0.08));
 }
 
 .customer-form-drawer__row-tight-top :deep(.el-form-item) {
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .customer-form-drawer__callout {
-  margin: 0 0 14px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background-color: var(--el-color-info-light-9);
-  border-left: 3px solid var(--el-color-info);
+  margin: 0 0 16px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  background-color: var(--apple-filter-bg, #fafafc);
+  border: 1px solid var(--apple-border-subtle, rgba(0, 0, 0, 0.08));
 }
 
 .customer-form-drawer__callout-text {
   display: block;
-  line-height: 1.5;
+  line-height: 1.47;
+  letter-spacing: -0.224px;
 }
 
 .customer-form-drawer__callout-text--stack {
   margin-top: 8px;
 }
 
+.customer-form-drawer__callout :deep(.el-text) {
+  color: var(--apple-gray-80, rgba(0, 0, 0, 0.8)) !important;
+}
+
 .customer-form-drawer__photo-block {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 16px;
+  gap: 18px;
+}
+
+.customer-form-drawer__photo-block :deep(.el-avatar) {
+  font-family: var(--apple-font-display, -apple-system, sans-serif);
+  font-weight: 600;
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
 }
 
 .customer-form-drawer__photo-actions {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+}
+
+.customer-form-drawer__photo-actions :deep(.el-button) {
+  min-height: 40px;
+  padding: 8px 18px;
+  font-family: var(--apple-font-text, -apple-system, sans-serif);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: -0.224px;
+  border-radius: 10px !important;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.customer-form-drawer__photo-actions :deep(.el-button--primary.is-plain) {
+  color: var(--apple-blue, #0071e3) !important;
+  background: #fff !important;
+  border: 1px solid var(--apple-blue, #0071e3) !important;
+
+  &:hover {
+    background: rgba(0, 113, 227, 0.06) !important;
+  }
 }
 
 .customer-form-drawer__photo-hint,
 .customer-form-drawer__photo-perm-hint {
   display: block;
-  margin-top: 8px;
-  line-height: 1.5;
+  margin-top: 10px;
+  line-height: 1.47;
+  letter-spacing: -0.224px;
+  color: var(--apple-gray-80, rgba(0, 0, 0, 0.8)) !important;
 }
 
 .customer-form-drawer__footer-actions {
@@ -96,6 +156,51 @@
   flex-wrap: wrap;
   justify-content: flex-end;
   gap: 12px;
+}
+
+.customer-form-drawer__footer-actions :deep(.el-button) {
+  min-height: 44px;
+  padding: 8px 22px;
+  font-family: var(--apple-font-text, -apple-system, sans-serif);
+  font-size: 17px;
+  font-weight: 400;
+  letter-spacing: -0.374px;
+  border-radius: 980px !important;
+  transition:
+    opacity 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.customer-form-drawer__footer-actions :deep(.el-button:not(.el-button--primary)) {
+  color: var(--apple-black, #1d1d1f) !important;
+  background: #fff !important;
+  border: 1px solid rgba(0, 0, 0, 0.14) !important;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.04) !important;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--apple-blue, #0071e3);
+    outline-offset: 2px;
+  }
+}
+
+.customer-form-drawer__footer-actions :deep(.el-button--primary) {
+  color: #fff !important;
+  background: var(--apple-blue, #0071e3) !important;
+  border-color: var(--apple-blue, #0071e3) !important;
+
+  &:hover {
+    background: var(--apple-blue-hover, #0077ed) !important;
+    border-color: var(--apple-blue-hover, #0077ed) !important;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--apple-blue, #0071e3);
+    outline-offset: 2px;
+  }
 }
 
 .customer-form-drawer__footer-actions :deep(.el-button + .el-button) {
@@ -121,31 +226,22 @@
 }
 
 .customer-form-dialog__accompanying-row {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .customer-form-dialog__visa-row {
-  margin-top: 12px;
+  margin-top: 8px;
 }
 
 .customer-form-dialog__visa-inner-row {
   width: 100%;
 }
 
-.customer-form-dialog__extension-title {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin: 0 0 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-}
-
 .customer-form-dialog__visa-panel {
-  padding: 10px 12px 8px;
-  border-radius: 8px;
-  background-color: var(--el-fill-color-light);
-  border: 1px solid var(--el-border-color-lighter);
+  padding: 16px 18px 14px;
+  border-radius: 12px;
+  background-color: var(--apple-filter-bg, #fafafc);
+  border: 1px solid var(--apple-border-subtle, rgba(0, 0, 0, 0.08));
 }
 
 .customer-form-dialog__visa-panel.is-inactive {
@@ -155,9 +251,11 @@
 .customer-form-dialog__visa-panel-hint {
   display: block;
   text-align: center;
-  line-height: 1.45;
-  margin: 2px 0 0;
+  line-height: 1.47;
+  letter-spacing: -0.224px;
+  margin: 4px 0 0;
   padding: 0 4px 4px;
+  color: var(--apple-gray-80, rgba(0, 0, 0, 0.8)) !important;
 }
 
 .customer-form-dialog__remind-days {

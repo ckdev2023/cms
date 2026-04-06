@@ -122,7 +122,7 @@ defineExpose({ formRef })
       class="customer-form-drawer__form"
       :model="form"
       :rules="rules"
-      label-width="120px"
+      label-width="132px"
       label-position="right"
     >
       <section
@@ -188,7 +188,7 @@ defineExpose({ formRef })
         <h3 class="customer-form-drawer__section-title">
           {{ t('dialogs.customerForm.sectionContactTitle') }}
         </h3>
-        <el-row :gutter="16">
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item :label="t('common.phone')" prop="phone">
               <el-input v-model="form.phone" placeholder="03-1234-5678" maxlength="50" />
@@ -201,7 +201,7 @@ defineExpose({ formRef })
           </el-col>
         </el-row>
 
-        <el-row :gutter="16" class="customer-form-drawer__row-tight-top">
+        <el-row :gutter="20" class="customer-form-drawer__row-tight-top">
           <el-col :span="12">
             <el-form-item :label="t('dialogs.customerForm.wechatId')" prop="wechatId">
               <el-input
@@ -243,7 +243,7 @@ defineExpose({ formRef })
         <h3 class="customer-form-drawer__section-title">
           {{ t('dialogs.customerForm.sectionServiceTitle') }}
         </h3>
-        <el-row :gutter="16">
+        <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item :label="t('dialogs.customerForm.serviceType')" prop="serviceType">
               <el-select
@@ -344,7 +344,7 @@ defineExpose({ formRef })
             class="customer-form-dialog__visa-panel"
             :class="{ 'is-inactive': personalColumnDisabled }"
           >
-            <el-row :gutter="16" class="customer-form-dialog__visa-inner-row">
+            <el-row :gutter="20" class="customer-form-dialog__visa-inner-row">
               <el-col :span="12">
                 <el-form-item
                   :label="t('dialogs.customerForm.residenceExpireDate')"

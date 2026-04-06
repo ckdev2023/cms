@@ -1,0 +1,8 @@
+/**
+ * 跟进记录弹框遮罩：对齐 design/apple（磨砂暗化、避免与 Element Plus 默认纯色遮罩冲突）。
+ */
+.customer-simple-follow-up-log-dialog__overlay.el-overlay {
+  background-color: rgba(0, 0, 0, 0.36) !important;
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+}

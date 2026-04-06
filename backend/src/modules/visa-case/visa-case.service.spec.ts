@@ -1,3 +1,5 @@
+import { registerUpdateCaseTypeMaterialTests } from './visa-case.service.spec.case-type-materials';
+import { registerCreateMaterialAutoInitTests } from './visa-case.service.spec.create-material-auto-init';
 import {
   registerCreateTests,
   registerFindByCustomerTests,
@@ -51,11 +53,13 @@ describe('VisaCaseService', () => {
   const getContext: ContextAccessor = () => context;
 
   registerCreateTests(getContext);
+  registerCreateMaterialAutoInitTests(getContext);
   registerInternalPrimaryCreateTests(getContext);
   registerExternalPrimaryCreateTests(getContext);
   registerFindByCustomerTests(getContext);
   registerFindOneTests(getContext);
   registerUpdateTests(getContext);
+  registerUpdateCaseTypeMaterialTests(getContext);
   registerInternalPrimaryUpdateTests(getContext);
   registerExternalPrimaryUpdateTests(getContext);
   registerListFamilyMembersTests(getContext);

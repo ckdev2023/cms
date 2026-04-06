@@ -1,0 +1,238 @@
+/**
+ * 简化详情 `.customer-detail-simple` 内 Element Plus 按钮/图标：对齐 `design/airbnb`（圆角 8px、近黑实心 CTA、灰底文本按钮、链色 link）。
+ * `is-text` + `primary` 在卡片头 `#actions` 内为主题蓝实心；其余 `is-text` 主按钮仍为浅灰底（如 Hero 次级操作）。
+ * 非 scoped，以便作用于子组件内的 `.el-button`；选择器限制在该根下，避免污染全局。
+ */
+
+.customer-detail-simple .el-button {
+  font-weight: 500;
+  border-radius: var(--cds-simple-ab-radius-button, 8px);
+  transition:
+    color 0.15s ease,
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+.customer-detail-simple .el-button .el-icon {
+  font-size: var(--cds-simple-ab-icon-in-button, 1rem);
+}
+
+.customer-detail-simple .el-button.is-text {
+  padding-block: 0.5rem;
+  padding-inline: 0.875rem;
+}
+
+/* 简化详情内文本主按钮：默认即带浅灰底，与 Hero 实心浅色 CTA 一致，避免白卡片上「悬浮才显形」 */
+.customer-detail-simple .el-button.is-text.el-button--primary {
+  color: var(--cds-simple-ab-near-black, #222222);
+  background-color: var(--cds-simple-ab-surface-control, #f2f2f2);
+  border: 1px solid rgb(0 0 0 / 0.08);
+}
+
+.customer-detail-simple .el-button.is-text.el-button--primary:hover:not(:disabled) {
+  color: var(--cds-simple-ab-near-black, #222222);
+  background-color: rgb(0 0 0 / 0.07);
+  border-color: rgb(0 0 0 / 0.12);
+  box-shadow: var(--cds-simple-ab-shadow-hover, rgba(0, 0, 0, 0.08) 0 4px 12px);
+}
+
+.customer-detail-simple .el-button.is-text.el-button--primary:focus-visible {
+  outline: 2px solid var(--cds-simple-ab-near-black, #222222);
+  outline-offset: 2px;
+}
+
+.customer-detail-simple .el-button.is-text.el-button--primary.is-disabled,
+.customer-detail-simple .el-button.is-text.el-button--primary:disabled {
+  color: rgb(0 0 0 / 0.38);
+  background-color: rgb(0 0 0 / 0.04);
+  border-color: rgb(0 0 0 / 0.06);
+}
+
+/**
+ * 卡片头主操作（`CustomerSimpleSectionCard` #actions）：基本信息「查看全部」/ 路径 / 日志 / 家属 / 材料等——与简化详情主 CTA 同色（`--cds-simple-apple-blue`）。
+ */
+.customer-detail-simple
+  .customer-simple-section-card__actions
+  .el-button.is-text.el-button--primary {
+  --el-button-bg-color: var(--cds-simple-apple-blue, #0071e3);
+  --el-button-border-color: var(--cds-simple-apple-blue, #0071e3);
+  --el-button-text-color: #ffffff;
+  --el-button-hover-bg-color: var(--cds-simple-apple-blue-hover, #0077ed);
+  --el-button-hover-border-color: var(--cds-simple-apple-blue-hover, #0077ed);
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-bg-color: #0060c0;
+  --el-button-active-border-color: #0060c0;
+  --el-button-active-text-color: #ffffff;
+  color: #ffffff;
+  background-color: var(--cds-simple-apple-blue, #0071e3);
+  border-color: var(--cds-simple-apple-blue, #0071e3);
+}
+
+.customer-detail-simple
+  .customer-simple-section-card__actions
+  .el-button.is-text.el-button--primary:hover:not(:disabled) {
+  color: #ffffff;
+  background-color: var(--cds-simple-apple-blue-hover, #0077ed);
+  border-color: var(--cds-simple-apple-blue-hover, #0077ed);
+  box-shadow: 0 8px 20px -6px rgb(0 113 227 / 0.45);
+}
+
+.customer-detail-simple
+  .customer-simple-section-card__actions
+  .el-button.is-text.el-button--primary:focus-visible {
+  outline: 2px solid var(--cds-simple-apple-blue, #0071e3);
+  outline-offset: 2px;
+}
+
+.customer-detail-simple
+  .customer-simple-section-card__actions
+  .el-button.is-text.el-button--primary:disabled,
+.customer-detail-simple
+  .customer-simple-section-card__actions
+  .el-button.is-text.el-button--primary.is-disabled {
+  --el-button-bg-color: rgb(0 113 227 / 0.32);
+  --el-button-border-color: rgb(0 113 227 / 0.22);
+  --el-button-text-color: rgb(255 255 255 / 0.88);
+  color: rgb(255 255 255 / 0.88);
+  background-color: rgb(0 113 227 / 0.32);
+  border-color: rgb(0 113 227 / 0.22);
+  box-shadow: none;
+}
+
+.customer-detail-simple .el-button.is-link.el-button--primary {
+  padding: 0.25rem 0.125rem;
+  font-weight: 500;
+  color: var(--cds-simple-ab-legal-blue, #428bff);
+}
+
+.customer-detail-simple .el-button.is-link.el-button--primary:hover {
+  color: var(--cds-simple-ab-near-black, #222222);
+  text-decoration: underline;
+}
+
+/**
+ * Hero 顶栏「返回」：导航级轻链，避开全局 `is-text`+`primary` 的灰底块，减少占位与视觉噪音。
+ */
+.customer-detail-simple .customer-simple-stitch-hero__back-btn.el-button.is-link.el-button--primary {
+  padding: 0.125rem 0;
+  margin-left: -0.125rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+  color: rgb(0 0 0 / 0.52);
+}
+
+.customer-detail-simple .customer-simple-stitch-hero__back-btn.el-button.is-link.el-button--primary .el-icon {
+  font-size: 0.875rem;
+  margin-right: 0.125rem;
+}
+
+.customer-detail-simple .customer-simple-stitch-hero__back-btn.el-button.is-link.el-button--primary:hover {
+  color: var(--cds-simple-ab-near-black, #222222);
+  text-decoration: none;
+}
+
+.customer-detail-simple .customer-simple-stitch-hero__back-btn.el-button.is-link.el-button--primary:focus-visible {
+  outline: 2px solid var(--cds-simple-ab-near-black, #222222);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.customer-detail-simple .el-button--primary:not(.is-link):not(.is-text):not(:disabled):hover {
+  box-shadow: var(--cds-simple-ab-shadow-hover, rgba(0, 0, 0, 0.08) 0 4px 12px);
+}
+
+/**
+ * 申请材料清单页脚：与卡片内进度环 / 勾选态同色（`--cds-simple-ab-legal-blue`），区别于全页默认灰底文本按钮。
+ * 「催促补件」实心主操作；「查看全部」浅蓝底描边次要操作。
+ */
+.customer-detail-simple
+  .customer-simple-materials-card__footer
+  .customer-simple-materials-card__footer-btn--view-all.el-button.is-text.el-button--primary {
+  color: var(--cds-simple-ab-legal-blue, #428bff);
+  background-color: rgba(66, 139, 255, 0.12);
+  border: 1px solid rgba(66, 139, 255, 0.32);
+}
+
+.customer-detail-simple
+  .customer-simple-materials-card__footer
+  .customer-simple-materials-card__footer-btn--view-all.el-button.is-text.el-button--primary:hover:not(:disabled) {
+  color: #2b6fd9;
+  background-color: rgba(66, 139, 255, 0.18);
+  border-color: rgba(66, 139, 255, 0.42);
+  box-shadow: 0 4px 12px -4px rgb(66 139 255 / 0.35);
+}
+
+.customer-detail-simple
+  .customer-simple-materials-card__footer
+  .customer-simple-materials-card__footer-btn--view-all.el-button.is-text.el-button--primary:focus-visible {
+  outline: 2px solid var(--cds-simple-ab-legal-blue, #428bff);
+  outline-offset: 2px;
+}
+
+.customer-detail-simple
+  .customer-simple-materials-card__footer
+  .customer-simple-materials-card__footer-btn--urge.el-button.is-text.el-button--primary {
+  font-weight: 600;
+  color: #ffffff;
+  background-color: var(--cds-simple-ab-legal-blue, #428bff);
+  border: 1px solid var(--cds-simple-ab-legal-blue, #428bff);
+}
+
+.customer-detail-simple
+  .customer-simple-materials-card__footer
+  .customer-simple-materials-card__footer-btn--urge.el-button.is-text.el-button--primary:hover:not(:disabled) {
+  color: #ffffff;
+  background-color: #3a7ef0;
+  border-color: #3a7ef0;
+  box-shadow: 0 6px 16px -6px rgb(66 139 255 / 0.5);
+}
+
+.customer-detail-simple
+  .customer-simple-materials-card__footer
+  .customer-simple-materials-card__footer-btn--urge.el-button.is-text.el-button--primary:focus-visible {
+  outline: 2px solid var(--cds-simple-ab-legal-blue, #428bff);
+  outline-offset: 2px;
+}
+
+.customer-detail-simple
+  .customer-simple-materials-card__footer
+  .customer-simple-materials-card__footer-btn--urge.el-button.is-text.el-button--primary:disabled,
+.customer-detail-simple
+  .customer-simple-materials-card__footer
+  .customer-simple-materials-card__footer-btn--urge.el-button.is-text.el-button--primary.is-disabled {
+  color: rgb(255 255 255 / 0.88);
+  background-color: rgb(66 139 255 / 0.38);
+  border-color: rgb(66 139 255 / 0.28);
+  box-shadow: none;
+}
+
+.customer-detail-simple
+  .customer-simple-materials-card__footer
+  .customer-simple-materials-card__footer-btn--view-all.el-button.is-text.el-button--primary:disabled,
+.customer-detail-simple
+  .customer-simple-materials-card__footer
+  .customer-simple-materials-card__footer-btn--view-all.el-button.is-text.el-button--primary.is-disabled {
+  color: rgb(66 139 255 / 0.45);
+  background-color: rgb(66 139 255 / 0.06);
+  border-color: rgb(66 139 255 / 0.14);
+  box-shadow: none;
+}
+
+/* 资料路径「复制」：icon-only 文本按钮 → Airbnb 圆形灰底控件（覆盖上方通用 is-text 内边距） */
+.customer-detail-simple .customer-simple-paths-card__copy.el-button.is-text.el-button--primary {
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border-radius: 50%;
+  color: var(--cds-simple-ab-near-black, #222222);
+  background-color: var(--cds-simple-ab-surface-control, #f2f2f2);
+}
+
+.customer-detail-simple
+  .customer-simple-paths-card__copy.el-button.is-text.el-button--primary:hover:not(:disabled) {
+  color: var(--cds-simple-ab-near-black, #222222);
+  background-color: var(--cds-simple-ab-surface-control, #f2f2f2);
+  box-shadow: var(--cds-simple-ab-shadow-hover, rgba(0, 0, 0, 0.08) 0 4px 12px);
+}

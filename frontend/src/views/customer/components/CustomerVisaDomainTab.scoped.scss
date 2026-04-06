@@ -1,0 +1,377 @@
+.visa-domain-tab {
+  padding: 0 0 8px;
+  border-radius: 0;
+  background: transparent;
+
+  &__summary {
+    margin-bottom: var(--app-spacing-md);
+    padding: var(--app-spacing-md) var(--app-spacing-lg);
+    background: var(--el-bg-color);
+    border-radius: var(--customer-detail-radius-card, var(--el-border-radius-base));
+    border: none;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.04),
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      0 8px 24px rgba(0, 0, 0, 0.06);
+    min-height: 56px;
+  }
+
+  /** 单行摘要：各格同一结构（主信息在上、说明在下），说明行底对齐 */
+  &__summary-strip {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 12px 28px;
+  }
+
+  &__cell {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    min-width: 0;
+
+    &--metric {
+      flex: 0 0 auto;
+    }
+
+    /** 材料类列吃掉剩余宽度，避免窄条挤压 */
+    &--fill {
+      flex: 1 1 160px;
+      min-width: min(100%, 140px);
+      max-width: 100%;
+    }
+  }
+
+  &__cell-main {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  &__cell-caption {
+    margin-top: auto;
+    padding-top: 6px;
+    width: 100%;
+    font-size: var(--el-font-size-small);
+    font-weight: 500;
+    color: var(--el-text-color-secondary);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+
+  &__tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px 8px;
+    width: 100%;
+    min-height: 28px;
+
+    &--checklist {
+      align-items: flex-start;
+    }
+  }
+
+  &__primary-checklist-line {
+    font-size: var(--el-font-size-base);
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.02em;
+    color: var(--app-text-primary);
+    flex: 1 1 12rem;
+    min-width: 0;
+  }
+
+  &__section-nav {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    margin: 0 0 14px;
+    padding: 10px 4px;
+    border-radius: var(--customer-detail-radius-surface, var(--el-border-radius-base));
+    background: linear-gradient(
+      to bottom,
+      var(--el-fill-color-extra-light) 75%,
+      transparent
+    );
+  }
+
+  /** 与 `CustomerDetailTabNav` 次级 segmented 同构：圆角 pill 分区导航 */
+  &__section-nav-pills {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+    min-height: 32px;
+    max-width: 100%;
+    padding: 3px;
+    border: 3px solid rgba(0, 0, 0, 0.04);
+    border-radius: 11px;
+    background: #fafafc;
+    box-sizing: border-box;
+  }
+
+  &__section-pill {
+    margin: 0;
+    padding: 0 12px;
+    height: 26px;
+    line-height: 26px;
+    font-size: var(--el-font-size-small);
+    font-family: inherit;
+    color: var(--el-text-color-regular);
+    background: transparent;
+    border: none;
+    border-radius: calc(var(--el-border-radius-base) - 2px);
+    cursor: pointer;
+    transition:
+      color var(--el-transition-duration) ease,
+      background-color var(--el-transition-duration) ease,
+      box-shadow var(--el-transition-duration) ease;
+    white-space: nowrap;
+  }
+
+  &__section-pill:hover {
+    color: var(--el-color-primary);
+    background: var(--el-fill-color-blank);
+  }
+
+  &__section-pill:focus-visible {
+    outline: 2px solid var(--el-color-primary-light-5);
+    outline-offset: 1px;
+  }
+
+  &__section-pill.is-active {
+    font-weight: 500;
+    color: var(--el-color-primary);
+    background: var(--el-bg-color);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+  }
+
+  &__section-pill.is-active:hover {
+    background: var(--el-bg-color);
+  }
+
+  &__stack {
+    display: flex;
+    flex-direction: column;
+    gap: var(--customer-detail-gap-stack, var(--app-spacing-lg));
+  }
+
+  /**
+   * 宽屏双列：DOM 顺序不变（深链 `#visa-domain-*` / `scrollIntoView` 不变），仅用 Grid 将左列 basic→家属→材料、右列路径→案件→日志对齐到同行。
+   * 断点与 `CustomerDetailView.scoped.scss` 中客户详情壳层宽屏栅格常用阈值（1200px）一致。
+   */
+  @media (min-width: 1200px) {
+    &__stack {
+      display: grid;
+      grid-template-columns: minmax(0, 1.12fr) minmax(0, 0.88fr);
+      grid-auto-rows: minmax(min-content, auto);
+      align-items: start;
+      gap: var(--customer-detail-gap-stack, var(--app-spacing-lg));
+    }
+
+    &__section--stack-left-1 {
+      grid-column: 1;
+      grid-row: 1;
+    }
+
+    &__section--stack-left-2 {
+      grid-column: 1;
+      grid-row: 2;
+    }
+
+    &__section--stack-left-3 {
+      grid-column: 1;
+      grid-row: 3;
+    }
+
+    &__section--stack-right-1 {
+      grid-column: 2;
+      grid-row: 1;
+    }
+
+    &__section--stack-right-2 {
+      grid-column: 2;
+      grid-row: 2;
+    }
+
+    &__section--stack-right-3 {
+      grid-column: 2;
+      grid-row: 3;
+    }
+  }
+
+  &__section {
+    scroll-margin-top: 1.25rem;
+    min-width: 0;
+  }
+
+  &__block-card {
+    border: none;
+    border-radius: var(--customer-detail-radius-card, var(--el-border-radius-base));
+    background: var(--el-bg-color);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.04),
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      0 8px 24px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+  }
+
+  /**
+   * 主栏案件日志：默认折叠以降低与右侧 Rail 的重复感与纵向占位（深链/导航/写日志时由脚本展开）。
+   */
+  &__logs-collapse {
+    --el-collapse-header-height: auto;
+
+    border: none;
+    border-radius: var(--customer-detail-radius-card, var(--el-border-radius-base));
+    background: var(--el-bg-color);
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.04),
+      0 2px 8px rgba(0, 0, 0, 0.06),
+      0 8px 24px rgba(0, 0, 0, 0.06);
+    overflow: hidden;
+
+    :deep(.el-collapse-item__header) {
+      align-items: center;
+      min-height: 48px;
+      line-height: 1.35;
+      font-weight: 600;
+      font-size: var(--el-font-size-base);
+      padding: 12px 16px;
+      border: none;
+      background: transparent;
+    }
+
+    :deep(.el-collapse-item__arrow) {
+      margin: 0 0 0 auto;
+    }
+
+    :deep(.el-collapse-item__wrap) {
+      border: none;
+      background: transparent;
+    }
+
+    :deep(.el-collapse-item__content) {
+      padding-bottom: 12px;
+    }
+  }
+
+  &__logs-collapse-body {
+    padding: 0 16px 4px;
+  }
+
+  &__block-title {
+    font-weight: 600;
+    font-size: var(--el-font-size-base);
+  }
+
+  &__primary-case {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  &__primary-case-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+
+  &__primary-case-label {
+    font-size: var(--app-font-size-sm);
+    font-weight: 600;
+    color: var(--app-text-primary);
+  }
+
+  &__primary-case-dl {
+    margin: 0;
+    padding: 12px 14px;
+    border-radius: var(--customer-detail-radius-card, var(--el-border-radius-base));
+    border: none;
+    background: #fafafc;
+  }
+
+  &__primary-case-row {
+    display: grid;
+    grid-template-columns: 7rem minmax(0, 1fr);
+    gap: 8px 12px;
+    padding: 4px 0;
+    font-size: var(--app-font-size-sm);
+
+    dt {
+      margin: 0;
+      color: var(--app-text-secondary);
+    }
+
+    dd {
+      margin: 0;
+      color: var(--app-text-primary);
+    }
+  }
+
+  &__all-cases-collapse {
+    border: none;
+
+    :deep(.el-collapse-item__header) {
+      font-weight: 600;
+      padding-left: 0;
+    }
+
+    :deep(.el-collapse-item__wrap) {
+      border: none;
+    }
+
+    :deep(.el-collapse-item__content) {
+      padding-bottom: 0;
+    }
+  }
+}
+
+.visa-domain-tab__cell--metric .stat-item {
+  flex: 1 1 auto;
+  align-self: stretch;
+  min-height: 100%;
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &__value {
+    font-size: clamp(1.375rem, 2.4vw, 1.75rem);
+    font-weight: 600;
+    line-height: 1.15;
+    letter-spacing: -0.03em;
+    color: var(--app-text-primary);
+
+    &--date {
+      font-size: clamp(1.05rem, 1.8vw, 1.2rem);
+      font-weight: 600;
+    }
+  }
+
+  &__label {
+    margin-top: auto;
+    padding-top: 2px;
+    font-size: var(--el-font-size-small);
+    font-weight: 500;
+    color: var(--app-text-secondary);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+
+  &--primary .stat-item__value {
+    color: var(--el-color-primary);
+  }
+
+  &--warning .stat-item__value {
+    color: var(--el-color-warning);
+  }
+}

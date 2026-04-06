@@ -26,6 +26,10 @@ export type SeedMaterialTemplateDef = {
  * 常用签证申请类目的默认材料模板（日文项目名，与事务所内部用语对齐）。
  *
  * 与 `docs/22` 模板层一致：仅作新环境/首次 `npm run seed` 时的基础数据；已存在同 `case_type` 活跃模板时跳过。
+ *
+ * **维护约定**：新增 `VisaCaseApplicationCategory` 时须同步本数组、`dictionary.controller` 中
+ * `visa_case_application_type` 的展示标签，以及前端 `VisaCaseApplicationCategory` 枚举；
+ * `seed-material-templates.data.spec.ts` 会校验「枚举值 ⇔ 种子条数」一一对应。
  */
 export const MATERIAL_TEMPLATE_BASE_SEEDS: readonly SeedMaterialTemplateDef[] =
   [

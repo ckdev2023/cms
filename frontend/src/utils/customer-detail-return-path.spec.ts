@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   buildCustomerDetailReturnFromQuery,
   CUSTOMER_DETAIL_RETURN_FROM_QUERY_KEY,
+  isCustomerCenterHubTabPath,
   parseSafeCustomerDetailReturnPath,
 } from '@/utils/customer-detail-return-path'
 
@@ -10,6 +11,13 @@ import {
 const SAMPLE_UUID = '550e8400-e29b-41d4-a716-446655440000'
 
 describe('customer-detail-return-path', () => {
+  it('isCustomerCenterHubTabPath matches customer center tab fullPaths', () => {
+    expect(isCustomerCenterHubTabPath('/customers')).toBe(true)
+    expect(isCustomerCenterHubTabPath('/customers/workbench/visa')).toBe(true)
+    expect(isCustomerCenterHubTabPath('/dashboard')).toBe(false)
+    expect(isCustomerCenterHubTabPath(`/customers/${SAMPLE_UUID}`)).toBe(false)
+  })
+
   it('parseSafeCustomerDetailReturnPath accepts hub paths and dashboard', () => {
     expect(parseSafeCustomerDetailReturnPath('/customers')).toBe('/customers')
     expect(parseSafeCustomerDetailReturnPath('/customers/workbench/visa')).toBe(
@@ -26,6 +34,10 @@ describe('customer-detail-return-path', () => {
 
   it('parseSafeCustomerDetailReturnPath accepts profile and finance detail pathnames', () => {
     expect(parseSafeCustomerDetailReturnPath(`/customers/${SAMPLE_UUID}`)).toBe(`/customers/${SAMPLE_UUID}`)
+    expect(parseSafeCustomerDetailReturnPath(`/customers/${SAMPLE_UUID}/simple`)).toBe(
+      `/customers/${SAMPLE_UUID}/simple`,
+    )
+    expect(parseSafeCustomerDetailReturnPath('/customers/not-a-uuid/simple')).toBe(null)
     expect(parseSafeCustomerDetailReturnPath(`/customers/admin-cases/${SAMPLE_UUID}`)).toBe(
       `/customers/admin-cases/${SAMPLE_UUID}`,
     )

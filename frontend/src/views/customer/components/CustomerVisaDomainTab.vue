@@ -1,24 +1,37 @@
+<!-- eslint-disable max-lines -- 签证域摘要条、分区 pill、堆叠六段与 IntersectionObserver 同页承载；后续可拆 composable / 子块时再收紧 -->
 <script setup lang="ts">
-import { computed, nextTick, ref, watch } from 'vue'
+import { computed, nextTick, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import { getVisaCases } from '@/api/visa-case'
-import { MaterialStatusLabel } from '@/constants/enum-labels'
+import { useCustomerVisaDomainLogsPanelCollapse } from '@/composables/useCustomerVisaDomainLogsPanelCollapse'
+import { useCustomerVisaDomainStackSectionSync } from '@/composables/useCustomerVisaDomainStackSectionSync'
+import { MaterialStatusLabel, VisaCaseStatusLabel } from '@/constants/enum-labels'
 import type { MaterialStatus } from '@/constants/enums'
 import { VisaCaseStatus } from '@/constants/enums'
 import { P } from '@/constants/permissions'
 import { useUserStore } from '@/stores/user'
-import type { CustomerListPrimaryVisaCaseSummary } from '@/types/customer'
+import type { CustomerDetail, CustomerListPrimaryVisaCaseSummary } from '@/types/customer'
 import type { VisaCaseItem, VisaCaseLogPreFillData } from '@/types/visa-case'
 import { CUSTOMER_DETAIL_VISA_WORK_IN_PROGRESS_STATUSES } from '@/utils/customer-detail-default-tab'
+import {
+  isVisaDomainBlockQueryValue,
+  stripVisaDomainDeepLinkFromLocation,
+  VISA_DOMAIN_BLOCK_KEYS,
+  type VisaDomainBlockQueryValue,
+  visaDomainSectionElementId,
+} from '@/utils/customer-detail-visa-domain-deeplink'
 import { useLocaleFormatter } from '@/utils/locale-format'
 import { materialChecklistApplicableTotal } from '@/utils/material-checklist-progress'
+import { formatVisaCaseTypeDisplay } from '@/utils/visa-case-type-display'
 
 import CustomerFamilyMembersBlock from './CustomerFamilyMembersBlock.vue'
 import CustomerFilePathsTab from './CustomerFilePathsTab.vue'
 import CustomerMaterialChecklistTab from './CustomerMaterialChecklistTab.vue'
 import CustomerVisaCaseLogsTab from './CustomerVisaCaseLogsTab.vue'
 import CustomerVisaCasesTab from './CustomerVisaCasesTab.vue'
+import CustomerVisaDomainBasicSnapshotCard from './CustomerVisaDomainBasicSnapshotCard.vue'
 
 const props = defineProps<{
   customerId: string
@@ -48,42 +61,136 @@ const props = defineProps<{
    * 与 `GET /customers/:id` 同源的主展示案件摘要，用于签证域顶栏 checklist 与持久化摘要联动展示。
    */
   listPrimaryVisaCase?: CustomerListPrimaryVisaCaseSummary | null
+  /** 与详情页 `GET /customers/:id` 同源；用于工作台「基本信息摘要」卡片（非完整主档表单）。 */
+  customer: CustomerDetail
 }>()
 
 const emit = defineEmits<{
   /** 签证域内变更影响客户详情顶栏/主展示案件摘要时，请求详情页重新拉取 GET /customers/:id */
   'visa-domain-customer-refresh': []
+  /** 摘要卡片「查看完整资料」：请求父级切换到 `tab=basic`。 */
+  'request-basic-tab': []
 }>()
 
 defineOptions({ name: 'CustomerVisaDomainTab' })
 
-const VALID_VISA_DOMAIN_SUB_BLOCKS = new Set([
-  'cases',
-  'family',
-  'paths',
-  'logs',
-  'materials',
-])
+const VISA_DOMAIN_BLOCK_ORDER = VISA_DOMAIN_BLOCK_KEYS
+
+type VisaDomainBlockKey = VisaDomainBlockQueryValue
+
+/** 需懒加载挂载子 Tab 的分区（首卡 basicSnapshot 始终挂载，不纳入此表）。 */
+type VisaLazyMountBlockKey = Exclude<VisaDomainBlockKey, 'basicSnapshot'>
 
 const { t } = useI18n({ useScope: 'global' })
+const route = useRoute()
+const router = useRouter()
 const { formatDate } = useLocaleFormatter()
 const userStore = useUserStore()
 const T = (key: string, params?: Record<string, unknown>) =>
   t(`detailViews.customer.visaDomainTab.${key}`, params ?? {})
 
-const activeBlock = ref('cases')
+/**
+ * 返回 Stitch 堆叠分区标题（与 `stitchLayout.stackBlocks` 及路由 `visaDomainBlock` 对齐）。
+ *
+ * @param block - 签证域分区键
+ * @returns 当前语言下的区块标题文案
+ */
+function stackBlockTitle(block: VisaDomainBlockKey): string {
+  return t(`detailViews.customer.stitchLayout.stackBlocks.${block}`)
+}
+
+const activeBlock = ref<VisaDomainBlockKey>('basicSnapshot')
 const cases = ref<VisaCaseItem[]>([])
 const summaryLoading = ref(false)
+
+const stackRootRef = ref<HTMLElement | null>(null)
+
+const lazyMount = reactive<Record<VisaLazyMountBlockKey, boolean>>({
+  family: true,
+  materials: false,
+  paths: false,
+  cases: false,
+  logs: false,
+})
+
+/** 有主展示摘要时「全部案件」表格默认折叠；深链打开向导/编辑时需展开才能交互 */
+const allCasesCollapseNames = ref<string[]>([])
+
+const primaryCaseStatusTagType: Record<
+  string,
+  'success' | 'info' | 'warning' | 'danger' | 'primary'
+> = {
+  [VisaCaseStatus.DRAFT]: 'info',
+  [VisaCaseStatus.IN_PROGRESS]: 'primary',
+  [VisaCaseStatus.SUBMITTED]: 'primary',
+  [VisaCaseStatus.SUPPLEMENT]: 'warning',
+  [VisaCaseStatus.APPROVED]: 'success',
+  [VisaCaseStatus.REJECTED]: 'danger',
+  [VisaCaseStatus.COMPLETED]: 'success',
+  [VisaCaseStatus.CANCELLED]: 'info',
+}
 
 /** 日志 Tab 默认选中：`logVisaCaseId` 优先于 `openVisaCaseId`，避免与案件子 Tab 抢 ID */
 const preferredVisaCaseIdForLogs = computed((): string => {
   const logId = props.logVisaCaseId?.trim()
-  if (logId) {return logId}
+  if (logId) {
+    return logId
+  }
   return props.openVisaCaseId?.trim() ?? ''
 })
 
 /** docs/21：客户上下文案件摘要与 `GET .../visa-cases` 同源，需 `visaCase:list`。 */
 const canLoadCaseSummary = computed((): boolean => userStore.hasPermission(P.VISA_CASE_LIST))
+
+/**
+ * 将指定分区标记为已挂载，供懒加载子块与深链滚动前渲染内容。
+ *
+ * @param block - 签证域堆叠分区键
+ */
+function ensureBlockMounted(block: VisaDomainBlockKey): void {
+  if (block === 'basicSnapshot') {
+    return
+  }
+  lazyMount[block as VisaLazyMountBlockKey] = true
+}
+
+const {
+  logsPanelExpandedNames,
+  expandLogsPanel,
+  onLogsPanelCollapseChange,
+  logsPanelCollapseName,
+} = useCustomerVisaDomainLogsPanelCollapse(
+  () => props.openVisaCaseLogForm,
+  ensureBlockMounted,
+)
+
+const OBSERVER_ACTIVE_SYNC_PAUSE_MS = 750
+
+const { pauseSectionObserverActiveSync } = useCustomerVisaDomainStackSectionSync(
+  stackRootRef,
+  activeBlock,
+  ensureBlockMounted,
+)
+
+/**
+ * 滚动至对应锚点分区并同步活动锚点状态。
+ *
+ * @param block - 与 `visaDomainBlock` 一致的区块键
+ */
+function scrollToBlock(block: VisaDomainBlockKey): void {
+  if (block === 'logs') {
+    expandLogsPanel()
+  }
+  activeBlock.value = block
+  pauseSectionObserverActiveSync(OBSERVER_ACTIVE_SYNC_PAUSE_MS)
+  ensureBlockMounted(block)
+  void nextTick(() => {
+    document.getElementById(visaDomainSectionElementId(block))?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+  })
+}
 
 watch(
   () => [props.customerId, canLoadCaseSummary.value] as const,
@@ -115,8 +222,45 @@ watch(
 watch(
   () => props.initialSubBlock,
   (block) => {
-    if (block && VALID_VISA_DOMAIN_SUB_BLOCKS.has(block)) {
-      activeBlock.value = block
+    if (!block || !isVisaDomainBlockQueryValue(block)) {
+      return
+    }
+    const key = block
+    if (key === 'logs') {
+      expandLogsPanel()
+    }
+    activeBlock.value = key
+    pauseSectionObserverActiveSync(OBSERVER_ACTIVE_SYNC_PAUSE_MS)
+    ensureBlockMounted(key)
+    void nextTick(() => {
+      void nextTick(() => {
+        document.getElementById(visaDomainSectionElementId(key))?.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start',
+        })
+        stripVisaDomainDeepLinkFromLocation(route, router)
+      })
+    })
+  },
+  { immediate: true },
+)
+
+watch(
+  () =>
+    [
+      props.listPrimaryVisaCase,
+      props.openVisaCaseId ?? '',
+      props.openVisaCaseWizard ?? false,
+      props.initialSubBlock ?? '',
+    ] as const,
+  () => {
+    if (!props.listPrimaryVisaCase) {
+      return
+    }
+    const id = props.openVisaCaseId?.trim()
+    const sub = typeof props.initialSubBlock === 'string' ? props.initialSubBlock.trim() : ''
+    if (id || props.openVisaCaseWizard || sub === 'cases') {
+      allCasesCollapseNames.value = ['all']
     }
   },
   { immediate: true },
@@ -147,9 +291,17 @@ const logPreFillData = ref<VisaCaseLogPreFillData | null>(null)
  */
 function handleWriteLog(data: VisaCaseLogPreFillData): void {
   logPreFillData.value = null
+  expandLogsPanel()
   activeBlock.value = 'logs'
-  nextTick(() => {
-    logPreFillData.value = data
+  pauseSectionObserverActiveSync(OBSERVER_ACTIVE_SYNC_PAUSE_MS)
+  void nextTick(() => {
+    document.getElementById(visaDomainSectionElementId('logs'))?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start',
+    })
+    nextTick(() => {
+      logPreFillData.value = data
+    })
   })
 }
 
@@ -220,6 +372,13 @@ const primaryCaseChecklistHeadline = computed((): string | null => {
     progress: `${collected}/${applicable}`,
   })
 })
+
+const sectionNavItems = computed(() =>
+  VISA_DOMAIN_BLOCK_ORDER.map((key) => ({
+    key,
+    label: stackBlockTitle(key),
+  })),
+)
 </script>
 
 <template>
@@ -282,170 +441,172 @@ const primaryCaseChecklistHeadline = computed((): string | null => {
               </el-tag>
             </div>
           </div>
-          <span class="visa-domain-tab__cell-caption">{{ T('materialsBlock') }}</span>
+          <span class="visa-domain-tab__cell-caption">{{ stackBlockTitle('materials') }}</span>
         </div>
       </div>
     </div>
 
-    <el-tabs v-model="activeBlock" type="card" class="visa-domain-tab__blocks">
-      <el-tab-pane :label="T('casesBlock')" name="cases">
-        <CustomerVisaCasesTab
-          :key="casesRefreshKey"
-          :customer-id="customerId"
-          :context-customer-name="contextCustomerName"
-          :open-visa-case-id="openVisaCaseId"
-          :open-visa-case-wizard="openVisaCaseWizard"
-          @visa-domain-customer-refresh="() => emit('visa-domain-customer-refresh')"
+    <nav
+      class="visa-domain-tab__section-nav"
+      role="navigation"
+      :aria-label="t('detailViews.customer.stitchLayout.stackSectionNavAria')"
+    >
+      <div class="visa-domain-tab__section-nav-pills" role="tablist">
+        <button
+          v-for="item in sectionNavItems"
+          :key="item.key"
+          type="button"
+          role="tab"
+          class="visa-domain-tab__section-pill"
+          :class="{ 'is-active': activeBlock === item.key }"
+          :aria-selected="activeBlock === item.key"
+          @click="scrollToBlock(item.key)"
+        >
+          {{ item.label }}
+        </button>
+      </div>
+    </nav>
+
+    <div ref="stackRootRef" class="visa-domain-tab__stack">
+      <div
+        :id="visaDomainSectionElementId('basicSnapshot')"
+        class="visa-domain-tab__section visa-domain-tab__section--stack-left-1"
+      >
+        <CustomerVisaDomainBasicSnapshotCard
+          :customer="customer"
+          @open-full-basic="emit('request-basic-tab')"
         />
-      </el-tab-pane>
-      <el-tab-pane :label="T('familyBlock')" name="family" lazy>
-        <CustomerFamilyMembersBlock :customer-id="customerId" />
-      </el-tab-pane>
-      <el-tab-pane :label="T('pathsBlock')" name="paths" lazy>
-        <CustomerFilePathsTab :customer-id="customerId" />
-      </el-tab-pane>
-      <el-tab-pane :label="T('logsBlock')" name="logs" lazy>
-        <CustomerVisaCaseLogsTab
-          :customer-id="customerId"
-          :preferred-visa-case-id="preferredVisaCaseIdForLogs"
-          :auto-open-create-form="openVisaCaseLogForm"
-          :suggested-next-follow-up-at="suggestedNextFollowUpAt"
-          :pre-fill-data="logPreFillData"
-          @prefill-settled="clearLogPreFill"
-        />
-      </el-tab-pane>
-      <el-tab-pane :label="T('materialsBlock')" name="materials" lazy>
-        <CustomerMaterialChecklistTab
-          :customer-id="customerId"
-          :preferred-materials-visa-case-id="materialsPreferredVisaCaseId"
-          @material-status-synced="handleMaterialStatusSynced"
-          @write-log="handleWriteLog"
-        />
-      </el-tab-pane>
-    </el-tabs>
+      </div>
+
+      <div id="visa-domain-family" class="visa-domain-tab__section visa-domain-tab__section--stack-left-2">
+        <el-card shadow="never" class="visa-domain-tab__block-card">
+          <template #header>
+            <span class="visa-domain-tab__block-title">{{ stackBlockTitle('family') }}</span>
+          </template>
+          <CustomerFamilyMembersBlock v-if="lazyMount.family" :customer-id="customerId" />
+        </el-card>
+      </div>
+
+      <div id="visa-domain-materials" class="visa-domain-tab__section visa-domain-tab__section--stack-left-3">
+        <el-card shadow="never" class="visa-domain-tab__block-card">
+          <template #header>
+            <span class="visa-domain-tab__block-title">{{ stackBlockTitle('materials') }}</span>
+          </template>
+          <CustomerMaterialChecklistTab
+            v-if="lazyMount.materials"
+            :customer-id="customerId"
+            :preferred-materials-visa-case-id="materialsPreferredVisaCaseId"
+            @material-status-synced="handleMaterialStatusSynced"
+            @write-log="handleWriteLog"
+          />
+        </el-card>
+      </div>
+
+      <div id="visa-domain-paths" class="visa-domain-tab__section visa-domain-tab__section--stack-right-1">
+        <el-card shadow="never" class="visa-domain-tab__block-card">
+          <template #header>
+            <span class="visa-domain-tab__block-title">{{ stackBlockTitle('paths') }}</span>
+          </template>
+          <CustomerFilePathsTab v-if="lazyMount.paths" :customer-id="customerId" />
+        </el-card>
+      </div>
+
+      <div id="visa-domain-cases" class="visa-domain-tab__section visa-domain-tab__section--stack-right-2">
+        <el-card shadow="never" class="visa-domain-tab__block-card">
+          <template #header>
+            <span class="visa-domain-tab__block-title">{{ stackBlockTitle('cases') }}</span>
+          </template>
+          <div v-if="listPrimaryVisaCase" class="visa-domain-tab__primary-case">
+            <div class="visa-domain-tab__primary-case-head">
+              <span class="visa-domain-tab__primary-case-label">{{ T('primaryCaseSummaryLabel') }}</span>
+              <el-tag
+                size="small"
+                :type="primaryCaseStatusTagType[listPrimaryVisaCase.caseStatus] ?? 'info'"
+              >
+                {{
+                  VisaCaseStatusLabel[listPrimaryVisaCase.caseStatus as VisaCaseStatus] ??
+                    listPrimaryVisaCase.caseStatus
+                }}
+              </el-tag>
+            </div>
+            <dl class="visa-domain-tab__primary-case-dl">
+              <div class="visa-domain-tab__primary-case-row">
+                <dt>{{ T('primaryCaseFieldType') }}</dt>
+                <dd>{{ formatVisaCaseTypeDisplay(listPrimaryVisaCase.caseType) || '—' }}</dd>
+              </div>
+              <div v-if="listPrimaryVisaCase.assignedToDisplayName" class="visa-domain-tab__primary-case-row">
+                <dt>{{ T('primaryCaseFieldAssignee') }}</dt>
+                <dd>{{ listPrimaryVisaCase.assignedToDisplayName }}</dd>
+              </div>
+              <div v-if="listPrimaryVisaCase.expireDate" class="visa-domain-tab__primary-case-row">
+                <dt>{{ T('primaryCaseFieldExpire') }}</dt>
+                <dd>{{ formatDate(listPrimaryVisaCase.expireDate) }}</dd>
+              </div>
+              <div v-if="listPrimaryVisaCase.nextFollowUpAt" class="visa-domain-tab__primary-case-row">
+                <dt>{{ T('primaryCaseFieldFollowUp') }}</dt>
+                <dd>{{ formatDate(listPrimaryVisaCase.nextFollowUpAt) }}</dd>
+              </div>
+              <div v-if="listPrimaryVisaCase.materialStatus" class="visa-domain-tab__primary-case-row">
+                <dt>{{ T('primaryCaseFieldMaterial') }}</dt>
+                <dd>
+                  {{
+                    MaterialStatusLabel[listPrimaryVisaCase.materialStatus as MaterialStatus] ??
+                      listPrimaryVisaCase.materialStatus
+                  }}
+                </dd>
+              </div>
+            </dl>
+            <el-collapse v-model="allCasesCollapseNames" class="visa-domain-tab__all-cases-collapse">
+              <el-collapse-item name="all" :title="T('allCasesCollapseTitle')">
+                <CustomerVisaCasesTab
+                  :key="casesRefreshKey"
+                  :customer-id="customerId"
+                  :context-customer-name="contextCustomerName"
+                  :open-visa-case-id="openVisaCaseId"
+                  :open-visa-case-wizard="openVisaCaseWizard"
+                  @visa-domain-customer-refresh="() => emit('visa-domain-customer-refresh')"
+                />
+              </el-collapse-item>
+            </el-collapse>
+          </div>
+          <CustomerVisaCasesTab
+            v-else
+            :key="casesRefreshKey"
+            :customer-id="customerId"
+            :context-customer-name="contextCustomerName"
+            :open-visa-case-id="openVisaCaseId"
+            :open-visa-case-wizard="openVisaCaseWizard"
+            @visa-domain-customer-refresh="() => emit('visa-domain-customer-refresh')"
+          />
+        </el-card>
+      </div>
+
+      <div id="visa-domain-logs" class="visa-domain-tab__section visa-domain-tab__section--stack-right-3">
+        <el-collapse
+          v-model="logsPanelExpandedNames"
+          class="visa-domain-tab__logs-collapse"
+          @change="onLogsPanelCollapseChange"
+        >
+          <el-collapse-item
+            :name="logsPanelCollapseName"
+            :title="stackBlockTitle('logs')"
+          >
+            <div class="visa-domain-tab__logs-collapse-body">
+              <CustomerVisaCaseLogsTab
+                v-if="lazyMount.logs"
+                :customer-id="customerId"
+                :preferred-visa-case-id="preferredVisaCaseIdForLogs"
+                :auto-open-create-form="openVisaCaseLogForm"
+                :suggested-next-follow-up-at="suggestedNextFollowUpAt"
+                :pre-fill-data="logPreFillData"
+                @prefill-settled="clearLogPreFill"
+              />
+            </div>
+          </el-collapse-item>
+        </el-collapse>
+      </div>
+    </div>
   </div>
 </template>
 
-<style scoped lang="scss">
-.visa-domain-tab {
-  &__summary {
-    margin-bottom: 16px;
-    padding: 12px 16px;
-    background: var(--el-fill-color-lighter);
-    border-radius: 6px;
-    min-height: 56px;
-  }
-
-  /** 单行摘要：各格同一结构（主信息在上、说明在下），说明行底对齐 */
-  &__summary-strip {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 12px 28px;
-  }
-
-  &__cell {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    justify-content: flex-start;
-    min-width: 0;
-
-    &--metric {
-      flex: 0 0 auto;
-    }
-
-    /** 材料类列吃掉剩余宽度，避免窄条挤压 */
-    &--fill {
-      flex: 1 1 160px;
-      min-width: min(100%, 140px);
-      max-width: 100%;
-    }
-  }
-
-  &__cell-main {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    width: 100%;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-
-  &__cell-caption {
-    margin-top: auto;
-    padding-top: 4px;
-    width: 100%;
-    font-size: var(--app-font-size-xs);
-    color: var(--app-text-secondary);
-    line-height: 1.2;
-  }
-
-  &__tag-row {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 6px 8px;
-    width: 100%;
-    min-height: 28px;
-
-    &--checklist {
-      align-items: flex-start;
-    }
-  }
-
-  &__primary-checklist-line {
-    font-size: var(--el-font-size-small);
-    font-weight: 600;
-    line-height: 1.35;
-    color: var(--app-text-primary);
-    flex: 1 1 12rem;
-    min-width: 0;
-  }
-
-  &__blocks {
-    :deep(.el-tabs__content) {
-      padding-top: 12px;
-    }
-  }
-}
-
-.visa-domain-tab__cell--metric .stat-item {
-  flex: 1 1 auto;
-  align-self: stretch;
-  min-height: 100%;
-}
-
-.stat-item {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-
-  &__value {
-    font-size: 20px;
-    font-weight: 600;
-    line-height: 1.2;
-    color: var(--app-text-primary);
-
-    &--date {
-      font-size: 16px;
-    }
-  }
-
-  &__label {
-    margin-top: auto;
-    padding-top: 4px;
-    font-size: var(--app-font-size-xs);
-    color: var(--app-text-secondary);
-    line-height: 1.2;
-  }
-
-  &--primary .stat-item__value {
-    color: var(--el-color-primary);
-  }
-
-  &--warning .stat-item__value {
-    color: var(--el-color-warning);
-  }
-}
-</style>
+<style scoped lang="scss" src="./CustomerVisaDomainTab.scoped.scss"></style>

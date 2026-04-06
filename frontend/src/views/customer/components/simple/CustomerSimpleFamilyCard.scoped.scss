@@ -1,0 +1,148 @@
+/**
+ * CustomerSimpleFamilyCard — Stitch 家属行：简称圆、双行文案、右侧 chevron（与 `CustomerDetailSimpleView` token 对齐）
+ */
+
+.customer-simple-family-card-root {
+  /* v-loading 目标略留高度；空列表不再用大插图，故略降 */
+  min-height: 2.75rem;
+}
+
+.customer-simple-family-card__denied {
+  margin: 0;
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  line-height: var(--cds-simple-line-body, 1.5);
+  color: var(--cds-simple-color-on-surface-variant, #404753);
+}
+
+.customer-simple-family-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-simple-stack-inner-sm, 0.75rem);
+}
+
+.customer-simple-family-card__summary {
+  margin: 0;
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  font-weight: 500;
+  line-height: var(--cds-simple-line-body, 1.5);
+  color: var(--cds-simple-color-on-surface-variant, #404753);
+}
+
+.customer-simple-family-card__more {
+  margin: 0;
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  font-weight: 500;
+  line-height: var(--cds-simple-line-body, 1.5);
+  color: var(--cds-simple-color-on-surface-variant, #404753);
+}
+
+/* 无随附家属时避免 el-empty 大图区占位，保持与权限提示行同密度 */
+.customer-simple-family-card__empty-inline {
+  margin: 0;
+  padding: 0.375rem 0 0.125rem;
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: var(--cds-simple-text-caption, 0.9375rem);
+  line-height: var(--cds-simple-line-body, 1.5);
+  color: var(--cds-simple-color-on-surface-variant, #6a6a6a);
+}
+
+.customer-simple-family-card__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-simple-stack-inner-sm, 0.75rem);
+}
+
+.customer-simple-family-card__item {
+  margin: 0;
+  padding: 0;
+}
+
+.customer-simple-family-card__row {
+  display: flex;
+  align-items: center;
+  gap: var(--cds-simple-stack-inner-sm, 0.75rem);
+  padding: 0.75rem 0.5rem;
+  border-radius: var(--cds-simple-radius-control, 0.25rem);
+  text-decoration: none;
+  color: inherit;
+  transition: background-color 0.15s ease;
+
+  &:hover {
+    background: var(--cds-simple-color-surface-low, #f6f3f2);
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--cds-simple-color-primary, #005daa);
+    outline-offset: 2px;
+  }
+}
+
+.customer-simple-family-card__abbr {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  font-family: var(--cds-simple-font-headline, 'Plus Jakarta Sans', system-ui, sans-serif);
+  font-size: var(--cds-simple-text-body, 0.875rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--cds-simple-color-primary, #005daa);
+  background: color-mix(
+    in srgb,
+    var(--cds-simple-color-primary, #005daa) 12%,
+    var(--cds-simple-color-surface, #ffffff)
+  );
+}
+
+.customer-simple-family-card__text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.customer-simple-family-card__name {
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: var(--cds-simple-text-body, 0.875rem);
+  font-weight: 600;
+  line-height: var(--cds-simple-line-tight, 1.25);
+  color: var(--cds-simple-color-on-surface, #1b1c1c);
+  word-break: break-word;
+}
+
+.customer-simple-family-card__sub {
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  font-weight: 400;
+  line-height: var(--cds-simple-line-body, 1.5);
+  color: var(--cds-simple-color-on-surface-variant, #404753);
+  word-break: break-word;
+}
+
+.customer-simple-family-card__chevron {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: var(--cds-simple-radius-control, 0.25rem);
+  font-size: 1rem;
+  color: var(--cds-simple-ab-legal-blue, #428bff);
+  background: color-mix(
+    in srgb,
+    var(--cds-simple-ab-legal-blue, #428bff) 12%,
+    var(--cds-simple-color-surface, #ffffff)
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--cds-simple-ab-legal-blue, #428bff) 20%, transparent);
+}

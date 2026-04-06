@@ -1,0 +1,366 @@
+/**
+ * Stitch 简化详情顶区：栅格与间距对齐 `CustomerDetailSimpleView.scoped.scss` 中 `--cds-simple-*` 变量。
+ * 色板与字栈可与仓库根目录 `design/apple` 对齐（本页通过父级 CSS 变量注入）。
+ */
+
+.customer-simple-stitch-hero {
+  box-sizing: border-box;
+  /**
+   * 紧凑 + 呼吸感：在继承 `.customer-detail-simple` 全页 token 的前提下，压缩 Hero 壳层与栅格槽；
+   * 头像列宽见父级 `--cds-simple-hero-avatar-size`，须与 `el-avatar` :size 一致。
+   */
+  --cds-simple-hero-padding: clamp(1.125rem, 1.8vw, 1.625rem);
+  --cds-simple-hero-gap: clamp(1rem, 1.5vw, 1.375rem);
+}
+
+.customer-simple-stitch-hero__back-row {
+  margin: 0 0 0.375rem;
+}
+
+.customer-simple-stitch-hero__back-btn {
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+}
+
+.customer-simple-stitch-hero__fallback-alert {
+  margin-bottom: var(--cds-simple-stack-inner-sm, 0.75rem);
+  padding: 6px 11px;
+}
+
+.customer-simple-stitch-hero__fallback-alert :deep(.el-alert__content) {
+  padding: 0;
+}
+
+.customer-simple-stitch-hero__fallback-line {
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  line-height: var(--cds-simple-line-body, 1.5);
+}
+
+.customer-simple-stitch-hero__fallback-link {
+  margin-left: 6px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--cds-simple-color-primary, var(--el-color-primary));
+  text-decoration: none;
+}
+
+.customer-simple-stitch-hero__fallback-link:hover {
+  text-decoration: underline;
+}
+
+.customer-simple-stitch-hero__shell {
+  box-sizing: border-box;
+  padding: var(--cds-simple-hero-padding, 2rem);
+  background: var(--cds-simple-color-surface, #fff);
+  border: var(--cds-simple-card-border, 1px solid rgba(192, 199, 214, 0.1));
+  border-radius: var(--cds-simple-radius-card, 0.5rem);
+  box-shadow: var(--cds-simple-shadow-card, 0 1px 2px rgb(0 0 0 / 0.05));
+  margin-bottom: calc(
+    var(--cds-simple-stack-after-hero, 2rem) - var(--cds-simple-section-gap, 2rem)
+  );
+}
+
+.customer-simple-stitch-hero__grid {
+  display: grid;
+  grid-template-columns: var(--cds-simple-hero-avatar-size, 5rem) minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: var(--cds-simple-hero-gap, 1.5rem);
+  /* 顶对齐：主区多行时与右侧操作同起点，扫读路径更直 */
+  align-items: start;
+}
+
+.customer-simple-stitch-hero__avatar-wrap {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 0.125rem;
+}
+
+.customer-simple-stitch-hero__main {
+  grid-column: 2;
+  grid-row: 1 / span 2;
+  min-width: 0;
+}
+
+.customer-simple-stitch-hero__ctas {
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 0.375rem 0.5rem;
+  justify-content: flex-end;
+  align-items: center;
+  align-self: start;
+  margin-left: clamp(0.25rem, 1.2vw, 0.75rem);
+  padding-left: clamp(0.75rem, 2vw, 1.125rem);
+  border-left: 1px solid rgba(0, 0, 0, 0.06);
+  padding-top: 0.125rem;
+}
+
+.customer-simple-stitch-hero__ctas :deep(.el-button) {
+  margin: 0;
+  font-size: var(--cds-simple-text-caption, 0.875rem);
+  font-weight: 500;
+}
+
+/* 次级描边按钮：无案件时「查看全部签证案件」等 */
+.customer-simple-stitch-hero__cta--secondary-link.el-button {
+  --el-button-bg-color: rgba(0, 102, 204, 0.12);
+  --el-button-border-color: rgba(0, 102, 204, 0.28);
+  --el-button-text-color: var(--cds-simple-apple-link-blue, #0066cc);
+  --el-button-hover-bg-color: rgba(0, 102, 204, 0.18);
+  --el-button-hover-border-color: rgba(0, 102, 204, 0.38);
+  --el-button-hover-text-color: var(--cds-simple-apple-link-blue-hover, #0054b3);
+  --el-button-active-bg-color: rgba(0, 102, 204, 0.22);
+  --el-button-active-border-color: rgba(0, 102, 204, 0.42);
+  --el-button-active-text-color: var(--cds-simple-apple-link-blue-hover, #0054b3);
+}
+
+.customer-simple-stitch-hero__cta--text-muted.el-button.is-text {
+  padding: 4px 10px;
+  font-weight: 500;
+  color: var(--cds-simple-apple-muted-action, rgba(0, 0, 0, 0.56));
+}
+
+.customer-simple-stitch-hero__cta--text-muted.el-button.is-text:hover {
+  color: var(--cds-simple-apple-muted-action-hover, rgba(0, 0, 0, 0.72));
+}
+
+.customer-simple-stitch-hero__cta--text-link.el-button.is-text {
+  padding: 4px 10px;
+  font-weight: 500;
+  color: var(--cds-simple-apple-link-blue, #0066cc);
+}
+
+.customer-simple-stitch-hero__cta--text-link.el-button.is-text:hover {
+  color: var(--cds-simple-apple-link-blue-hover, #0054b3);
+}
+
+.customer-simple-stitch-hero__cta--add-follow-up.el-button--primary {
+  font-weight: 600;
+  --el-button-bg-color: var(--cds-simple-apple-blue, #0071e3);
+  --el-button-border-color: var(--cds-simple-apple-blue, #0071e3);
+  --el-button-text-color: #ffffff;
+  --el-button-hover-bg-color: var(--cds-simple-apple-blue-hover, #0077ed);
+  --el-button-hover-border-color: var(--cds-simple-apple-blue-hover, #0077ed);
+  --el-button-hover-text-color: #ffffff;
+  --el-button-active-bg-color: #0060c0;
+  --el-button-active-border-color: #0060c0;
+  --el-button-active-text-color: #ffffff;
+}
+
+.customer-simple-stitch-hero__avatar-wrap :deep(.el-avatar) {
+  border-radius: var(--cds-simple-radius-hero-avatar, 1rem);
+  font-family: var(--cds-simple-font-headline, system-ui, sans-serif);
+  font-weight: var(--cds-simple-weight-section-title, 700);
+  background: var(--cds-simple-color-surface-low, #f6f3f2);
+  color: var(--cds-simple-color-on-surface-variant, #404753);
+}
+
+.customer-simple-stitch-hero__identity-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem 0.625rem;
+  min-width: 0;
+}
+
+/* Element Plus 标签默认行高与标题/说明字阶不一致时，在 flex 行内强制垂直居中 */
+.customer-simple-stitch-hero__identity-row :deep(.el-tag),
+.customer-simple-stitch-hero__family-row :deep(.el-tag),
+.customer-simple-stitch-hero__case-row :deep(.el-tag) {
+  align-self: center;
+}
+
+.customer-simple-stitch-hero__name {
+  margin: 0;
+  font-family: var(--cds-simple-font-headline, system-ui, sans-serif);
+  /* 略小于全页 `--cds-simple-text-hero-name`，保留层级又更省垂直空间 */
+  font-size: clamp(1.375rem, 1.15vw + 1.1rem, 1.5625rem);
+  font-weight: var(--cds-simple-weight-hero-name, 800);
+  line-height: var(--cds-simple-line-tight, 1.25);
+  letter-spacing: -0.02em;
+  color: var(--cds-simple-color-on-surface, var(--el-text-color-primary));
+}
+
+.customer-simple-stitch-hero__tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0;
+}
+
+.customer-simple-stitch-hero__family-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.375rem;
+  margin-top: 0.375rem;
+}
+
+.customer-simple-stitch-hero__family-meta {
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  color: var(--cds-simple-color-on-surface-variant, var(--el-text-color-secondary));
+  white-space: nowrap;
+}
+
+.customer-simple-stitch-hero__case-block {
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--cds-simple-color-surface-low, #fafafc);
+  border-radius: var(--cds-simple-radius-control, 0.25rem);
+  /* 浅色带替代顶部分割线：案件事实一整块更易一眼扫到 */
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.customer-simple-stitch-hero__case-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem 0.65rem;
+  min-width: 0;
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  line-height: var(--cds-simple-line-body, 1.5);
+}
+
+.customer-simple-stitch-hero__case-row-sep {
+  flex: 0 0 auto;
+  align-self: center;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--cds-simple-color-on-surface-variant, var(--el-text-color-placeholder));
+  opacity: 0.45;
+}
+
+.customer-simple-stitch-hero__case-type {
+  font-size: var(--cds-simple-text-body, 0.875rem);
+  font-weight: 700;
+  line-height: var(--cds-simple-line-tight, 1.25);
+  letter-spacing: -0.01em;
+  color: var(--cds-simple-color-on-surface, var(--el-text-color-primary));
+}
+
+@media (min-width: 900px) {
+  .customer-simple-stitch-hero__case-type {
+    font-size: 1rem;
+  }
+}
+
+.customer-simple-stitch-hero__assignee {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.customer-simple-stitch-hero__assignee-k {
+  color: var(--cds-simple-color-on-surface-variant, var(--el-text-color-secondary));
+}
+
+.customer-simple-stitch-hero__assignee-v {
+  color: var(--cds-simple-color-on-surface, var(--el-text-color-regular));
+}
+
+.customer-simple-stitch-hero__kv {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.customer-simple-stitch-hero__k {
+  color: var(--cds-simple-color-on-surface-variant, var(--el-text-color-secondary));
+}
+
+/* 在留期限标签：略加重，与「下次跟进」灰字区分 */
+.customer-simple-stitch-hero__kv--residence-expire .customer-simple-stitch-hero__k {
+  font-weight: 600;
+  color: var(--cds-simple-color-on-surface, var(--el-text-color-regular));
+}
+
+/* 日期值统一收入胶囊；高优先级由 `--priority` 强化底与字重 */
+.customer-simple-stitch-hero__date-pill {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 1.375rem;
+  padding: 1px 0.5rem;
+  border-radius: 9999px;
+  font-variant-numeric: tabular-nums;
+  color: var(--cds-simple-color-on-surface, var(--el-text-color-regular));
+  background: rgba(0, 0, 0, 0.05);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.06);
+}
+
+.customer-simple-stitch-hero__date-pill--priority {
+  font-weight: 600;
+  color: var(--cds-simple-color-on-surface, var(--el-text-color-primary));
+  background: rgba(0, 102, 204, 0.12);
+  box-shadow: inset 0 0 0 1px rgba(0, 102, 204, 0.22);
+}
+
+/* 在留期限：默认即暖色底，避免在「下次跟进」已蓝显时仍像次要灰胶囊 */
+.customer-simple-stitch-hero__date-pill--residence-expire {
+  font-weight: 600;
+  color: var(--el-color-warning-dark-2, #b88230);
+  background: var(--el-color-warning-light-9, rgba(250, 236, 216, 0.95));
+  box-shadow: inset 0 0 0 1px var(--el-color-warning-light-5, rgba(230, 162, 60, 0.45));
+}
+
+/* 两日期中在留更早：在暖色上再加强，不与跟进共用的蓝色混淆 */
+.customer-simple-stitch-hero__date-pill--residence-expire.customer-simple-stitch-hero__date-pill--priority {
+  color: var(--el-color-warning-dark-2, #a76a15);
+  background: var(--el-color-warning-light-8, rgba(252, 226, 185, 0.98));
+  box-shadow: inset 0 0 0 1px var(--el-color-warning, #e6a23c);
+}
+
+.customer-simple-stitch-hero__empty-case {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin-top: 0.625rem;
+  padding: 0.5rem 0.625rem;
+  background: var(--cds-simple-color-surface-low, #fafafc);
+  border-radius: var(--cds-simple-radius-control, 0.25rem);
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+.customer-simple-stitch-hero__empty-text {
+  flex: 1 1 100%;
+  margin: 0;
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  line-height: var(--cds-simple-line-body, 1.5);
+  color: var(--cds-simple-color-on-surface-variant, var(--el-text-color-secondary));
+}
+
+@media (max-width: 720px) {
+  .customer-simple-stitch-hero__grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+  }
+
+  .customer-simple-stitch-hero__avatar-wrap {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .customer-simple-stitch-hero__main {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .customer-simple-stitch-hero__ctas {
+    grid-column: 1;
+    grid-row: 3;
+    justify-content: flex-start;
+    align-items: flex-start;
+    width: 100%;
+    margin-left: 0;
+    padding-left: 0;
+    padding-top: 0;
+    border-left: none;
+  }
+}

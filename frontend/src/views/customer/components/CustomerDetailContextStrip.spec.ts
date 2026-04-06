@@ -11,7 +11,12 @@ import { h } from 'vue'
 import type { Router } from 'vue-router'
 import { createMemoryHistory, createRouter } from 'vue-router'
 
-import { MaterialStatus, VisaCaseStatus } from '@/constants/enums'
+import {
+  CustomerStatus,
+  CustomerType,
+  MaterialStatus,
+  VisaCaseStatus,
+} from '@/constants/enums'
 import { P } from '@/constants/permissions'
 import { i18n } from '@/i18n'
 import { useUserStore } from '@/stores/user'
@@ -97,6 +102,10 @@ function createCustomerDetailRouter(): Router {
 type StripMountOpts = {
   permissions: string[]
   customerId?: string
+  customerName?: string
+  customerCode?: string
+  customerType?: CustomerType
+  customerStatus?: CustomerStatus
   listPrimaryVisaCase: CustomerListPrimaryVisaCaseSummary | null
   listPrimaryVisaCaseSource?: ListPrimaryVisaCaseSource
   primaryCustomerIdForListFallback?: string | null
@@ -129,6 +138,10 @@ async function mountContextStrip(
   const wrapper = mount(CustomerDetailContextStrip, {
     props: {
       customerId,
+      customerName: opts.customerName ?? '摘要带测试客户',
+      customerCode: opts.customerCode ?? 'C-STRIP-1',
+      customerType: opts.customerType ?? CustomerType.PERSONAL,
+      customerStatus: opts.customerStatus ?? CustomerStatus.ACTIVE,
       listPrimaryVisaCase: opts.listPrimaryVisaCase,
       listPrimaryVisaCaseSource: opts.listPrimaryVisaCaseSource ?? null,
       primaryCustomerIdForListFallback: opts.primaryCustomerIdForListFallback ?? null,
@@ -143,7 +156,7 @@ async function mountContextStrip(
 }
 
 /**
- * 在摘要带内按 i18n 文案匹配并点击第一个按钮。
+ * 在摘要带内按 i18n 文案匹配并点击第一个按钮（不含「更多」下拉内的项）。
  *
  * @param wrapper - 已挂载的摘要带 wrapper
  * @param messageKey - `detailViews.customer.contextStrip` 下的子键
@@ -162,6 +175,37 @@ async function clickContextStripButton(
   await flushPromises()
 }
 
+/**
+ * 打开「更多操作」下拉并点击其中与 i18n 子键匹配的菜单项（菜单挂载在 body）。
+ *
+ * @param wrapper - 已挂载的摘要带 wrapper
+ * @param messageKey - `detailViews.customer.contextStrip` 下的子键
+ */
+async function clickContextStripMoreMenuItem(
+  wrapper: VueWrapper,
+  messageKey: string,
+): Promise<void> {
+  const moreLabel = String(
+    i18n.global.t('detailViews.customer.contextStrip.moreActions'),
+  )
+  const trigger = wrapper
+    .findAll('button')
+    .find((b) => (b.text() ?? '').includes(moreLabel))
+  expect(trigger).toBeTruthy()
+  await trigger!.trigger('click')
+  await flushPromises()
+  const itemLabel = String(
+    i18n.global.t(`detailViews.customer.contextStrip.${messageKey}`),
+  )
+  const items = Array.from(
+    document.body.querySelectorAll('.el-dropdown-menu__item'),
+  )
+  const el = items.find((node) => (node.textContent ?? '').includes(itemLabel))
+  expect(el).toBeTruthy()
+  el!.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+  await flushPromises()
+}
+
 beforeEach(() => {
   i18n.global.locale.value = 'zh-CN'
   vi.clearAllMocks()
@@ -169,6 +213,26 @@ beforeEach(() => {
 
 afterEach(() => {
   document.body.innerHTML = ''
+})
+
+describe('CustomerDetailContextStrip — Stitch 顶区', () => {
+  it('展示姓名、客户编号与主展示案件 ID', async () => {
+    const { wrapper } = await mountContextStrip({
+      permissions: [P.VISA_CASE_DETAIL],
+      customerName: '王测试',
+      customerCode: 'HK-88',
+      listPrimaryVisaCase: minimalListPrimaryVisaCase({
+        visaCaseId: 'vc-hero-ref-9f2a',
+      }),
+    })
+
+    const body = document.body.textContent ?? ''
+    expect(body).toContain('王测试')
+    expect(body).toContain('HK-88')
+    expect(body).toContain('vc-hero-ref-9f2a')
+
+    wrapper.unmount()
+  })
 })
 
 describe('CustomerDetailContextStrip — render', () => {
@@ -185,7 +249,7 @@ describe('CustomerDetailContextStrip — render', () => {
       String(i18n.global.t('detailViews.customer.contextStrip.openCase')),
     )
     expect(document.body.textContent ?? '').toContain(
-      String(i18n.global.t('detailViews.customer.contextStrip.viewAllVisaCases')),
+      String(i18n.global.t('detailViews.customer.contextStrip.moreActions')),
     )
     expect(document.body.textContent ?? '').toContain(
       String(i18n.global.t('detailViews.customer.contextStrip.unassigned')),
@@ -299,7 +363,7 @@ describe('CustomerDetailContextStrip — openMaterials', () => {
       { spyPush: true },
     )
 
-    await clickContextStripButton(wrapper, 'materials')
+    await clickContextStripMoreMenuItem(wrapper, 'materials')
     expect(pushSpy).toHaveBeenCalledWith({
       path: '/customers/cust-1',
       query: expect.objectContaining({
@@ -314,6 +378,31 @@ describe('CustomerDetailContextStrip — openMaterials', () => {
 })
 
 describe('CustomerDetailContextStrip — openWriteLog', () => {
+  it('同时具备案件上下文与建日志权时从「更多」打开写日志深链', async () => {
+    const nextFollowUpAt = '2026-03-20T00:00:00.000Z'
+    const { wrapper, pushSpy } = await mountContextStrip(
+      {
+        permissions: [P.VISA_CASE_DETAIL, P.VISA_CASE_LOG_CREATE],
+        listPrimaryVisaCase: minimalListPrimaryVisaCase({ nextFollowUpAt }),
+      },
+      { spyPush: true },
+    )
+
+    await clickContextStripMoreMenuItem(wrapper, 'writeLog')
+    expect(pushSpy).toHaveBeenCalledWith({
+      path: '/customers/cust-1',
+      query: expect.objectContaining({
+        tab: 'visa-domain',
+        visaDomainBlock: 'logs',
+        logVisaCaseId: 'vc-strip-1',
+        openVisaCaseLogForm: '1',
+        suggestedNextFollowUpAt: nextFollowUpAt,
+      }),
+    })
+
+    wrapper.unmount()
+  })
+
   it('存在下次跟进日时附带 suggestedNextFollowUpAt', async () => {
     const nextFollowUpAt = '2026-03-20T00:00:00.000Z'
     const { wrapper, pushSpy } = await mountContextStrip(
@@ -462,7 +551,7 @@ describe('CustomerDetailContextStrip — view all visa cases', () => {
       { spyPush: true },
     )
 
-    await clickContextStripButton(wrapper, 'viewAllVisaCases')
+    await clickContextStripMoreMenuItem(wrapper, 'viewAllVisaCases')
 
     expect(pushSpy).toHaveBeenCalledWith({
       path: '/customers/cust-1',

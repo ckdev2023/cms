@@ -78,22 +78,6 @@ const { t } = useI18n()
   width: 100%;
 }
 
-.customer-form-dialog__extension-title {
-  font-size: 13px;
-  font-weight: 600;
-  line-height: 1.35;
-  color: var(--el-text-color-primary);
-  margin: 0 0 8px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--el-border-color-lighter);
-  min-height: 22px;
-}
-
-.customer-form-dialog__extension-title.is-inactive {
-  color: var(--el-text-color-secondary);
-  font-weight: 500;
-}
-
 .customer-form-dialog__fiscal-month {
   width: 100%;
   max-width: 280px;

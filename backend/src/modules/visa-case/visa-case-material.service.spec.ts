@@ -1,6 +1,11 @@
 import type { VisaCaseMaterialFixture } from './visa-case-material.service.spec.fixture';
 import { createVisaCaseMaterialFixture } from './visa-case-material.service.spec.fixture';
 import {
+  runBackfillAddsMissingMemberRows,
+  runBackfillIdempotentWhenAllPairsExist,
+  runBackfillReassignsPlaceholderPreservingStatus,
+  runBackfillReturnsZeroWhenNoTemplateBackedRows,
+  runBackfillThrowsWhenCaseMissing,
   runCreateItemThrowsWhenCaseMissing,
   runCreateItemValidatesFamilyMember,
   runCreateManualMaterialItem,
@@ -23,6 +28,10 @@ import {
   runInitializeMemberScopePerFamily,
   runInitializeSkipsWhenItemsExist,
   runInitializeThrowsWhenCaseMissing,
+  runReinitializeRunsTransactionAndSeeds,
+  runReinitializeThrowsWhenCaseMissing,
+  runReinitializeThrowsWhenNoCaseType,
+  runReinitializeThrowsWhenNoTemplate,
   runSyncStatusAlignsCurrent,
   runSyncStatusWritesSuggested,
   runUpdateItemClearsCollectedAt,
@@ -127,6 +136,34 @@ function registerVisaCaseMaterialSyncStatusTests(): void {
   });
 }
 
+function registerVisaCaseMaterialReinitializeTests(): void {
+  describe('reinitializeFromActiveTemplate', () => {
+    it('should throw NotFoundException when case does not exist', () =>
+      runReinitializeThrowsWhenCaseMissing(fx));
+    it('should throw BadRequestException when case has no caseType', () =>
+      runReinitializeThrowsWhenNoCaseType(fx));
+    it('should throw BadRequestException when no active template', () =>
+      runReinitializeThrowsWhenNoTemplate(fx));
+    it('should run transaction delete+seed and return new rows', () =>
+      runReinitializeRunsTransactionAndSeeds(fx));
+  });
+}
+
+function registerVisaCaseMaterialMemberBackfillTests(): void {
+  describe('backfillMemberScopedRowsAfterFamilyMemberChange', () => {
+    it('should return 0 when no template-sourced material rows exist', () =>
+      runBackfillReturnsZeroWhenNoTemplateBackedRows(fx));
+    it('should insert rows only for missing (templateItem, member) pairs', () =>
+      runBackfillAddsMissingMemberRows(fx));
+    it('should be idempotent when all member template pairs already exist', () =>
+      runBackfillIdempotentWhenAllPairsExist(fx));
+    it('should throw NotFoundException when visa case does not exist', () =>
+      runBackfillThrowsWhenCaseMissing(fx));
+    it('should reassign placeholder MEMBER rows preserving NOT_APPLICABLE', () =>
+      runBackfillReassignsPlaceholderPreservingStatus(fx));
+  });
+}
+
 describe('VisaCaseMaterialService', () => {
   registerVisaCaseMaterialInitializeTests();
   registerVisaCaseMaterialFindByTests();
@@ -135,4 +172,6 @@ describe('VisaCaseMaterialService', () => {
   registerVisaCaseMaterialDeleteItemTests();
   registerVisaCaseMaterialGetSummaryTests();
   registerVisaCaseMaterialSyncStatusTests();
+  registerVisaCaseMaterialReinitializeTests();
+  registerVisaCaseMaterialMemberBackfillTests();
 });

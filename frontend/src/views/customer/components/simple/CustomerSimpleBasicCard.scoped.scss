@@ -1,0 +1,299 @@
+/**
+ * CustomerSimpleBasicCard — 基本资料键值表：标签列宽、分段分隔与字阶对齐 `CustomerDetailSimpleView` Stitch token。
+ */
+
+.customer-simple-basic-card {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  gap: 0;
+  /* 键值层级：label 14px 保证可读，仍略小于正文 value；颜色与字重保持辅助层级 */
+  --cds-basic-label-size: 0.875rem; /* 14px */
+  --cds-basic-label-color: var(--cds-simple-color-on-surface-variant, #6a6a6a);
+  --cds-basic-value-size: var(--cds-simple-text-body, 1.0625rem);
+  --cds-basic-value-color: var(--cds-simple-color-on-surface, #222222);
+}
+
+.customer-simple-basic-card__segment {
+  padding: 0;
+}
+
+.customer-simple-basic-card__segment + .customer-simple-basic-card__segment {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid
+    color-mix(in srgb, var(--cds-simple-color-outline-variant, #c0c7d6) 25%, transparent);
+}
+
+.customer-simple-basic-card__segment-title {
+  margin: 0 0 0.625rem;
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  font-weight: 600;
+  line-height: var(--cds-simple-line-tight, 1.25);
+  color: var(--cds-simple-color-on-surface-variant, #404753);
+}
+
+/**
+ * 2×2 信息宫格：浅灰底圆角卡片 + 顶行图标与标签、下方加粗值（对齐简化详情稿面联系方式区）。
+ */
+.customer-simple-basic-card__tile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--cds-simple-stack-inner-sm, 0.75rem);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.customer-simple-basic-card__tile {
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: var(--cds-simple-ab-radius-button, 8px);
+  background: var(--cds-simple-color-surface-low, #f5f5f7);
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+}
+
+.customer-simple-basic-card__tile-head {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  margin-bottom: 0.5rem;
+}
+
+.customer-simple-basic-card__tile-head--icon-only {
+  margin-bottom: 0.375rem;
+}
+
+.customer-simple-basic-card__tile-icon {
+  flex-shrink: 0;
+  font-size: 1.125rem;
+  color: color-mix(
+    in srgb,
+    var(--cds-simple-color-primary, var(--el-color-primary)) 78%,
+    var(--cds-simple-color-on-surface-variant, #6a6a6a)
+  );
+}
+
+.customer-simple-basic-card__tile-label {
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  font-weight: 500;
+  line-height: var(--cds-simple-line-tight, 1.25);
+  color: var(--cds-basic-label-color);
+  overflow-wrap: anywhere;
+}
+
+.customer-simple-basic-card__tile-value {
+  display: block;
+  font-size: var(--cds-basic-value-size);
+  font-weight: 700;
+  line-height: var(--cds-simple-line-body, 1.5);
+  letter-spacing: -0.01em;
+  color: var(--cds-basic-value-color);
+  overflow-wrap: anywhere;
+}
+
+.customer-simple-basic-card__tile--full {
+  grid-column: 1 / -1;
+}
+
+.customer-simple-basic-card__tile-value--multiline {
+  white-space: pre-wrap;
+}
+
+.customer-simple-basic-card__contact-block {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.customer-simple-basic-card__contact-expanded-channels {
+  margin-top: var(--cds-simple-stack-inner-sm, 0.75rem);
+}
+
+@media (max-width: 520px) {
+  .customer-simple-basic-card__tile-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.customer-simple-basic-card__rows {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+}
+
+/**
+ * 双列并排（摘要 / 联系方式）：用 flex + 顶对齐，避免一侧 value 换行时另一侧被纵向居中造成错落。
+ */
+.customer-simple-basic-card__pair {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  column-gap: var(--cds-simple-stack-inner-sm, 0.75rem);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--cds-simple-color-outline-variant, #c0c7d6) 20%, transparent);
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+}
+
+.customer-simple-basic-card__pair .customer-simple-basic-card__row--cell {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.customer-simple-basic-card__pair .customer-simple-basic-card__row {
+  padding: 0;
+  border-bottom: none;
+}
+
+.customer-simple-basic-card__pair .customer-simple-basic-card__row--cell:not(:last-child) {
+  padding-right: calc(var(--cds-simple-stack-inner-sm, 0.75rem) * 0.5);
+  border-right: 1px solid
+    color-mix(in srgb, var(--cds-simple-color-outline-variant, #c0c7d6) 18%, transparent);
+}
+
+.customer-simple-basic-card__row {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 32%) minmax(0, 1fr);
+  align-items: start;
+  align-content: start;
+  column-gap: var(--cds-simple-stack-inner-sm, 0.75rem);
+  padding: 0.5rem 0;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--cds-simple-color-outline-variant, #c0c7d6) 20%, transparent);
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+}
+
+.customer-simple-basic-card__row--cell {
+  grid-template-columns: minmax(4.25rem, 38%) minmax(0, 1fr);
+}
+
+.customer-simple-basic-card__rows > :last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.customer-simple-basic-card__rows > :first-child {
+  padding-top: 0;
+}
+
+.customer-simple-basic-card__rows > .customer-simple-basic-card__pair:first-child {
+  padding-top: 0;
+}
+
+@media (max-width: 520px) {
+  .customer-simple-basic-card__row {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 0.375rem;
+  }
+
+  .customer-simple-basic-card__pair {
+    flex-direction: column;
+    row-gap: 0.75rem;
+  }
+
+  .customer-simple-basic-card__pair .customer-simple-basic-card__row--cell:not(:last-child) {
+    padding-right: 0;
+    border-right: none;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--cds-simple-color-outline-variant, #c0c7d6) 15%, transparent);
+  }
+
+  .customer-simple-basic-card__pair .customer-simple-basic-card__row--cell:last-child {
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+}
+
+.customer-simple-basic-card__label {
+  font-size: var(--cds-basic-label-size);
+  font-weight: 400;
+  line-height: var(--cds-simple-line-tight, 1.25);
+  letter-spacing: 0.02em;
+  color: var(--cds-basic-label-color);
+}
+
+.customer-simple-basic-card__value {
+  font-size: var(--cds-basic-value-size);
+  font-weight: 500;
+  line-height: var(--cds-simple-line-body, 1.5);
+  color: var(--cds-basic-value-color);
+  word-break: break-word;
+}
+
+/* 窄列内长邮箱等：允许在任意位置断行，避免单栏过高、对侧视觉错位 */
+.customer-simple-basic-card__row--cell .customer-simple-basic-card__value {
+  overflow-wrap: anywhere;
+}
+
+/* 小节标题已表达字段语义时单独展示值（如地址），避免标签与标题同文案重复 */
+.customer-simple-basic-card__value--block {
+  margin: 0;
+  padding: 0;
+  text-align: start;
+  white-space: pre-wrap;
+}
+
+.customer-simple-basic-card__footer {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 0.625rem;
+}
+
+/* 全宽浅色条 + 箭头：比 text 链更像可点区域，仍轻量 */
+.customer-simple-basic-card__expand-btn.el-button {
+  box-sizing: border-box;
+  width: 100%;
+  margin: 0 !important;
+  padding: 0.5rem 0.875rem !important;
+  min-height: 2.25rem;
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: var(--cds-simple-text-caption, 0.9375rem) !important;
+  font-weight: 600 !important;
+  line-height: var(--cds-simple-line-tight, 1.25);
+  color: var(--cds-simple-ab-legal-blue, #428bff) !important;
+  border-radius: var(--cds-simple-ab-radius-button, 8px) !important;
+  border: 1px solid
+    color-mix(in srgb, var(--cds-simple-ab-legal-blue, #428bff) 32%, transparent) !important;
+  background: color-mix(
+    in srgb,
+    var(--cds-simple-ab-legal-blue, #428bff) 10%,
+    var(--cds-simple-color-surface, #ffffff)
+  ) !important;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.customer-simple-basic-card__expand-btn.el-button:hover {
+  color: var(--cds-simple-ab-legal-blue, #428bff) !important;
+  border-color: color-mix(
+    in srgb,
+    var(--cds-simple-ab-legal-blue, #428bff) 48%,
+    transparent
+  ) !important;
+  background: color-mix(
+    in srgb,
+    var(--cds-simple-ab-legal-blue, #428bff) 16%,
+    var(--cds-simple-color-surface, #ffffff)
+  ) !important;
+  box-shadow: var(--cds-simple-ab-shadow-hover, rgba(0, 0, 0, 0.08) 0 2px 8px);
+}
+
+.customer-simple-basic-card__expand-inner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+}
+
+.customer-simple-basic-card__expand-icon {
+  font-size: 1rem;
+}

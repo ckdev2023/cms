@@ -4,7 +4,7 @@ import { useI18n } from 'vue-i18n'
 
 import { VisaCaseLogTypeLabel } from '@/constants/enum-labels'
 import { VisaCaseLogType } from '@/constants/enums'
-import { visaCaseLogTimelineTagType } from '@/constants/visa-case-log-ui'
+import { resolveVisaCaseLogTimelineVisualTone } from '@/constants/visa-case-log-ui'
 import type { VisaCaseLogItem } from '@/types/visa-case'
 
 const props = defineProps<{
@@ -34,11 +34,23 @@ const T = (key: string, params?: Record<string, unknown>) => t(`detailViews.cust
   <div v-loading="props.loading" class="case-logs-tab__timeline">
     <el-empty v-if="!props.loading && props.logs.length === 0" :description="T('empty')" />
     <el-timeline v-else>
-      <el-timeline-item v-for="log in props.logs" :key="log.id" :timestamp="props.formatDateTime(log.createdAt)" placement="top">
-        <el-card shadow="hover" class="case-logs-tab__log-card">
+      <el-timeline-item
+        v-for="log in props.logs"
+        :key="log.id"
+        :timestamp="props.formatDateTime(log.createdAt)"
+        placement="top"
+        :type="resolveVisaCaseLogTimelineVisualTone(log.logType)"
+      >
+        <el-card
+          shadow="never"
+          :class="[
+            'case-logs-tab__log-card',
+            `visa-case-log-timeline-tone--${resolveVisaCaseLogTimelineVisualTone(log.logType)}`,
+          ]"
+        >
           <div class="case-logs-tab__log-header">
             <div class="case-logs-tab__log-meta">
-              <el-tag size="small" :type="visaCaseLogTimelineTagType[log.logType] ?? 'info'">
+              <el-tag size="small" :type="resolveVisaCaseLogTimelineVisualTone(log.logType)">
                 {{ VisaCaseLogTypeLabel[log.logType as VisaCaseLogType] }}
               </el-tag>
               <span v-if="log.creatorName" class="case-logs-tab__log-author">

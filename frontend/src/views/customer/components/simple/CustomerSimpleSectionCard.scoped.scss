@@ -1,0 +1,91 @@
+/**
+ * CustomerSimpleSectionCard — Stitch 卡片壳（与 CustomerDetailSimpleView.scoped.scss 变量对齐）
+ *
+ * 放在 `.customer-detail-simple` 内可继承 `--cds-simple-*`；标题旁图标色对齐 `design/airbnb` Legal Blue。
+ */
+
+.customer-simple-section-card {
+  /* 主视图未声明的区块级度量（若上提至 `.customer-detail-simple` 可统一覆盖） */
+  --cds-simple-section-header-gap: 0.75rem;
+  /* 标题旁图标容器：略大于 glyph，容纳浅色底与圆角（与 Airbnb 8px 控件一致） */
+  --cds-simple-section-icon-size: 2.25rem;
+
+  box-sizing: border-box;
+  background: var(--cds-simple-color-surface, #ffffff);
+  border: var(--cds-simple-card-border, 1px solid rgba(192, 199, 214, 0.1));
+  border-radius: var(--cds-simple-radius-card, 0.5rem);
+  box-shadow: var(--cds-simple-shadow-card, 0 1px 2px 0 rgb(0 0 0 / 0.05));
+  padding: var(--cds-simple-card-padding, 1.5rem);
+}
+
+.customer-simple-section-card__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  row-gap: 0.5rem;
+  gap: var(--cds-simple-section-header-gap, 1rem);
+  margin: 0 0 var(--cds-simple-card-header-margin-bottom, 1.5rem);
+}
+
+.customer-simple-section-card__icon {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--cds-simple-section-icon-size, 2.25rem);
+  height: var(--cds-simple-section-icon-size, 2.25rem);
+  line-height: 0;
+  border-radius: var(--cds-simple-ab-radius-button, 8px);
+  color: var(--cds-simple-ab-legal-blue, var(--cds-simple-color-primary, #428bff));
+  background: color-mix(
+    in srgb,
+    var(--cds-simple-ab-legal-blue, #428bff) 14%,
+    var(--cds-simple-color-surface, #ffffff)
+  );
+  border: 1px solid
+    color-mix(in srgb, var(--cds-simple-ab-legal-blue, #428bff) 22%, transparent);
+}
+
+/* Element Plus 图标以 `font-size` 驱动 1em SVG（与 Airbnb 预览 circle 内 14px 量级一致） */
+.customer-simple-section-card__icon :deep(.el-icon) {
+  font-size: var(--cds-simple-ab-icon-inline, 1.125rem);
+}
+
+.customer-simple-section-card__icon :deep(svg) {
+  display: block;
+  width: 1em;
+  height: 1em;
+}
+
+.customer-simple-section-card__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  font-family: var(--cds-simple-font-headline, 'Plus Jakarta Sans', system-ui, sans-serif);
+  font-size: var(--cds-simple-text-section-title, 1.125rem);
+  font-weight: var(--cds-simple-weight-section-title, 700);
+  line-height: var(--cds-simple-line-tight, 1.25);
+  color: var(--cds-simple-color-on-surface, #1b1c1c);
+}
+
+.customer-simple-section-card__actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-start: auto;
+}
+
+.customer-simple-section-card__actions :deep(.el-button) {
+  margin: 0;
+}
+
+.customer-simple-section-card__body {
+  margin: 0;
+  padding: 0;
+}
+
+.customer-simple-section-card__body :deep(.el-button) {
+  margin: 0;
+}

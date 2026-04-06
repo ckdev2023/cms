@@ -1,6 +1,7 @@
 import type { RouteRecordRaw } from 'vue-router'
 
 import { P } from '@/constants/permissions'
+import { customerDetailRouteRequiresFullPage } from '@/utils/customer-detail-full-route-query'
 
 /**
  * 定义后台应用的静态路由树，集中维护页面入口与权限元信息。
@@ -119,10 +120,35 @@ export const routes: RouteRecordRaw[] = [
         ],
       },
       {
+        path: 'customers/:id/simple',
+        name: 'CustomerDetailSimple',
+        component: () => import('@/views/customer/CustomerDetailSimpleView.vue'),
+        meta: {
+          titleKey: 'routes.customerDetailSimple',
+          hidden: true,
+          permissions: [P.CUSTOMER_DETAIL],
+        },
+      },
+      {
         path: 'customers/:id',
         name: 'CustomerDetail',
         component: () => import('@/views/customer/CustomerDetailView.vue'),
         meta: { titleKey: 'routes.customerDetail', hidden: true, permissions: [P.CUSTOMER_DETAIL] },
+        beforeEnter: (to) => {
+          if (customerDetailRouteRequiresFullPage(to.query, to.hash)) {
+            return
+          }
+          const id = to.params.id
+          if (typeof id !== 'string' || id === '') {
+            return
+          }
+          return {
+            path: `/customers/${id}/simple`,
+            query: to.query,
+            hash: to.hash,
+            replace: true,
+          }
+        },
       },
       {
         path: 'workbench/visa',
@@ -253,6 +279,15 @@ export const routes: RouteRecordRaw[] = [
         name: 'ExportLogs',
         component: () => import('@/views/system/ExportLogListView.vue'),
         meta: { titleKey: 'routes.exportLogs', permissions: [P.LOG_LIST] },
+      },
+      {
+        path: 'system/material-templates',
+        name: 'MaterialTemplateList',
+        component: () => import('@/views/system/MaterialTemplateListView.vue'),
+        meta: {
+          titleKey: 'routes.materialTemplates',
+          permissions: [P.MATERIAL_TEMPLATE_MANAGE],
+        },
       },
     ],
   },

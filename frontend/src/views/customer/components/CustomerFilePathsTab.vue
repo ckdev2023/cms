@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { CopyDocument, Delete, Edit, Plus } from '@element-plus/icons-vue'
+import { CopyDocument, Delete, Edit, InfoFilled, Plus } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
 import { ElMessage } from 'element-plus'
 import { computed, reactive, ref, watch } from 'vue'
@@ -246,14 +246,12 @@ function displayLabel(item: CustomerFilePathItem): string {
 
 <template>
   <div class="file-paths-tab">
-    <el-alert
-      type="info"
-      :closable="false"
-      show-icon
-      class="file-paths-tab__hint"
-    >
-      <template #default>{{ T('notUploadHint') }}</template>
-    </el-alert>
+    <p class="file-paths-tab__hint" role="note">
+      <el-icon class="file-paths-tab__hint-icon" aria-hidden>
+        <InfoFilled />
+      </el-icon>
+      <span class="file-paths-tab__hint-text">{{ T('notUploadHint') }}</span>
+    </p>
 
     <div class="file-paths-tab__toolbar">
       <div class="file-paths-tab__filter">
@@ -431,10 +429,59 @@ function displayLabel(item: CustomerFilePathItem): string {
 
 <style scoped lang="scss">
 .file-paths-tab {
-  &__hint { margin-bottom: 16px; }
-  &__toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-  &__filter { display: flex; align-items: center; gap: 12px; }
-  &__count { font-size: var(--app-font-size-sm); color: var(--app-text-secondary); }
+  &__hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0 0 var(--app-spacing-md);
+    padding: 10px 12px;
+    border-radius: calc(var(--el-border-radius-base) + 2px);
+    background: var(--el-fill-color-lighter);
+    border: 1px solid var(--el-border-color-lighter);
+    font-size: var(--el-font-size-extra-small);
+    line-height: 1.45;
+    color: var(--el-text-color-secondary);
+    letter-spacing: -0.01em;
+  }
+
+  &__hint-icon {
+    flex-shrink: 0;
+    margin-top: 1px;
+    font-size: 14px;
+    color: var(--el-color-info);
+  }
+
+  &__hint-text {
+    flex: 1;
+    min-width: 0;
+  }
+
+  &__toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--app-spacing-sm);
+    margin-bottom: var(--app-spacing-md);
+    padding: var(--app-spacing-sm) var(--app-spacing-md);
+    border-radius: calc(var(--el-border-radius-base) + 2px);
+    background: var(--el-fill-color-blank);
+    border: 1px solid var(--el-border-color-extra-light);
+  }
+
+  &__filter {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-sm);
+  }
+
+  &__count {
+    font-size: var(--el-font-size-small);
+    font-weight: 500;
+    color: var(--el-text-color-secondary);
+    letter-spacing: -0.02em;
+  }
   &__form-card { margin-bottom: 20px; }
   &__form-actions { display: flex; justify-content: flex-end; gap: 8px; }
 

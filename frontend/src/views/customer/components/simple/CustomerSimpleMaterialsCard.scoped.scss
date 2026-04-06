@@ -1,0 +1,253 @@
+/**
+ * CustomerSimpleMaterialsCard — Stitch 1:1：标题行环形进度 + 清单行（伪复选框 / 行末状态）
+ */
+
+.customer-simple-materials-card-root :deep(.customer-simple-section-card__header) {
+  margin-bottom: 1rem;
+}
+
+.customer-simple-materials-card-root {
+  min-height: 4rem;
+}
+
+.customer-simple-materials-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.customer-simple-materials-card__empty {
+  margin: 0;
+  padding: 0.25rem 0;
+}
+
+.customer-simple-materials-card__empty :deep(.el-empty__description) {
+  max-width: 22rem;
+  margin-inline: auto;
+}
+
+.customer-simple-materials-card__empty-desc {
+  margin: 0 0 0.75rem;
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  line-height: var(--cds-simple-line-body, 1.5);
+  color: var(--cds-simple-color-on-surface-variant, #404753);
+}
+
+.customer-simple-materials-card__hint {
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--cds-simple-radius-control, 0.25rem);
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: var(--cds-simple-text-caption, 0.75rem);
+  line-height: var(--cds-simple-line-body, 1.5);
+  color: var(--cds-simple-color-on-surface-variant, #404753);
+  background: var(--cds-simple-color-surface-low, #f6f3f2);
+}
+
+/* --- 标题行右侧环形进度（对齐 Stitch 圆环 + 中心百分比）--- */
+.customer-simple-materials-card__ring-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 3.5rem;
+  height: 3.5rem;
+}
+
+.customer-simple-materials-card__ring-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.customer-simple-materials-card__ring-track {
+  stroke: rgba(0, 0, 0, 0.08);
+  stroke-width: 5;
+}
+
+.customer-simple-materials-card__ring-value {
+  stroke: var(--cds-simple-ab-legal-blue, var(--cds-simple-color-primary, #428bff));
+  stroke-width: 5;
+  stroke-linecap: round;
+}
+
+.customer-simple-materials-card__ring-pct {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--cds-simple-color-on-surface, #1d1d1f);
+}
+
+/* --- 清单区：限高滚动（对齐 Stitch 卡片比例，避免长列表被误认为仅一行）--- */
+.customer-simple-materials-card__rows-scroll {
+  box-sizing: border-box;
+  max-height: min(36vh, 15rem);
+  padding: 0.125rem;
+  margin: -0.125rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--cds-simple-radius-control, 0.25rem);
+  outline: none;
+
+  &:focus-visible {
+    outline: 2px solid var(--cds-simple-ab-legal-blue, var(--cds-simple-color-primary, #428bff));
+    outline-offset: 2px;
+  }
+}
+
+/* --- 清单区：限高滚动（对齐 Stitch 卡高，避免长列表被误认为「只有一行」）--- */
+.customer-simple-materials-card__rows-scroll {
+  max-height: min(42vh, 16rem);
+  padding: 0.125rem;
+  margin: -0.125rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-radius: var(--cds-simple-radius-control, 0.25rem);
+  outline: none;
+}
+
+.customer-simple-materials-card__rows-scroll:focus-visible {
+  box-shadow: 0 0 0 2px var(--cds-simple-ab-legal-blue, #428bff);
+}
+
+/* --- 清单区：与 Stitch 卡片高度协调的可滚动区域（全量行，避免误以为仅一行）--- */
+.customer-simple-materials-card__rows-scroll {
+  max-height: min(55vh, 17.5rem);
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  border-radius: var(--cds-simple-radius-control, 0.25rem);
+
+  &:focus-visible {
+    outline: 2px solid var(--cds-simple-ab-legal-blue, #428bff);
+    outline-offset: 2px;
+  }
+}
+
+/* --- 清单行：左框 / 文案 / 右状态 --- */
+.customer-simple-materials-card__rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.customer-simple-materials-card__row {
+  display: grid;
+  grid-template-columns: 1.25rem minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 0.75rem;
+  min-height: 2.25rem;
+}
+
+.customer-simple-materials-card__fake-cb {
+  box-sizing: border-box;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border: 1.5px solid rgba(0, 0, 0, 0.14);
+  border-radius: 4px;
+  background: #f3f4f6;
+}
+
+.customer-simple-materials-card__fake-cb[data-checked='true'] {
+  border-color: var(--cds-simple-ab-legal-blue, #428bff);
+  background: var(--cds-simple-ab-legal-blue, #428bff);
+}
+
+.customer-simple-materials-card__fake-cb-icon {
+  font-size: 0.75rem;
+  color: #ffffff;
+}
+
+.customer-simple-materials-card__row-label {
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: var(--cds-simple-text-body, 1.0625rem);
+  font-weight: 500;
+  line-height: var(--cds-simple-line-body, 1.5);
+  color: var(--cds-simple-color-on-surface, #1d1d1f);
+}
+
+.customer-simple-materials-card__row-status {
+  position: relative;
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 2.75rem;
+}
+
+.customer-simple-materials-card__status-done {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  font-size: 0.6875rem;
+  color: #ffffff;
+  background: var(--cds-simple-ab-legal-blue, #428bff);
+}
+
+.customer-simple-materials-card__status-pending {
+  padding: 0.1875rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--cds-simple-font-body, Inter, system-ui, sans-serif);
+  font-size: var(--cds-simple-text-micro, 0.8125rem);
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  color: #b45309;
+  background: rgba(251, 191, 36, 0.35);
+}
+
+.customer-simple-materials-card__status-other {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  color: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.customer-simple-materials-card__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.customer-simple-materials-card__footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  padding-top: 0.25rem;
+  margin-top: 0.125rem;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.customer-simple-materials-card__footer-btn {
+  margin: 0 !important;
+  padding: 0.4375rem 0.875rem !important;
+  font-size: var(--cds-simple-text-caption, 0.9375rem) !important;
+  font-weight: 500;
+}

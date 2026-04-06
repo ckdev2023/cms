@@ -1,4 +1,12 @@
+@use '@/styles/visa-case-log-timeline-tone.scss';
+
 .case-logs-tab__log-card {
+  border-radius: var(--customer-detail-radius-card, var(--el-border-radius-base));
+  border: 1px solid var(--el-border-color-lighter);
+  border-left-width: 3px;
+  border-left-color: var(--vcl-accent, var(--el-border-color-extra-light));
+  box-shadow: var(--customer-detail-shadow-card, var(--el-box-shadow-light));
+
   :deep(.el-card__body) {
     padding: 12px 16px;
   }

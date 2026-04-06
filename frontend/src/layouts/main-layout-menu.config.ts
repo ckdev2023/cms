@@ -39,11 +39,22 @@ export const allMenuItems: Readonly<MenuItem[]> = [
     path: '/system',
     titleKey: 'routes.system',
     icon: Setting,
-    permissions: [P.SYSTEM_USER_MANAGE, P.SYSTEM_ROLE_MANAGE, P.SYSTEM_DICT_MANAGE, P.LOG_LIST],
+    permissions: [
+      P.SYSTEM_USER_MANAGE,
+      P.SYSTEM_ROLE_MANAGE,
+      P.SYSTEM_DICT_MANAGE,
+      P.LOG_LIST,
+      P.MATERIAL_TEMPLATE_MANAGE,
+    ],
     children: [
       { path: '/system/users', titleKey: 'routes.systemUsers', permissions: [P.SYSTEM_USER_MANAGE] },
       { path: '/system/roles', titleKey: 'routes.systemRoles', permissions: [P.SYSTEM_ROLE_MANAGE] },
       { path: '/system/dictionaries', titleKey: 'routes.systemDictionaries', permissions: [P.SYSTEM_DICT_MANAGE] },
+      {
+        path: '/system/material-templates',
+        titleKey: 'routes.materialTemplates',
+        permissions: [P.MATERIAL_TEMPLATE_MANAGE],
+      },
       { path: '/system/audit-logs', titleKey: 'routes.auditLogs', permissions: [P.LOG_LIST] },
       { path: '/system/login-logs', titleKey: 'routes.loginLogs', permissions: [P.LOG_LIST] },
       { path: '/system/export-logs', titleKey: 'routes.exportLogs', permissions: [P.LOG_LIST] },

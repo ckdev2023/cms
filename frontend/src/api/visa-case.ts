@@ -4,6 +4,7 @@ import type {
   AdminCaseVisaSupplementPreviewResult,
   CreateCustomerFilePathParams,
   CreateFamilyMemberParams,
+  CreateMaterialTemplateParams,
   CreateVisaCaseLogParams,
   CreateVisaCaseMaterialItemParams,
   CreateVisaCaseParams,
@@ -11,8 +12,11 @@ import type {
   CustomerFilePathQueryParams,
   GlobalVisaCaseQueryParams,
   MaterialSummary,
+  MaterialTemplateDetail,
+  ReinitializeVisaCaseMaterialsParams,
   UpdateCustomerFilePathParams,
   UpdateFamilyMemberParams,
+  UpdateMaterialTemplateParams,
   UpdateVisaCaseLogParams,
   UpdateVisaCaseMaterialItemParams,
   UpdateVisaCaseParams,
@@ -499,6 +503,24 @@ export function initializeVisaCaseMaterials(
 }
 
 /**
+ * 在用户确认后删除该案全部材料实例并按当前案件类型的活跃模板重新生成（含手工行丢失风险）。
+ *
+ * @param visaCaseId - 签证案件 ID
+ * @param data - 必须含 `confirm: true`，可选 `reason` 写入审计
+ * @returns 再生成后的材料项列表响应体
+ */
+export function reinitializeVisaCaseMaterials(
+  visaCaseId: string,
+  data: ReinitializeVisaCaseMaterialsParams,
+): Promise<ApiResponse<VisaCaseMaterialItemDetail[]>> {
+  return request<VisaCaseMaterialItemDetail[]>({
+    url: `/visa-cases/${visaCaseId}/materials/reinitialize`,
+    method: 'POST',
+    data,
+  })
+}
+
+/**
  * 更新指定案件材料项的状态、备注或排序。
  *
  * @param visaCaseId - 签证案件 ID
@@ -687,5 +709,64 @@ export function commitAdminCaseVisaSupplement(
     url: '/visa-cases/admin-case-supplement/commit',
     method: 'POST',
     data: { adminCaseIds },
+  })
+}
+
+/**
+ * 拉取全部活跃材料模板及子项（需 `materialTemplate:manage`，与 `docs/22` §8 一致）。
+ *
+ * @returns 模板数组响应体
+ */
+export function getMaterialTemplates(): Promise<ApiResponse<MaterialTemplateDetail[]>> {
+  return request<MaterialTemplateDetail[]>({
+    url: '/material-templates',
+    method: 'GET',
+  })
+}
+
+/**
+ * 新建材料模板；同一 `caseType` 仅允许一条未删除的活跃模板。
+ *
+ * @param data - 案件类型、显示名与子项列表
+ * @returns 新建模板详情
+ */
+export function createMaterialTemplate(
+  data: CreateMaterialTemplateParams,
+): Promise<ApiResponse<MaterialTemplateDetail>> {
+  return request<MaterialTemplateDetail>({
+    url: '/material-templates',
+    method: 'POST',
+    data,
+  })
+}
+
+/**
+ * 更新模板显示名与/或全量替换子项（PUT 未包含的既有子项会被删除）。
+ *
+ * @param id - 模板 UUID
+ * @param data - 可选 `displayName` 与 `items`
+ * @returns 更新后模板详情
+ */
+export function updateMaterialTemplate(
+  id: string,
+  data: UpdateMaterialTemplateParams,
+): Promise<ApiResponse<MaterialTemplateDetail>> {
+  return request<MaterialTemplateDetail>({
+    url: `/material-templates/${id}`,
+    method: 'PUT',
+    data,
+  })
+}
+
+/**
+ * 停用材料模板（逻辑删除）；已写入案件实例的材料行不受影响。
+ *
+ * @param id - 模板 UUID
+ * @returns 空数据成功响应
+ */
+export function deactivateMaterialTemplate(id: string): Promise<ApiResponse<null>> {
+  return request<null>({
+    url: `/material-templates/${id}`,
+    method: 'DELETE',
   })
 }

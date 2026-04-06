@@ -8,6 +8,7 @@ import {
   mergeCustomerDetailReturnQuery,
   parseCustomerDetailReturnTarget,
   pickCustomerDetailDeepLinkPreserve,
+  resolveCustomerDetailSimpleBackMessageKey,
 } from '@/utils/customer-detail-return-navigation'
 import { CUSTOMER_DETAIL_RETURN_FROM_QUERY_KEY } from '@/utils/customer-detail-return-path'
 
@@ -80,5 +81,45 @@ describe('customer-detail-return-navigation', () => {
       false,
     )
     expect(isTrustedCustomerDetailHistoryBack('//evil', '/x')).toBe(false)
+  })
+})
+
+describe('resolveCustomerDetailSimpleBackMessageKey', () => {
+  it('maps ccFrom pathname and history fallback to i18n keys', () => {
+    const current = `/customers/${SAMPLE_UUID}/simple`
+    expect(
+      resolveCustomerDetailSimpleBackMessageKey(
+        { [CUSTOMER_DETAIL_RETURN_QUERY_KEY]: '/customers' },
+        undefined,
+        current,
+      ),
+    ).toBe('detailViews.customer.stitchLayout.simpleHero.backToCustomerList')
+    expect(
+      resolveCustomerDetailSimpleBackMessageKey(
+        { [CUSTOMER_DETAIL_RETURN_QUERY_KEY]: '/dashboard' },
+        undefined,
+        current,
+      ),
+    ).toBe('detailViews.customer.stitchLayout.simpleHero.backToDashboard')
+    expect(
+      resolveCustomerDetailSimpleBackMessageKey(
+        { [CUSTOMER_DETAIL_RETURN_QUERY_KEY]: '/customers/workbench/visa' },
+        undefined,
+        current,
+      ),
+    ).toBe('detailViews.customer.stitchLayout.simpleHero.backToCustomerCenter')
+    expect(
+      resolveCustomerDetailSimpleBackMessageKey(
+        { [CUSTOMER_DETAIL_RETURN_QUERY_KEY]: `/customers/${SAMPLE_UUID}` },
+        undefined,
+        current,
+      ),
+    ).toBe('detailViews.customer.stitchLayout.simpleHero.backToSourcePage')
+    expect(
+      resolveCustomerDetailSimpleBackMessageKey({}, '/customers/workbench/visa', current),
+    ).toBe('detailViews.customer.stitchLayout.simpleHero.backToPreviousPage')
+    expect(resolveCustomerDetailSimpleBackMessageKey({}, undefined, current)).toBe(
+      'detailViews.customer.stitchLayout.simpleHero.backToCustomerList',
+    )
   })
 })

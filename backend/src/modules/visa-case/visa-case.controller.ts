@@ -40,6 +40,7 @@ import { QueryVisaCaseLogDto } from './dto/query-visa-case-log.dto';
 import { QueryVisaCaseStatsDto } from './dto/query-visa-case-stats.dto';
 import { QueryVisaReminderDto } from './dto/query-visa-reminder.dto';
 import { QueryVisaWorkbenchDto } from './dto/query-visa-workbench.dto';
+import { ReinitializeVisaCaseMaterialsDto } from './dto/reinitialize-visa-case-materials.dto';
 import { UpdateCustomerFilePathDto } from './dto/update-customer-file-path.dto';
 import { UpdateMaterialTemplateDto } from './dto/update-material-template.dto';
 import { UpdateVisaCaseDto } from './dto/update-visa-case.dto';
@@ -715,6 +716,36 @@ export class VisaCaseController {
     @Req() req: AuthenticatedRequest,
   ) {
     return this.visaCaseService.initializeMaterials(id, req.user.id);
+  }
+
+  /**
+   * 删除该案全部材料实例后按当前案件类型的活跃模板再生成（既存行・手入力行はすべて失われる）。
+   *
+   * 案件类型変更で既存チェックリストがある場合は本 API のみが置換を許可する。
+   *
+   * @param id - 签证案件 ID
+   * @param dto - `confirm: true` 必須、任意 `reason` は監査ログ afterValue に残る
+   * @param req - 携带当前登录用户 ID 的认证请求对象
+   * @returns 再生成後の材料项列表
+   */
+  @Post('visa-cases/:id/materials/reinitialize')
+  @Permissions(PermissionCodes.VISA_CASE_EDIT)
+  @AuditAction({
+    action: AuditActionType.UPDATE,
+    targetType: AuditTargetType.VISA_CASE,
+  })
+  @ApiOperation({
+    summary:
+      '案件材料チェックリスト再初期化（全削除後テンプレート適用・要 confirm）',
+  })
+  @ApiParam({ name: 'id', type: 'string', format: 'uuid' })
+  async reinitializeMaterials(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: ReinitializeVisaCaseMaterialsDto,
+    @Req() req: AuthenticatedRequest,
+  ) {
+    void dto;
+    return this.visaCaseService.reinitializeMaterials(id, req.user.id);
   }
 
   /**

@@ -1,25 +1,44 @@
 <script setup lang="ts">
+import { ArrowDown } from '@element-plus/icons-vue'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { VisaCaseStatusLabel } from '@/constants/enum-labels'
-import { VisaCaseStatus } from '@/constants/enums'
+import {
+  type CustomerStatus,
+  type CustomerType,
+} from '@/constants/enums'
 import { P } from '@/constants/permissions'
 import { useUserStore } from '@/stores/user'
 import type {
   CustomerListPrimaryVisaCaseSummary,
   ListPrimaryVisaCaseSource,
 } from '@/types/customer'
+import {
+  computeContextStripDatePriority,
+  formatContextStripMaterialsProgressBar,
+  materialsProgressLabel as stripMaterialsFractionLabel,
+  primaryCaseStatusLabel as stripPrimaryCaseStatusLabel,
+} from '@/utils/customer-detail-context-strip-helpers'
 import { pickCustomerDetailDeepLinkPreserve } from '@/utils/customer-detail-return-navigation'
 import { useLocaleFormatter } from '@/utils/locale-format'
 import { materialChecklistApplicableTotal } from '@/utils/material-checklist-progress'
 import { formatVisaCaseTypeDisplay } from '@/utils/visa-case-type-display'
 
+import CustomerDetailStitchHero from './CustomerDetailStitchHero.vue'
+
 const props = withDefaults(
   defineProps<{
     /** 当前客户 UUID，与路由参数一致 */
     customerId: string
+    /** 客户姓名（Stitch 顶区标题） */
+    customerName: string
+    /** 客户编号 customer_code */
+    customerCode: string
+    /** 客户类型标签 */
+    customerType: CustomerType
+    /** 客户状态标签 */
+    customerStatus: CustomerStatus
     /** 与 `GET /customers/:id` 的 `listPrimaryVisaCase` 同源，用于摘要带与深链目标案件 */
     listPrimaryVisaCase: CustomerListPrimaryVisaCaseSummary | null
     /** 主展示摘要来源；家属回退至主客户案件时为 `PRIMARY_CUSTOMER_FALLBACK` */
@@ -54,9 +73,16 @@ const canOpenPrimaryCustomerDetail = computed((): boolean =>
   userStore.hasPermission(P.CUSTOMER_DETAIL),
 )
 
-/**
- * 主展示摘要为主客户回退且主客户 id 有效、与当前页客户不同时展示单行说明（含可选深链）。
- */
+const primaryActionKind = computed((): 'openCase' | 'writeLog' | null => {
+  if (canOpenCaseContext.value) {
+    return 'openCase'
+  }
+  if (canWriteCaseLog.value) {
+    return 'writeLog'
+  }
+  return null
+})
+
 const showPrimaryCustomerFallbackBanner = computed((): boolean => {
   if (props.listPrimaryVisaCaseSource !== 'PRIMARY_CUSTOMER_FALLBACK') {
     return false
@@ -68,9 +94,6 @@ const showPrimaryCustomerFallbackBanner = computed((): boolean => {
   return true
 })
 
-/**
- * 跳转主客户详情时保留与签证域深链一致的 query（`pickCustomerDetailDeepLinkPreserve`）。
- */
 const primaryCustomerDetailRoute = computed(() => {
   const pid = (props.primaryCustomerIdForListFallback ?? '').trim()
   return {
@@ -79,17 +102,12 @@ const primaryCustomerDetailRoute = computed(() => {
   }
 })
 
-/**
- * 提取深链时应保留的 `dataScope` / `assignedTo` / `ccFrom` 片段。
- *
- * @returns 扁平 query 对象
- */
 function preserveBase(): Record<string, string> {
   return pickCustomerDetailDeepLinkPreserve(route.query)
 }
 
 /**
- * 跳转签证域并打开主展示案件编辑上下文（`openVisaCaseId`，与列表/登记册一致）。
+ * 跳转当前客户签证域并打开主展示案件编辑上下文（`openVisaCaseId`）。
  */
 function openPrimaryCase(): void {
   const pc = props.listPrimaryVisaCase
@@ -107,7 +125,7 @@ function openPrimaryCase(): void {
 }
 
 /**
- * 跳转签证域材料子块并锁定主展示案件（`visaDomainBlock` + `materialsVisaCaseId`）。
+ * 跳转签证域材料子块并锁定主展示案件（`materialsVisaCaseId`）。
  */
 function openMaterials(): void {
   const pc = props.listPrimaryVisaCase
@@ -150,7 +168,7 @@ function openWriteLog(): void {
 }
 
 /**
- * 无开放主展示摘要时引导进入签证域建案向导（`openVisaCaseWizard=1`，与 docs/21 主路径一致）。
+ * 跳转签证域并打开建案向导（`openVisaCaseWizard=1`）。
  */
 function goVisaWizard(): void {
   void router.push({
@@ -164,7 +182,7 @@ function goVisaWizard(): void {
 }
 
 /**
- * 进入签证域「案件」子块，查看本客户全部签证案件（无后端开放件数时的列表入口）。
+ * 跳转签证域「案件」子块以查看本客户全部签证案件。
  */
 function openAllVisaCases(): void {
   void router.push({
@@ -177,71 +195,45 @@ function openAllVisaCases(): void {
   })
 }
 
+type MoreMenuCommand = 'viewAll' | 'materials' | 'writeLog'
+
 /**
- * 将主展示案件类型码格式化为界面展示文案。
+ * 响应「更多操作」下拉项，与独立按钮深链行为一致。
  *
- * @param pc - 主展示案件摘要
- * @returns 本地化案件类型标签
+ * @param command - 下拉命令：`viewAll` / `materials` / `writeLog`
  */
+function onMoreCommand(command: MoreMenuCommand): void {
+  if (command === 'viewAll') {
+    openAllVisaCases()
+    return
+  }
+  if (command === 'materials') {
+    openMaterials()
+    return
+  }
+  if (command === 'writeLog') {
+    openWriteLog()
+  }
+}
+
 function primaryCaseTypeLabel(pc: CustomerListPrimaryVisaCaseSummary): string {
   return formatVisaCaseTypeDisplay(pc.caseType)
 }
 
-/**
- * 汇总材料 checklist 已收/适用数以短文案展示。
- *
- * @param pc - 主展示案件摘要
- * @returns 例如「2/5」
- */
+function primaryCaseStatusLabel(pc: CustomerListPrimaryVisaCaseSummary): string {
+  return stripPrimaryCaseStatusLabel(pc)
+}
+
 function materialsProgressLabel(pc: CustomerListPrimaryVisaCaseSummary): string {
-  const applicable = materialChecklistApplicableTotal(pc)
-  const collected = pc.materialChecklistCollected ?? 0
-  return `${collected}/${applicable}`
+  return stripMaterialsFractionLabel(pc)
 }
 
-/**
- * 将可选日期字符串解析为时间戳；无效或空值返回 `null`。
- *
- * @param dateStr - ISO 或后端日期字符串
- * @returns 毫秒时间戳，不可解析时为 `null`
- */
-function parseDateMs(dateStr: string | null | undefined): number | null {
-  if (!dateStr) {
-    return null
-  }
-  const t = new Date(dateStr).getTime()
-  return Number.isNaN(t) ? null : t
+function materialsProgressBarFormat(percentage: number): string {
+  return formatContextStripMaterialsProgressBar(props.listPrimaryVisaCase, percentage)
 }
 
-/**
- * 在「下次跟进」与「在留期限」之间标出更紧迫的一栏（更早的日历时刻），便于扫读。
- */
-const stripDatePriority = computed((): { nextFollowUp: boolean; expireDate: boolean } => {
-  const pc = props.listPrimaryVisaCase
-  if (!pc) {
-    return { nextFollowUp: false, expireDate: false }
-  }
-  const nextMs = parseDateMs(pc.nextFollowUpAt)
-  const expireMs = parseDateMs(pc.expireDate)
-  if (nextMs === null && expireMs === null) {
-    return { nextFollowUp: false, expireDate: false }
-  }
-  if (nextMs !== null && expireMs === null) {
-    return { nextFollowUp: true, expireDate: false }
-  }
-  if (nextMs === null && expireMs !== null) {
-    return { nextFollowUp: false, expireDate: true }
-  }
-  return (nextMs as number) <= (expireMs as number)
-    ? { nextFollowUp: true, expireDate: false }
-    : { nextFollowUp: false, expireDate: true }
-})
+const stripDatePriority = computed(() => computeContextStripDatePriority(props.listPrimaryVisaCase))
 
-/**
- * 主展示案件材料 checklist 的适用项总数（与 `materialChecklistApplicableTotal` 一致）。
- *
- * @returns 非负整数；无 `listPrimaryVisaCase` 时为 0
- */
 const materialsApplicableTotal = computed((): number => {
   const pc = props.listPrimaryVisaCase
   if (!pc) {
@@ -250,21 +242,16 @@ const materialsApplicableTotal = computed((): number => {
   return materialChecklistApplicableTotal(pc)
 })
 
-/**
- * 解析主展示案件状态枚举为界面标签。
- *
- * @param pc - 主展示案件摘要
- * @returns 状态本地化文本
- */
-function primaryCaseStatusLabel(pc: CustomerListPrimaryVisaCaseSummary): string {
-  return VisaCaseStatusLabel[pc.caseStatus as VisaCaseStatus] ?? pc.caseStatus
-}
+const materialsProgressPercent = computed((): number => {
+  const pc = props.listPrimaryVisaCase
+  const total = materialsApplicableTotal.value
+  if (!pc || total <= 0) {
+    return 0
+  }
+  const collected = pc.materialChecklistCollected ?? 0
+  return Math.min(100, Math.round((collected / total) * 100))
+})
 
-/**
- * 主展示签证案件之案件担当（assigned_to）显示名；空串或缺失时回退为 i18n「未指定」。
- *
- * @returns 案件担当姓名或 `contextStrip.unassigned` 文案
- */
 const assigneeDisplayLabel = computed((): string => {
   const raw = props.listPrimaryVisaCase?.assignedToDisplayName
   const trimmed = typeof raw === 'string' ? raw.trim() : ''
@@ -273,13 +260,11 @@ const assigneeDisplayLabel = computed((): string => {
 </script>
 
 <template>
-  <div class="customer-detail-context-strip" role="region" :aria-label="t('detailViews.customer.contextStrip.title')">
-    <div class="customer-detail-context-strip__head">
-      <span class="customer-detail-context-strip__title">
-        {{ t('detailViews.customer.contextStrip.title') }}
-      </span>
-    </div>
-
+  <div
+    class="customer-detail-context-strip"
+    role="region"
+    :aria-label="t('detailViews.customer.contextStrip.title')"
+  >
     <el-alert
       v-if="showPrimaryCustomerFallbackBanner"
       class="customer-detail-context-strip__fallback-alert"
@@ -301,85 +286,119 @@ const assigneeDisplayLabel = computed((): string => {
       </template>
     </el-alert>
 
-    <div v-if="listPrimaryVisaCase" class="customer-detail-context-strip__body">
-      <div class="customer-detail-context-strip__meta">
-        <span class="customer-detail-context-strip__kv">
-          <span class="customer-detail-context-strip__k">{{ t('detailViews.customer.contextStrip.caseType') }}</span>
-          <span class="customer-detail-context-strip__v">{{ primaryCaseTypeLabel(listPrimaryVisaCase) }}</span>
-        </span>
-        <span class="customer-detail-context-strip__kv">
-          <span class="customer-detail-context-strip__k">{{ t('detailViews.customer.contextStrip.status') }}</span>
-          <el-tag size="small" type="info">{{ primaryCaseStatusLabel(listPrimaryVisaCase) }}</el-tag>
-        </span>
-        <span class="customer-detail-context-strip__kv">
-          <span class="customer-detail-context-strip__k">{{ t('detailViews.customer.contextStrip.assignee') }}</span>
-          <span class="customer-detail-context-strip__v">{{ assigneeDisplayLabel }}</span>
-        </span>
-        <span class="customer-detail-context-strip__kv">
-          <span class="customer-detail-context-strip__k">{{ t('detailViews.customer.contextStrip.nextFollowUp') }}</span>
-          <span
-            class="customer-detail-context-strip__v"
-            :class="{ 'customer-detail-context-strip__v--date-priority': stripDatePriority.nextFollowUp }"
-          >{{ formatDate(listPrimaryVisaCase.nextFollowUpAt) }}</span>
-        </span>
-        <span class="customer-detail-context-strip__kv">
-          <span class="customer-detail-context-strip__k">{{ t('detailViews.customer.contextStrip.expireDate') }}</span>
-          <span
-            class="customer-detail-context-strip__v"
-            :class="{ 'customer-detail-context-strip__v--date-priority': stripDatePriority.expireDate }"
-          >{{ formatDate(listPrimaryVisaCase.expireDate) }}</span>
-        </span>
-        <span class="customer-detail-context-strip__kv">
-          <span class="customer-detail-context-strip__k">{{ t('detailViews.customer.contextStrip.materialsProgress') }}</span>
-          <span class="customer-detail-context-strip__v">
-            <template v-if="materialsApplicableTotal > 0">
-              {{ materialsProgressLabel(listPrimaryVisaCase) }}
-            </template>
-            <el-tooltip
-              v-else
-              :content="t('detailViews.customer.contextStrip.materialsProgressNoApplicableTooltip')"
-              placement="top"
-            >
-              <span class="customer-detail-context-strip__materials-zero" tabindex="0">
-                <span class="customer-detail-context-strip__materials-zero-fraction">
-                  {{ materialsProgressLabel(listPrimaryVisaCase) }}
-                </span>
-                <span class="customer-detail-context-strip__materials-zero-note">
-                  {{ t('detailViews.customer.contextStrip.materialsProgressNoApplicable') }}
-                </span>
-              </span>
-            </el-tooltip>
+    <CustomerDetailStitchHero
+      :customer-name="customerName"
+      :customer-code="customerCode"
+      :customer-type="customerType"
+      :customer-status="customerStatus"
+      :list-primary-visa-case="listPrimaryVisaCase"
+    />
+
+    <div v-if="listPrimaryVisaCase" class="customer-detail-context-strip__hero">
+      <div class="customer-detail-context-strip__hero-main">
+        <div class="customer-detail-context-strip__primary-line">
+          <div class="customer-detail-context-strip__primary-line-start">
+            <span class="customer-detail-context-strip__case-type">
+              {{ primaryCaseTypeLabel(listPrimaryVisaCase) }}
+            </span>
+            <el-tag size="small" type="info">
+              {{ primaryCaseStatusLabel(listPrimaryVisaCase) }}
+            </el-tag>
+          </div>
+          <span class="customer-detail-context-strip__assignee">
+            <span class="customer-detail-context-strip__assignee-k">{{ t('detailViews.customer.contextStrip.assignee') }}</span>
+            <span class="customer-detail-context-strip__assignee-v">{{ assigneeDisplayLabel }}</span>
           </span>
-        </span>
+        </div>
+        <div class="customer-detail-context-strip__secondary-meta">
+          <span class="customer-detail-context-strip__kv">
+            <span class="customer-detail-context-strip__k">{{ t('detailViews.customer.contextStrip.nextFollowUp') }}</span>
+            <span
+              class="customer-detail-context-strip__v"
+              :class="{ 'customer-detail-context-strip__v--date-priority': stripDatePriority.nextFollowUp }"
+            >{{ formatDate(listPrimaryVisaCase.nextFollowUpAt) }}</span>
+          </span>
+          <span class="customer-detail-context-strip__kv">
+            <span class="customer-detail-context-strip__k">{{ t('detailViews.customer.contextStrip.expireDate') }}</span>
+            <span
+              class="customer-detail-context-strip__v"
+              :class="{ 'customer-detail-context-strip__v--date-priority': stripDatePriority.expireDate }"
+            >{{ formatDate(listPrimaryVisaCase.expireDate) }}</span>
+          </span>
+        </div>
       </div>
-      <div class="customer-detail-context-strip__actions">
-        <el-button link type="primary" @click="openAllVisaCases">
-          {{ t('detailViews.customer.contextStrip.viewAllVisaCases') }}
-        </el-button>
-        <el-button
-          v-if="canOpenCaseContext"
-          link
-          type="primary"
-          @click="openPrimaryCase"
-        >
-          {{ t('detailViews.customer.contextStrip.openCase') }}
-        </el-button>
-        <el-button
-          v-if="canOpenCaseContext"
-          link
-          type="primary"
-          @click="openMaterials"
-        >
-          {{ t('detailViews.customer.contextStrip.materials') }}
-        </el-button>
-        <el-button
-          v-if="canWriteCaseLog"
-          link
-          type="primary"
-          @click="openWriteLog"
-        >
-          {{ t('detailViews.customer.contextStrip.writeLog') }}
-        </el-button>
+
+      <div class="customer-detail-context-strip__progress-col">
+        <div class="customer-detail-context-strip__progress-head">
+          <span class="customer-detail-context-strip__progress-label-text">
+            {{ t('detailViews.customer.contextStrip.materialsProgress') }}
+          </span>
+        </div>
+        <div v-if="materialsApplicableTotal > 0" class="customer-detail-context-strip__progress-wrap">
+          <el-progress
+            :percentage="materialsProgressPercent"
+            :stroke-width="10"
+            :format="materialsProgressBarFormat"
+          />
+        </div>
+        <div v-else class="customer-detail-context-strip__progress-zero">
+          <el-tooltip
+            :content="t('detailViews.customer.contextStrip.materialsProgressNoApplicableTooltip')"
+            placement="top"
+          >
+            <span class="customer-detail-context-strip__materials-zero" tabindex="0">
+              <span class="customer-detail-context-strip__materials-zero-fraction">
+                {{ materialsProgressLabel(listPrimaryVisaCase!) }}
+              </span>
+              <span class="customer-detail-context-strip__materials-zero-note">
+                {{ t('detailViews.customer.contextStrip.materialsProgressNoApplicable') }}
+              </span>
+            </span>
+          </el-tooltip>
+        </div>
+      </div>
+
+      <div class="customer-detail-context-strip__action-col">
+        <div class="customer-detail-context-strip__action-buttons">
+          <el-button
+            v-if="primaryActionKind === 'openCase'"
+            type="primary"
+            @click="openPrimaryCase"
+          >
+            {{ t('detailViews.customer.contextStrip.openCase') }}
+          </el-button>
+          <el-button
+            v-else-if="primaryActionKind === 'writeLog'"
+            type="primary"
+            @click="openWriteLog"
+          >
+            {{ t('detailViews.customer.contextStrip.writeLog') }}
+          </el-button>
+          <el-dropdown trigger="click" @command="onMoreCommand">
+            <el-button class="customer-detail-context-strip__more-trigger">
+              {{ t('detailViews.customer.contextStrip.moreActions') }}
+              <el-icon class="customer-detail-context-strip__more-icon">
+                <ArrowDown />
+              </el-icon>
+            </el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="viewAll">
+                  {{ t('detailViews.customer.contextStrip.viewAllVisaCases') }}
+                </el-dropdown-item>
+                <el-dropdown-item v-if="canOpenCaseContext" command="materials">
+                  {{ t('detailViews.customer.contextStrip.materials') }}
+                </el-dropdown-item>
+                <el-dropdown-item
+                  v-if="primaryActionKind === 'openCase' && canWriteCaseLog"
+                  command="writeLog"
+                >
+                  {{ t('detailViews.customer.contextStrip.writeLog') }}
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
+        </div>
       </div>
     </div>
 
@@ -392,7 +411,6 @@ const assigneeDisplayLabel = computed((): string => {
       </el-button>
       <el-button
         v-if="canOpenVisaWizard"
-        link
         type="primary"
         @click="goVisaWizard"
       >
@@ -402,126 +420,4 @@ const assigneeDisplayLabel = computed((): string => {
   </div>
 </template>
 
-<style scoped lang="scss">
-.customer-detail-context-strip {
-  margin-bottom: var(--app-spacing-md);
-  padding: var(--app-spacing-md);
-  border-radius: var(--el-border-radius-base);
-  background: var(--el-fill-color-light);
-  border: 1px solid var(--el-border-color-lighter);
-}
-
-.customer-detail-context-strip__head {
-  margin-bottom: var(--app-spacing-sm);
-}
-
-.customer-detail-context-strip__fallback-alert {
-  margin-bottom: var(--app-spacing-sm);
-  padding: 6px 11px;
-}
-
-.customer-detail-context-strip__fallback-alert :deep(.el-alert__content) {
-  padding: 0;
-}
-
-.customer-detail-context-strip__fallback-line {
-  font-size: var(--el-font-size-small);
-  line-height: 1.5;
-}
-
-.customer-detail-context-strip__fallback-link {
-  margin-left: 6px;
-  font-weight: 600;
-  white-space: nowrap;
-  color: var(--el-color-primary);
-  text-decoration: none;
-}
-
-.customer-detail-context-strip__fallback-link:hover {
-  color: var(--el-color-primary-light-3);
-  text-decoration: underline;
-}
-
-.customer-detail-context-strip__title {
-  font-size: var(--el-font-size-small);
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.customer-detail-context-strip__body {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--app-spacing-md);
-  justify-content: space-between;
-}
-
-.customer-detail-context-strip__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--app-spacing-md);
-  align-items: center;
-}
-
-.customer-detail-context-strip__kv {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: var(--el-font-size-small);
-}
-
-.customer-detail-context-strip__k {
-  color: var(--el-text-color-secondary);
-}
-
-.customer-detail-context-strip__v {
-  color: var(--el-text-color-regular);
-}
-
-.customer-detail-context-strip__v--date-priority {
-  font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-
-.customer-detail-context-strip__materials-zero {
-  display: inline-flex;
-  align-items: baseline;
-  flex-wrap: wrap;
-  gap: 4px;
-  max-width: 100%;
-  cursor: help;
-  border-bottom: 1px dotted var(--el-text-color-secondary);
-  outline: none;
-}
-
-.customer-detail-context-strip__materials-zero-fraction {
-  white-space: nowrap;
-}
-
-.customer-detail-context-strip__materials-zero-note {
-  font-weight: 400;
-  color: var(--el-text-color-secondary);
-  font-size: var(--el-font-size-extra-small);
-}
-
-.customer-detail-context-strip__actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--app-spacing-xs);
-  align-items: center;
-}
-
-.customer-detail-context-strip__empty {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--app-spacing-sm);
-  font-size: var(--el-font-size-small);
-  color: var(--el-text-color-secondary);
-}
-
-.customer-detail-context-strip__empty-text {
-  flex: 1;
-  min-width: 200px;
-}
-</style>
+<style scoped lang="scss" src="./CustomerDetailContextStrip.scoped.scss"></style>

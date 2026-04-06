@@ -93,6 +93,21 @@ export interface UpdateVisaCaseParams {
   memo?: string
 }
 
+/**
+ * 案件材料チェックリスト全面再初期化 API 请求体，与后端 `ReinitializeVisaCaseMaterialsDto` 一致。
+ */
+export interface ReinitializeVisaCaseMaterialsParams {
+  confirm: true
+  reason?: string
+}
+
+/**
+ * 签证案件编辑对话框上抛的保存载荷；`reinitializeMaterialsAfterSave` 仅用于前端父子通信，不得传入更新案件接口。
+ */
+export type VisaCaseEditSubmitPayload = UpdateVisaCaseParams & {
+  reinitializeMaterialsAfterSave?: boolean
+}
+
 export interface VisaCaseQueryParams {
   page?: number
   pageSize?: number
@@ -248,38 +263,6 @@ export interface VisaReminderQueryParams {
   assignedTo?: string
   dataScope?: VisaDataScope
   [key: string]: unknown
-}
-
-export interface MaterialTemplateItem {
-  id: string
-  templateId: string
-  groupName: string
-  itemName: string
-  scope: MaterialItemScope
-  sortOrder: number
-  isRequired: boolean
-  createdAt: string
-  updatedAt: string
-}
-
-export interface MaterialTemplateDetail {
-  id: string
-  caseType: string
-  displayName: string
-  isActive: boolean
-  items: MaterialTemplateItem[]
-  createdAt: string
-  updatedAt: string
-}
-
-export interface MaterialTemplateListItem {
-  id: string
-  caseType: string
-  displayName: string
-  isActive: boolean
-  itemCount: number
-  createdAt: string
-  updatedAt: string
 }
 
 export interface VisaCaseMaterialItemDetail {
@@ -543,4 +526,57 @@ export interface VisaWorkbenchQueryParams {
 export interface VisaWorkbenchAggregate {
   stats: VisaDomainStats
   reminderPreviews: VisaWorkbenchReminderPreviews
+}
+
+/** 全局材料模板子项（`GET /material-templates` 等），与后端 `MaterialTemplateItemResponseDto` 对齐。 */
+export interface MaterialTemplateItem {
+  id: string
+  groupName: string
+  itemName: string
+  scope: MaterialItemScope
+  sortOrder: number
+  isRequired: boolean
+}
+
+/** 材料模板详情响应，与后端 `MaterialTemplateResponseDto` 对齐。 */
+export interface MaterialTemplateDetail {
+  id: string
+  caseType: string
+  displayName: string
+  isActive: boolean
+  items: MaterialTemplateItem[]
+  createdAt: string
+  updatedAt: string
+}
+
+/** 创建模板时的子项请求体（无 id）。 */
+export interface CreateMaterialTemplateItemParams {
+  groupName: string
+  itemName: string
+  scope?: MaterialItemScope
+  sortOrder?: number
+  isRequired?: boolean
+}
+
+/** 创建材料模板请求体，与后端 `CreateMaterialTemplateDto` 对齐。 */
+export interface CreateMaterialTemplateParams {
+  caseType: string
+  displayName: string
+  items: CreateMaterialTemplateItemParams[]
+}
+
+/** 更新模板时的子项（有 id 为更新，无 id 为新增；未出现的既有 id 会被删除）。 */
+export interface UpdateMaterialTemplateItemParams {
+  id?: string
+  groupName: string
+  itemName: string
+  scope?: MaterialItemScope
+  sortOrder?: number
+  isRequired?: boolean
+}
+
+/** 更新材料模板请求体，与后端 `UpdateMaterialTemplateDto` 对齐。 */
+export interface UpdateMaterialTemplateParams {
+  displayName?: string
+  items?: UpdateMaterialTemplateItemParams[]
 }

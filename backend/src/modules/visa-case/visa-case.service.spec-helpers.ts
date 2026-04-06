@@ -1,3 +1,4 @@
+/* eslint-disable max-lines -- 聚合 VisaCaseService 测试夹具（多仓储 mock 与 TestingModule 装配） */
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 
@@ -19,6 +20,7 @@ import { MaterialTemplateItem } from './entities/material-template-item.entity';
 import { VisaCase } from './entities/visa-case.entity';
 import { VisaCaseFamilyMember } from './entities/visa-case-family-member.entity';
 import { VisaCaseMaterialItem } from './entities/visa-case-material-item.entity';
+import type { RepoMock as ChecklistRepoMock } from './material-checklist.spec.helpers';
 import { MaterialTemplateService } from './material-template.service';
 import { VisaCaseService } from './visa-case.service';
 import { VisaCaseDataScopeService } from './visa-case-data-scope.service';
@@ -336,10 +338,12 @@ export function buildFilePathRecord(
   };
 }
 
-function createMaterialItemRepoMock(): RepoMock<
-  'create' | 'save' | 'find' | 'findOne' | 'count' | 'remove' | 'update'
-> {
-  return {
+function createMaterialItemRepoMock(
+  visaCaseRepo: VisaCaseRepoMock,
+  familyMemberRepo: FamilyMemberRepoMock,
+): ChecklistRepoMock {
+  /* 含 `manager.transaction`（TypeORM 事务）供材料再初期化测例；mock 形态超出 ChecklistRepoMock 字面索引 */
+  const materialItemRepo = {
     create: jest.fn().mockImplementation((data: unknown) => data),
     save: jest
       .fn()
@@ -349,7 +353,32 @@ function createMaterialItemRepoMock(): RepoMock<
     count: jest.fn().mockResolvedValue(0),
     remove: jest.fn().mockResolvedValue(undefined),
     update: jest.fn().mockResolvedValue({ affected: 1 }),
+    delete: jest.fn().mockResolvedValue({ affected: 0 }),
+    manager: { transaction: jest.fn() },
   };
+  materialItemRepo.manager.transaction.mockImplementation(
+    async (
+      cb: (m: {
+        delete: jest.Mock;
+        getRepository: (e: unknown) => unknown;
+      }) => Promise<unknown>,
+    ) => {
+      const mgr = {
+        delete: jest.fn().mockResolvedValue({ affected: 1 }),
+        getRepository: (entity: unknown) => {
+          if (entity === VisaCaseFamilyMember) {
+            return familyMemberRepo;
+          }
+          if (entity === VisaCase) {
+            return visaCaseRepo;
+          }
+          return materialItemRepo;
+        },
+      };
+      return cb(mgr);
+    },
+  );
+  return materialItemRepo as unknown as ChecklistRepoMock;
 }
 
 function createTemplateRepoMock(): RepoMock<
@@ -376,17 +405,18 @@ function createTemplateItemRepoMock(): RepoMock<'create' | 'save' | 'delete'> {
   };
 }
 
-export async function createTestingContext(): Promise<ServiceTestContext> {
-  const visaCaseRepo = createVisaCaseRepoMock();
-  const familyMemberRepo = createFamilyMemberRepoMock();
-  const customerRepo = createCustomerRepoMock();
-  const noteRepo = createNoteRepoMock();
-  const filePathRepo = createFilePathRepoMock();
-  const materialItemRepo = createMaterialItemRepoMock();
-  const templateRepo = createTemplateRepoMock();
-  const templateItemRepo = createTemplateItemRepoMock();
-  const dataScopeResolve = jest.fn().mockResolvedValue({ mode: 'all' });
-  const module: TestingModule = await Test.createTestingModule({
+async function compileVisaCaseServiceModule(
+  visaCaseRepo: VisaCaseRepoMock,
+  familyMemberRepo: FamilyMemberRepoMock,
+  materialItemRepo: ChecklistRepoMock,
+  customerRepo: CustomerRepoMock,
+  noteRepo: NoteRepoMock,
+  filePathRepo: FilePathRepoMock,
+  templateRepo: RepoMock<'find' | 'findOne' | 'create' | 'save' | 'softRemove'>,
+  templateItemRepo: RepoMock<'create' | 'save' | 'delete'>,
+  dataScopeResolve: JestMockFn,
+): Promise<TestingModule> {
+  return Test.createTestingModule({
     providers: [
       VisaCaseLookupService,
       VisaCaseInternalPrimaryService,
@@ -395,9 +425,7 @@ export async function createTestingContext(): Promise<ServiceTestContext> {
       VisaCaseFilePathService,
       {
         provide: VisaCaseDataScopeService,
-        useValue: {
-          resolve: dataScopeResolve,
-        },
+        useValue: { resolve: dataScopeResolve },
       },
       {
         provide: VisaCaseDataScopePermissionService,
@@ -441,6 +469,32 @@ export async function createTestingContext(): Promise<ServiceTestContext> {
       },
     ],
   }).compile();
+}
+
+export async function createTestingContext(): Promise<ServiceTestContext> {
+  const visaCaseRepo = createVisaCaseRepoMock();
+  const familyMemberRepo = createFamilyMemberRepoMock();
+  const materialItemRepo = createMaterialItemRepoMock(
+    visaCaseRepo,
+    familyMemberRepo,
+  );
+  const customerRepo = createCustomerRepoMock();
+  const noteRepo = createNoteRepoMock();
+  const filePathRepo = createFilePathRepoMock();
+  const templateRepo = createTemplateRepoMock();
+  const templateItemRepo = createTemplateItemRepoMock();
+  const dataScopeResolve = jest.fn().mockResolvedValue({ mode: 'all' });
+  const module: TestingModule = await compileVisaCaseServiceModule(
+    visaCaseRepo,
+    familyMemberRepo,
+    materialItemRepo,
+    customerRepo,
+    noteRepo,
+    filePathRepo,
+    templateRepo,
+    templateItemRepo,
+    dataScopeResolve,
+  );
 
   return {
     module,

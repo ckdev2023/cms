@@ -1,0 +1,13 @@
+/**
+ * 案件日志时间轴：节点或卡片根元素挂 `.visa-case-log-timeline-tone--{tone}`（tone 与
+ * `resolveVisaCaseLogTimelineVisualTone` / `visaCaseLogTimelineToneForLogType` 一致），子级继承 `--vcl-*`。
+ * Rail 自定义轴与主栏日志卡片共用，与 `visa-case-log-ui.ts` 映射保持单一数据源。
+ */
+@each $tone in primary, success, warning, danger, info {
+  .visa-case-log-timeline-tone--#{$tone} {
+    --vcl-node-bg: var(--el-color-#{$tone}-light-9);
+    --vcl-node-border: var(--el-color-#{$tone}-light-7);
+    --vcl-node-icon: var(--el-color-#{$tone});
+    --vcl-accent: var(--el-color-#{$tone});
+  }
+}

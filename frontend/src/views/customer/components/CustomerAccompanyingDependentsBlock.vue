@@ -89,28 +89,48 @@ function dependentDetailTo(
       :description="T('accompanyingDependentsEmpty')"
     />
 
-    <el-table v-else-if="items.length > 0" :data="items" border size="small" class="accompanying-deps__table">
-      <el-table-column :label="t('detailViews.customer.basicFields.customerCode')" prop="customerCode" width="120" />
-      <el-table-column :label="t('detailViews.customer.basicFields.customerName')" prop="customerName" min-width="140" />
-      <el-table-column :label="t('detailViews.customer.basicFields.familyRelation')" width="140">
-        <template #default="{ row }">
-          <template v-if="row.personInfo?.familyRelation">
-            <el-tag size="small" type="info">
-              {{ FamilyRelationLabel[row.personInfo.familyRelation as FamilyRelation] }}
-            </el-tag>
-          </template>
-          <span v-else class="accompanying-deps__dash">-</span>
-        </template>
-      </el-table-column>
-      <el-table-column :label="t('detailViews.customer.basicFields.phone')" prop="phone" min-width="130" />
-      <el-table-column :label="t('common.actions')" width="100" align="center">
-        <template #default="{ row }">
-          <router-link :to="dependentDetailTo(row.id)" class="accompanying-deps__link">
-            {{ t('common.detail') }}
-          </router-link>
-        </template>
-      </el-table-column>
-    </el-table>
+    <ul v-else-if="items.length > 0" class="accompanying-deps__list">
+      <li v-for="item in items" :key="item.id" class="accompanying-deps__list-item">
+        <router-link
+          :to="dependentDetailTo(item.id)"
+          class="accompanying-deps__card"
+          :aria-label="`${item.customerName} — ${t('common.detail')}`"
+        >
+          <el-avatar :size="40" class="accompanying-deps__avatar" shape="circle">
+            {{ item.customerName?.trim().charAt(0) || '?' }}
+          </el-avatar>
+          <div class="accompanying-deps__card-main">
+            <div class="accompanying-deps__card-row">
+              <span class="accompanying-deps__name">{{ item.customerName }}</span>
+              <template v-if="item.personInfo?.familyRelation">
+                <el-tag size="small" type="info">
+                  {{ FamilyRelationLabel[item.personInfo.familyRelation as FamilyRelation] }}
+                </el-tag>
+              </template>
+              <span v-else class="accompanying-deps__dash">-</span>
+            </div>
+            <div class="accompanying-deps__card-meta">
+              <span class="accompanying-deps__meta-item">
+                <span class="accompanying-deps__meta-label">{{
+                  t('detailViews.customer.basicFields.customerCode')
+                }}</span>
+                <span class="accompanying-deps__meta-value">{{ item.customerCode }}</span>
+              </span>
+              <span class="accompanying-deps__meta-item">
+                <span class="accompanying-deps__meta-label">{{
+                  t('detailViews.customer.basicFields.phone')
+                }}</span>
+                <span class="accompanying-deps__meta-value">
+                  <template v-if="item.phone?.trim()">{{ item.phone }}</template>
+                  <span v-else class="accompanying-deps__dash">-</span>
+                </span>
+              </span>
+            </div>
+          </div>
+          <span class="accompanying-deps__detail-pill">{{ t('common.detail') }}</span>
+        </router-link>
+      </li>
+    </ul>
   </div>
 </template>
 
@@ -131,21 +151,112 @@ function dependentDetailTo(
     line-height: 1.5;
   }
 
-  &__table {
-    width: 100%;
+  &__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--app-spacing-sm);
+  }
+
+  &__list-item {
+    margin: 0;
+    padding: 0;
+  }
+
+  &__card {
+    display: flex;
+    align-items: center;
+    gap: var(--app-spacing-md);
+    padding: var(--app-spacing-sm) var(--app-spacing-md);
+    border-radius: var(--customer-detail-radius-card, var(--el-border-radius-base));
+    border: var(
+      --customer-detail-border-surface,
+      1px solid var(--el-border-color-extra-light)
+    );
+    box-shadow: var(--customer-detail-shadow-card, var(--el-box-shadow-light));
+    background: var(--el-bg-color);
+    text-decoration: none;
+    color: inherit;
+    transition:
+      border-color 0.15s ease,
+      box-shadow 0.15s ease;
+
+    &:hover {
+      border-color: var(--el-color-primary-light-5);
+      box-shadow: var(--el-box-shadow);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--el-color-primary);
+      outline-offset: 2px;
+    }
+  }
+
+  &__avatar {
+    flex-shrink: 0;
+  }
+
+  &__card-main {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  &__card-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--app-spacing-sm);
+    min-width: 0;
+  }
+
+  &__name {
+    font-size: var(--el-font-size-base);
+    font-weight: var(--app-font-weight-medium, 500);
+    color: var(--app-text-primary);
+    word-break: break-word;
+  }
+
+  &__card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--app-spacing-md);
+    font-size: var(--el-font-size-small);
+  }
+
+  &__meta-item {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    min-width: 0;
+    color: var(--el-text-color-regular);
+  }
+
+  &__meta-label {
+    color: var(--el-text-color-secondary);
+    white-space: nowrap;
+  }
+
+  &__meta-value {
+    color: var(--app-text-primary);
+    word-break: break-word;
+  }
+
+  &__detail-pill {
+    flex-shrink: 0;
+    font-size: var(--el-font-size-small);
+    font-weight: var(--app-font-weight-medium, 500);
+    color: var(--el-color-primary);
+    white-space: nowrap;
   }
 
   &__dash {
     color: var(--el-text-color-placeholder);
-  }
-
-  &__link {
-    color: var(--el-color-primary);
-    text-decoration: none;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 }
 </style>

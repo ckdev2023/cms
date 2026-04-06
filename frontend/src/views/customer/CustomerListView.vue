@@ -767,10 +767,10 @@ function handleWritePrimaryCaseLog(row: CustomerItem): void {
                 {{ t('common.edit') }}
               </el-dropdown-item>
               <el-dropdown-item v-if="customerListCanQuickOpenPaths()" command="paths">
-                {{ t('detailViews.customer.visaDomainTab.pathsBlock') }}
+                {{ t('detailViews.customer.stitchLayout.stackBlocks.paths') }}
               </el-dropdown-item>
               <el-dropdown-item v-if="customerListCanQuickOpenMaterials()" command="materials">
-                {{ t('detailViews.customer.visaDomainTab.materialsBlock') }}
+                {{ t('detailViews.customer.stitchLayout.stackBlocks.materials') }}
               </el-dropdown-item>
               <el-dropdown-item
                 v-if="customerListCanWritePrimaryCaseLog(row)"

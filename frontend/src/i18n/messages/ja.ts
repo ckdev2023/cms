@@ -82,6 +82,7 @@ const jaMessages = {
     residenceReminders: '在留期限（顧客情報）',
     residenceRemindersMenuSubtitle: '基本情報の在留期限／案件リマインドとは別',
     customerDetail: '顧客詳細',
+    customerDetailSimple: '顧客詳細（簡易版）',
     visaRemindersMenuSubtitle: '推奨経路・ビザ案件集約',
     visaCaseRegistryMenuSubtitle: '推奨経路・全顧客案件',
     visaCaseImportMenuSubtitle: 'ツール・履歴一括取込',
@@ -117,6 +118,7 @@ const jaMessages = {
     auditLogs: '操作ログ',
     loginLogs: 'ログインログ',
     exportLogs: 'エクスポートログ',
+    materialTemplates: '材料テンプレート',
     notFound: 'ページが見つかりません',
   },
   layout: {
@@ -714,6 +716,57 @@ const jaMessages = {
       start: '開始',
       end: '終了',
     },
+    materialTemplates: {
+      title: '材料テンプレート',
+      keywordPlaceholder: '案件タイプ、表示名',
+      listCardTitle: 'テンプレート一覧',
+      reload: 'サーバーから一覧を再取得',
+      createTitle: '材料テンプレート新規',
+      editTitle: '材料テンプレート編集',
+      createDialogTitle: '材料テンプレート新規',
+      editDialogTitle: '材料テンプレート編集',
+      caseType: '案件タイプ',
+      caseTypePlaceholder: '案件の case_type と一致する値を選択または入力',
+      caseTypeHint:
+        'ビザ案件に保存されるタイプ文字列と完全一致させてください。列挙から選ぶか、自由入力も可能です。',
+      displayName: 'テンプレート表示名',
+      displayNamePlaceholder: '例：技人国 標準チェックリスト',
+      itemsSection: 'テンプレート項目',
+      addItemRow: '項目を追加',
+      groupName: 'グループ',
+      itemName: '材料名',
+      scope: 'スコープ',
+      sortOrder: '並び順',
+      required: '必須',
+      needOneItem: '材料項目は1件以上必要です',
+      rowIncomplete: '各項目にグループ名と材料名を入力してください',
+      createSuccess: 'テンプレートを作成しました',
+      updateSuccess: 'テンプレートを更新しました',
+      itemCount: '項目数',
+      statusActive: '有効',
+      statusInactive: '無効',
+      deactivate: '無効化',
+      deactivateTitle: '材料テンプレートを無効化',
+      deactivateConfirm:
+        'テンプレート「{name}」を無効化しますか？新規案件では参照されなくなります。既に案件へ展開済みの材料行には影響しません。',
+      deactivateSuccess: 'テンプレートを無効化しました',
+      saveSuccess: '保存しました',
+      notFound: 'テンプレートが見つからないか、すでに無効化されています',
+      addItem: '項目を追加',
+      colGroup: 'グループ',
+      colItem: '材料名',
+      colScope: 'スコープ',
+      colSort: '並び順',
+      colRequired: '必須',
+      validation: {
+        displayName: '表示名を入力してください',
+        caseType: '案件タイプを選択または入力してください',
+        itemsMin: 'テンプレート項目は1件以上必要です',
+        itemFields: '各項目にグループ名と材料名を入力してください',
+      },
+      itemsReplaceHint:
+        '保存時は表の内容を全件送信します。表に含まれない既存項目は削除されます（PUT の全置換仕様）。',
+    },
     exportLogs: {
       title: 'エクスポートログ',
       occurredAt: '日時',
@@ -734,8 +787,6 @@ const jaMessages = {
       basicInfo: '基本情報',
       notes: '備忘・フォロー',
       adminCases: '行政案件',
-      visaDomainTabTooltip:
-        'ビザ管理では、ビザ案件・家族・資料・案件ログを扱います。直下の「行政案件」タブのデータとは独立しています。',
       adminCasesTabTooltip:
         '行政書士が扱う手続き案件は、ビザ案件台帳とは別管理です。ビザ関連は「ビザ管理」タブを優先してください。',
       legacyResidenceFieldHint:
@@ -758,12 +809,50 @@ const jaMessages = {
           'ビザ案件に直接関わる内容（進み具合、追加書類、費用の取り決め、担当の引き継ぎなど）は、「ビザ管理」→「案件ログ」で該当案件を選んでから記録してください。あとから探しやすく、引き継ぎもしやすくなります。「備忘・フォロー」は顧客まわりの付箋のイメージで、特定の案件に属さない短いメモや、複数案件の要約向けです。',
         detailExpandedWithoutVisa:
           '「備忘・フォロー」は顧客に関するメモ用です。ビザ管理の権限がある場合は、特定のビザ案件にひもづく進捗・補足・引き継ぎは「ビザ管理」→「案件ログ」に書くと、案件単位でたどれます。',
-        expandRulesLabel: '詳しい役割分担を表示',
-        collapseRulesLabel: '説明を閉じる',
         goCaseLogs: '案件ログを開く',
         goNotes: '備忘・フォローを開く',
+        rulesPopoverTrigger: '詳しい説明',
+        summaryLineHeaderCompactWithVisa:
+          '案件単位の記録→「ビザ管理 → 案件ログ」（案件を選ぶ）；顧客メモ→「備忘・フォロー」。',
+        summaryLineHeaderCompactWithoutVisa:
+          '顧客メモは「備忘・フォロー」；特定ビザ案件にひもづく内容はビザ管理利用時に「案件ログ」へ。',
       },
       visaCases: 'ビザ案件',
+      caseLogAsideAriaLabel: 'ビザ案件ログとフォロー要約',
+      caseLogRail: {
+        title: '案件ログ（一覧主表示案件）',
+        noPrimaryCase:
+          '一覧の主表示ビザ案件がないため、ログのプレビューは表示できません。',
+        needDetailPermission:
+          '案件ログの閲覧には「ビザ案件詳細」権限が必要です。ビザ管理タブで権限に応じて操作できます。',
+        loadError:
+          'ログの取得に失敗しました。しばらくしてから再度お試しください。ビザ管理からも確認できます。',
+        empty: 'この案件のログはまだありません。',
+        emptyFiltered:
+          'この分類には直近のログがありません。分類を切り替えるか、ビザ管理で一覧を確認してください。',
+        filterPillAll: 'すべて',
+        /** SUBMISSION / SUPPLEMENT */
+        filterPillMaterials: '提出・補充',
+        /** FOLLOW_UP / GENERAL */
+        filterPillCommunication: 'フォロー・連絡',
+        /** STATUS_CHANGE など */
+        filterPillSystem: '状態・履歴',
+        filtersAriaLabel: 'ログ種別でサイドバーのプレビューを絞り込む',
+        filterPillsLegend:
+          '分類の目安：提出・補充＝提出・補充系、フォロー・連絡＝フォロー・一般説明、状態・履歴＝状態変更などのシステム記録。左の「ビザ管理」内「案件ログ」セクションの一覧とあわせてご確認ください。',
+        /** タイトル横の案内アイコン：ホバーで filterPillsLegend を表示 */
+        filterLegendHint: '絞り込み分類の説明を表示',
+        viewAll: 'すべてのログを見る',
+      },
+      stickyActions: {
+        regionAriaLabel:
+          '一覧主表示ビザ案件のクイック操作（上部の主ボタンと同じ。長いページのスクロール後に操作しやすくするため）',
+        /** 下部バー副次ボタン：案件ログ新規（Stitch「新規記録」相当） */
+        newRecordCta: 'ログを追加',
+        /** 左側ステータス行：案件状態＋書類進捗 */
+        statusLineAriaLabel: '主表示案件の状態と書類進捗',
+        caseMaterialsNarrative: '{status} · 書類 {materials}',
+      },
       financePending: 'データはまだありません。モジュール実装待ちです',
       contextStrip: {
         title: '一覧主表示ビザ案件',
@@ -784,11 +873,128 @@ const jaMessages = {
         materials: '書類チェック',
         writeLog: '案件ログを書く',
         viewAllVisaCases: 'すべてのビザ案件を見る',
+        moreActions: 'その他の操作',
         primaryCustomerFallbackLine:
           '上の要約は、紐づく代表顧客の主表示ビザ案件です。',
         primaryCustomerFallbackOpen: '代表顧客の詳細を開く',
       },
+      /** Stitch ヒーロー/下部バー用。挙動は docs/36 を参照 */
+      stitchLayout: {
+        heroRegionAria: '顧客詳細・一覧主表示ビザ案件のヒーロー領域',
+        simpleHero: {
+          regionAria: '顧客簡易詳細のヒーロー領域',
+          edit: '編集',
+          copyPageLink: 'リンクをコピー',
+          addFollowUp: 'フォロー記録を追加',
+          shareCopied: 'このページのリンクをコピーしました',
+          shareFailed:
+            'コピーに失敗しました。ブラウザのアドレスバーから手動でコピーしてください',
+          backToDashboard: 'ダッシュボードに戻る',
+          backToCustomerList: '顧客一覧に戻る',
+          backToCustomerCenter: '顧客センターに戻る',
+          backToSourcePage: '元のページに戻る',
+          backToPreviousPage: '前のページに戻る',
+        },
+        /** 簡易詳細ヒーロー「フォロー記録を追加」ダイアログ（案件ログ API と整合） */
+        simpleFollowUpDialog: {
+          title: 'フォロー記録を追加',
+          method: 'フォロー形式',
+          follower: 'フォロー担当',
+          recordedAt: 'フォロー日時',
+          communication: '今回のコミュニケーション内容',
+          communicationPlaceholder: 'やり取りの要約を入力してください…',
+          submittedItems: '顧客が提出済みの書類',
+          submittedPlaceholder: '例：パスポート写し、証明写真 など',
+          missingItems: 'まだ不足している書類',
+          missingPlaceholder: '例：納税証明書の原本',
+          nextAction: '次に行うこと',
+          nextActionPlaceholder:
+            '例：資料を翻訳し、来週水曜に再度電話フォローする',
+          nextFollowUpAt: '次回フォロー日',
+          createReminder: 'リマインダーを作成',
+          reminderSoon: 'リマインダー機能は未提供です',
+          save: '記録を保存',
+        },
+        simpleBasicCard: {
+          viewAll: 'すべて表示',
+          fieldEmpty: '未入力',
+          expandDetails: 'さらに表示',
+          collapseDetails: '折りたたむ',
+        },
+        /** 簡易詳細「家族メンバー」カード：随附家族と同ソース、ビザ管理 `family` へ */
+        simpleFamilyCard: {
+          title: '家族メンバー',
+          memberSummary: '随伴家族 · 計 {count} 名',
+          needListPermission:
+            '家族一覧を表示するには「顧客一覧」権限が必要です。',
+          openInVisaWorkbench: 'ビザ管理で見る',
+          moreMembers: '他 {count} 名',
+          rowAria: '{name}、子顧客の詳細を開く',
+        },
+        simpleMaterialsCard: {
+          title: '申請書類チェックリスト',
+          viewAll: 'すべて表示',
+          openInVisaWorkbench: 'ビザ管理で見る',
+          noVisaPermission: '材料チェックリストを表示する権限がありません。',
+          progressLabel: '収集進捗',
+          progressPercent: '{n}%',
+          emptyChecklist:
+            'チェックリスト実体がありません。ビザ管理で材料チェックリストを初期化してください。',
+          ringAria: '申請書類の収集進捗 {percent}%',
+          rowPendingSupplement: '補件待ち',
+          /** スクロール可能領域（`/materials` 全件・材料タブと同件数）、キーボードスクロール用 `tabindex=0` */
+          materialsListAria:
+            '申請書類チェックリストの全項目です。詳細画面の材料タブと同じ件数です。項目が多い場合は領域内でスクロールし、Tab でフォーカスした後に矢印キーでも移動できます。',
+        },
+        simplePathsCard: {
+          title: 'ファイル管理センター',
+          copyPath: 'パスをコピー',
+          viewAll: 'パスを管理',
+          emptyPath: '未登録',
+          needListPermission:
+            '資料パスを表示するには「顧客資料パス一覧」権限が必要です。権限がある場合は資料パス台帳で操作できます。',
+        },
+        simpleFollowUpTimeline: {
+          sectionTitle: 'フォロー経過記録',
+          sortDesc: '日時の新しい順',
+          export: '記録をエクスポート',
+          exportDisabledTooltip:
+            '一括エクスポート API は未提供です。ビザ管理の「案件ログ」で確認してください。',
+          viewAll: 'すべてのログを見る',
+        },
+        primaryCaseIdLabel: '主表示案件',
+        urgeSupplementCta: '書類のフォローへ',
+        urgeSupplementTooltip:
+          '一覧主表示案件の書類チェックへ移動し、未提出項目を確認します。顧客へ自動送信は行いません。記録が必要な場合は「案件ログを書く」、またはチェックリストからログへ反映してください。',
+        etaFieldsHint:
+          '「次回フォロー」「在留期限」は案件データに対応します。別名の ETA フィールドはありません。',
+        detailTabsPrimaryRowLabel: '顧客メインビュー',
+        /** 主行タブの横スクロール領域（スクリーンリーダー用） */
+        detailTabsPrimaryTabsScrollAriaLabel:
+          '顧客メインビューのタブ。狭い画面では横スクロールで全項目を表示できます。',
+        tabNavVisaDefaultLandingHint:
+          '進行中の一覧主表示ビザ案件がある場合、顧客詳細を開くと通常このタブが既定で開きます。',
+        visaWorkbenchTab: 'ビザ管理',
+        visaWorkbenchTabTooltip:
+          '基本情報サマリー、家族メンバー、材料チェックリスト、資料パス、主表示と全案件、案件ログを縦方向の作業台としてまとめています。幅広画面（目安 1200px 以上）ではメイン欄内を左右 2 列に配置し、要約行とセクション用ピルは全幅のまま、ディープリンク用アンカー id は変わりません。シェルが 2 カラムのとき右側に主表示案件のログプレビュー（メイン欄「案件ログ」と補完関係）。案件単位の進捗は本ページまたは案件ログに記録し、「備忘・フォロー」の顧客メモと役割を分けてください。顧客マスタの全体は「基本情報」で編集。「行政案件」とデータは独立しています。',
+        ledgerRowTooltip:
+          '税務・財務・ファイルはページ全体の台帳ビューです。条件付きで表示される「行政案件」は本行のセグメント内にあり、上段「ビザ管理」のメイン欄セクションやディープリンク錨とは別物です。',
+        stackSectionNavAria: 'ビザ管理内セクションへ移動',
+        stackBlocks: {
+          basicSnapshot: '基本情報サマリー',
+          cases: '主表示と全案件',
+          family: '家族メンバー',
+          paths: '資料パス',
+          logs: '案件ログ',
+          materials: '材料チェックリスト',
+        },
+      },
       sharedInfo: '共通情報',
+      basicInfoLayout: {
+        contactHeading: '連絡先',
+        addressHeading: '住所',
+        recordHeading: '登録情報',
+      },
       companyInfoTitle: '法人情報',
       personalInfoTitle: '個人情報',
       staffRelationsTitle: '担当者一覧',
@@ -883,6 +1089,14 @@ const jaMessages = {
         edit: '編集',
         openCaseViewOnlyHint: '案件編集権限がないため、下の一覧で内容をご確認ください。',
         openCaseMismatch: 'この案件は現在の顧客コンテキストに属しません。自動表示を中止しました。',
+        caseTypeChangeMaterialsConfirmTitle: '案件タイプの変更の確認',
+        caseTypeChangeMaterialsConfirmBody:
+          'この案件には既に資料チェックリストがあります。保存すると案件タイプが更新され、新しいビザ区分のテンプレートに基づきチェックリストが再生成されます。既存の行（手入力で追加した項目を含む）はすべて削除され、元に戻せません。続行しますか？',
+        caseTypeChangeReinitializeReason: '案件タイプ変更に伴い資料チェックリストをテンプレートで再生成',
+        caseTypeChangeMaterialsReinitFailed:
+          '案件タイプは保存されましたが、資料チェックリストの再生成に失敗しました。「資料チェックリスト」から再初期化するか、しばらくしてから再度お試しください。',
+        caseTypeChangeMaterialsSummaryFailed:
+          '資料チェックリストのサマリーを取得できないため、保存を中止しました。案件参照権限をご確認のうえ再試行するか、通信環境が安定してから案件タイプの変更を行ってください。',
       },
       visaCaseWizard: {
         title: 'ビザ案件作成ウィザード',
@@ -957,7 +1171,7 @@ const jaMessages = {
         filePathRequired: 'ファイルパスを入力してください',
         notUploadHint: '※ファイルアップロードではなく、サーバーパスの台帳管理です',
       },
-      visaDomain: 'ビザ管理',
+      visaDomain: 'ビザ・デスク',
       visaDomainTab: {
         summaryStripAria: 'ビザ領域の案件・資料サマリー',
         totalCases: '総案件',
@@ -965,14 +1179,29 @@ const jaMessages = {
         supplementCases: '補充待ち',
         nearestExpiry: '直近の期限',
         materialStatus: '資料状況',
-        casesBlock: 'ビザ案件',
+        sectionNavAria: 'ビザ管理セクションへのショートカット',
+        casesBlock: '主表示と全案件',
         familyBlock: '家族メンバー',
         pathsBlock: '資料パス',
         logsBlock: '案件ログ',
         materialsBlock: '材料チェックリスト',
+        basicSnapshotTitle: '基本情報サマリー',
         primaryCaseChecklistSummary:
           '主展示案件チェックリスト：{progress} 回収済み（対象件数）',
         primaryCaseChecklistOutOfSyncBadge: '推奨と不一致',
+        allCasesCollapseTitle: '全案件（一覧・新規）',
+        primaryCaseSummaryLabel: '主表示中の案件',
+        primaryCaseFieldType: '案件種別',
+        primaryCaseFieldAssignee: '担当',
+        primaryCaseFieldExpire: '在留期限',
+        primaryCaseFieldFollowUp: '次回フォロー',
+        primaryCaseFieldMaterial: '資料状況',
+        basicSnapshotScopeHint:
+          '顧客コード・連絡先・在留の要点のみ表示します。写真・住所・WeChat/LINE・会社情報・担当者関係などは「基本情報」でご確認・編集ください。',
+        basicSnapshotOpenFull: '基本情報を開く',
+        basicSnapshotGroupContact: '連絡先',
+        basicSnapshotGroupIdDocs: '身分証明',
+        basicSnapshotGroupResidence: '在留',
       },
       materialChecklistTab: {
         managerHelpTitle: '材料チェックリストの使い方',

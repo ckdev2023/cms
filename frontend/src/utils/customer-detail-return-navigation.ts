@@ -3,6 +3,7 @@ import type { LocationQuery, RouteLocationNormalizedLoaded, RouteLocationRaw } f
 import {
   buildCustomerDetailReturnFromQuery,
   CUSTOMER_DETAIL_RETURN_FROM_QUERY_KEY,
+  isCustomerCenterHubTabPath,
   parseSafeCustomerDetailReturnPath,
   pickCustomerHubReturnQueryPreserve,
 } from '@/utils/customer-detail-return-path'
@@ -169,4 +170,62 @@ export function isTrustedCustomerDetailHistoryBack(
   }
   const pathname = pathPart.split('?')[0]?.split('#')[0] ?? ''
   return parseSafeCustomerDetailReturnPath(pathname) !== null
+}
+
+/** 简化详情顶区「返回」按钮文案键前缀，与 `zh-CN` / `ja` 中 `detailViews.customer.stitchLayout.simpleHero` 对齐。 */
+const SIMPLE_DETAIL_BACK_MESSAGE_KEY_PREFIX =
+  'detailViews.customer.stitchLayout.simpleHero.' as const
+
+/**
+ * 从当前路由 query 读取 `ccFrom` 的 pathname 段（不含 query/hash）。
+ *
+ * @param query - 一般为 `useRoute().query`
+ * @returns 未设置或非法空串时为 null
+ */
+function customerDetailCcFromPathname(query: LocationQuery): string | null {
+  const raw = query[CUSTOMER_DETAIL_RETURN_QUERY_KEY]
+  const s =
+    typeof raw === 'string'
+      ? raw
+      : Array.isArray(raw) && typeof raw[0] === 'string'
+        ? raw[0]
+        : ''
+  if (!s) {
+    return null
+  }
+  const pathname = (s.split('?')[0]?.split('#')[0] ?? '').trim()
+  return pathname === '' ? null : pathname
+}
+
+/**
+ * 解析简化客户详情页「返回」按钮对应的 i18n 消息键，与 `CustomerDetailSimpleView` 的 `goBack` 决策一致。
+ *
+ * @param query - 当前页 `route.query`
+ * @param historyBack - `window.history.state.back`
+ * @param currentFullPath - 当前页 `route.fullPath`
+ * @returns 供全局 `t()` 使用的完整消息键
+ */
+export function resolveCustomerDetailSimpleBackMessageKey(
+  query: LocationQuery,
+  historyBack: unknown,
+  currentFullPath: string,
+): string {
+  const target = parseCustomerDetailReturnTarget(query)
+  if (target !== null) {
+    const pathname = customerDetailCcFromPathname(query) ?? ''
+    if (pathname === '/dashboard') {
+      return `${SIMPLE_DETAIL_BACK_MESSAGE_KEY_PREFIX}backToDashboard`
+    }
+    if (pathname === '/customers') {
+      return `${SIMPLE_DETAIL_BACK_MESSAGE_KEY_PREFIX}backToCustomerList`
+    }
+    if (isCustomerCenterHubTabPath(pathname)) {
+      return `${SIMPLE_DETAIL_BACK_MESSAGE_KEY_PREFIX}backToCustomerCenter`
+    }
+    return `${SIMPLE_DETAIL_BACK_MESSAGE_KEY_PREFIX}backToSourcePage`
+  }
+  if (isTrustedCustomerDetailHistoryBack(historyBack, currentFullPath)) {
+    return `${SIMPLE_DETAIL_BACK_MESSAGE_KEY_PREFIX}backToPreviousPage`
+  }
+  return `${SIMPLE_DETAIL_BACK_MESSAGE_KEY_PREFIX}backToCustomerList`
 }

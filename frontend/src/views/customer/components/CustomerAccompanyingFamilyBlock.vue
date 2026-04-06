@@ -190,13 +190,6 @@ function removeRow(index: number): void {
   vertical-align: middle;
 }
 
-.customer-accompanying-family__table {
-  padding: 10px 12px 8px;
-  border-radius: 8px;
-  background-color: var(--el-fill-color-light);
-  border: 1px solid var(--el-border-color-lighter);
-}
-
 .customer-accompanying-family__table.is-disabled {
   opacity: 0.85;
 }

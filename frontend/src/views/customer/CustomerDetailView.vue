@@ -23,13 +23,19 @@ import {
   parseCustomerDetailReturnTarget,
 } from "@/utils/customer-detail-return-navigation";
 import { pickCustomerHubReturnQueryPreserve } from "@/utils/customer-detail-return-path";
+import {
+  isVisaDomainBlockQueryValue,
+  parseVisaDomainBlockFromLocationHash,
+  type VisaDomainBlockQueryValue,
+} from "@/utils/customer-detail-visa-domain-deeplink";
 import { visaUiVisaPrimaryEntriesVisible } from "@/utils/visa-ui-feature-flags";
 
 import CustomerAdminCasesTab from "./components/CustomerAdminCasesTab.vue";
 import CustomerBasicInfoTab from "./components/CustomerBasicInfoTab.vue";
-import CustomerDetailContextStrip from "./components/CustomerDetailContextStrip.vue";
+import CustomerDetailStickyActions from "./components/CustomerDetailStickyActions.vue";
 import CustomerDetailTabNav from "./components/CustomerDetailTabNav.vue";
 import CustomerDetailTraceabilityHint from "./components/CustomerDetailTraceabilityHint.vue";
+import CustomerDetailVisaHeaderHub from "./components/CustomerDetailVisaHeaderHub.vue";
 import CustomerFilesTab from "./components/CustomerFilesTab.vue";
 import CustomerFormDialog from "./components/CustomerFormDialog.vue";
 import CustomerNotesTab from "./components/CustomerNotesTab.vue";
@@ -67,6 +73,15 @@ const showVisaDomainTab = computed(
 const showAdminCasesTab = computed((): boolean =>
   userStore.hasPermission(P.ADMIN_CASE_LIST),
 );
+
+/** 与默认 Tab 规则一致：用于签证 Tab 导航在「工作台」场景下略加强激活态。 */
+const visaDomainWorkbenchHint = computed((): boolean => {
+  const c = customer.value;
+  if (!c || !showVisaDomainTab.value) {
+    return false;
+  }
+  return customerDetailPrefersVisaDomainTab(c);
+});
 
 const VALID_DETAIL_TABS = new Set([
   "basic",
@@ -120,21 +135,18 @@ const materialsVisaCaseIdFromQuery = computed(() =>
   queryParamAsString(route.query.materialsVisaCaseId),
 );
 
-const VISA_DOMAIN_SUB_BLOCKS = new Set([
-  "cases",
-  "family",
-  "paths",
-  "logs",
-  "materials",
-]);
-
-const visaDomainSubBlockFromQuery = computed((): string | undefined => {
-  const raw = queryParamAsString(route.query.visaDomainBlock);
-  if (VISA_DOMAIN_SUB_BLOCKS.has(raw)) {
-    return raw;
-  }
-  return undefined;
-});
+/**
+ * 签证域堆叠深链：优先消费 `visaDomainBlock` query，其次解析 history 模式下的 `#visa-domain-*` hash。
+ */
+const visaDomainDeepLinkBlock = computed(
+  (): VisaDomainBlockQueryValue | undefined => {
+    const raw = queryParamAsString(route.query.visaDomainBlock);
+    if (isVisaDomainBlockQueryValue(raw)) {
+      return raw;
+    }
+    return parseVisaDomainBlockFromLocationHash(route.hash) ?? undefined;
+  },
+);
 
 const pageTitle = computed(() => {
   if (!customer.value) {
@@ -156,6 +168,19 @@ watch(
         return;
       }
       activeTab.value = tab;
+    }
+  },
+  { immediate: true },
+);
+
+/**
+ * 堆叠分区深链（`visaDomainBlock` 或 `#visa-domain-*`）需落在签证域 Tab；须在 `tab` query 解析之后执行以免被覆盖。
+ */
+watch(
+  () => [showVisaDomainTab.value, visaDomainDeepLinkBlock.value] as const,
+  ([show, block]) => {
+    if (show && block !== undefined) {
+      activeTab.value = "visa-domain";
     }
   },
   { immediate: true },
@@ -263,7 +288,12 @@ function goBack(): void {
     void router.push(target);
     return;
   }
-  if (isTrustedCustomerDetailHistoryBack(window.history.state?.back, route.fullPath)) {
+  if (
+    isTrustedCustomerDetailHistoryBack(
+      window.history.state?.back,
+      route.fullPath,
+    )
+  ) {
     void router.back();
     return;
   }
@@ -280,11 +310,47 @@ function handleEdit() {
 function handleSaved() {
   fetchCustomer();
 }
+
+/**
+ * 签证域「基本信息摘要」跳转：切换到基础信息 Tab 并同步 `?tab=basic`（与路由监听一致）。
+ */
+function openBasicTabFromVisaDomain(): void {
+  const nextQuery = { ...route.query } as Record<
+    string,
+    string | string[] | undefined
+  >;
+  nextQuery.tab = "basic";
+  void router.replace({ path: route.path, query: nextQuery });
+}
 </script>
 
 <template>
-  <PageDetail :loading="loading" @back="goBack">
-    <template v-if="customer" #actions>
+  <PageDetail
+    :loading="loading"
+    :title="customer && showVisaDomainTab ? undefined : pageTitle"
+    :header-bar-inline="Boolean(customer && showVisaDomainTab)"
+    @back="goBack"
+  >
+    <template v-if="customer && showVisaDomainTab" #headerBar>
+      <CustomerDetailVisaHeaderHub
+        :customer-id="customerId"
+        :customer-name="customer.customerName"
+        :customer-code="customer.customerCode"
+        :customer-type="customer.customerType"
+        :customer-status="customer.status"
+        :list-primary-visa-case="customer.listPrimaryVisaCase ?? null"
+        :list-primary-visa-case-source="
+          customer.listPrimaryVisaCaseSource ?? null
+        "
+        :primary-customer-id-for-list-fallback="
+          customer.primaryCustomerIdForListFallback ?? null
+        "
+      />
+    </template>
+    <template v-else-if="customer && !showVisaDomainTab" #headerBar>
+      <CustomerDetailTraceabilityHint density="compact" />
+    </template>
+    <template v-if="customer && !showVisaDomainTab" #actions>
       <div class="detail-header-info">
         <h3 class="detail-header-info__name">{{ pageTitle }}</h3>
         <el-tag size="small">
@@ -301,10 +367,8 @@ function handleSaved() {
         </el-tag>
         <template v-if="customer.listPrimaryVisaCase?.isFamilyCase">
           <el-tag size="small" type="info">
-{{
-            t("pages.customers.familyCaseShortTag")
-          }}
-</el-tag>
+            {{ t("pages.customers.familyCaseShortTag") }}
+          </el-tag>
           <el-tag
             v-if="
               customer.listPrimaryVisaCase.familyLinkMode ===
@@ -341,61 +405,67 @@ function handleSaved() {
       </div>
     </template>
 
-    <el-card v-if="customer" shadow="never">
-      <CustomerDetailContextStrip
+    <el-card v-if="customer" shadow="never" class="customer-detail-shell">
+      <div class="customer-detail-body-grid">
+        <div class="customer-detail-body-grid__main">
+          <CustomerDetailTabNav
+            v-model:active-tab="activeTab"
+            :show-visa-domain-tab="showVisaDomainTab"
+            :show-admin-cases-tab="showAdminCasesTab"
+            :visa-domain-workbench-hint="visaDomainWorkbenchHint"
+          />
+          <el-tabs v-model="activeTab" class="customer-detail-tab-panels">
+            <el-tab-pane name="basic">
+              <CustomerBasicInfoTab :customer="customer" @edit="handleEdit" />
+            </el-tab-pane>
+
+            <el-tab-pane name="notes">
+              <CustomerNotesTab :customer-id="customerId" />
+            </el-tab-pane>
+
+            <el-tab-pane v-if="showVisaDomainTab" name="visa-domain">
+              <CustomerVisaDomainTab
+                :customer-id="customerId"
+                :customer="customer"
+                :context-customer-name="customer?.customerName ?? ''"
+                :open-visa-case-id="openVisaCaseIdFromQuery"
+                :log-visa-case-id="logVisaCaseIdFromQuery"
+                :open-visa-case-wizard="openVisaCaseWizardFromQuery"
+                :open-visa-case-log-form="openVisaCaseLogFormFromQuery"
+                :suggested-next-follow-up-at="suggestedNextFollowUpAtFromQuery"
+                :initial-sub-block="visaDomainDeepLinkBlock"
+                :materials-preferred-visa-case-id="materialsVisaCaseIdFromQuery"
+                :list-primary-visa-case="customer.listPrimaryVisaCase ?? null"
+                @visa-domain-customer-refresh="handleSaved"
+                @request-basic-tab="openBasicTabFromVisaDomain"
+              />
+            </el-tab-pane>
+
+            <el-tab-pane v-if="showAdminCasesTab" name="admin-cases">
+              <CustomerAdminCasesTab :customer-id="customerId" />
+            </el-tab-pane>
+
+            <el-tab-pane name="tax">
+              <CustomerTaxContractsTab :customer-id="customerId" />
+            </el-tab-pane>
+
+            <el-tab-pane name="finance">
+              <el-empty
+                :description="t('detailViews.customer.financePending')"
+              />
+            </el-tab-pane>
+
+            <el-tab-pane name="files">
+              <CustomerFilesTab :customer-id="customerId" />
+            </el-tab-pane>
+          </el-tabs>
+        </div>
+      </div>
+      <CustomerDetailStickyActions
         v-if="showVisaDomainTab"
         :customer-id="customerId"
         :list-primary-visa-case="customer.listPrimaryVisaCase ?? null"
-        :list-primary-visa-case-source="customer.listPrimaryVisaCaseSource ?? null"
-        :primary-customer-id-for-list-fallback="customer.primaryCustomerIdForListFallback ?? null"
       />
-      <CustomerDetailTraceabilityHint />
-      <CustomerDetailTabNav
-        v-model:active-tab="activeTab"
-        :show-visa-domain-tab="showVisaDomainTab"
-        :show-admin-cases-tab="showAdminCasesTab"
-      />
-      <el-tabs v-model="activeTab" class="customer-detail-tab-panels">
-        <el-tab-pane name="basic">
-          <CustomerBasicInfoTab :customer="customer" @edit="handleEdit" />
-        </el-tab-pane>
-
-        <el-tab-pane name="notes">
-          <CustomerNotesTab :customer-id="customerId" />
-        </el-tab-pane>
-
-        <el-tab-pane v-if="showVisaDomainTab" name="visa-domain">
-          <CustomerVisaDomainTab
-            :customer-id="customerId"
-            :context-customer-name="customer?.customerName ?? ''"
-            :open-visa-case-id="openVisaCaseIdFromQuery"
-            :log-visa-case-id="logVisaCaseIdFromQuery"
-            :open-visa-case-wizard="openVisaCaseWizardFromQuery"
-            :open-visa-case-log-form="openVisaCaseLogFormFromQuery"
-            :suggested-next-follow-up-at="suggestedNextFollowUpAtFromQuery"
-            :initial-sub-block="visaDomainSubBlockFromQuery"
-            :materials-preferred-visa-case-id="materialsVisaCaseIdFromQuery"
-            :list-primary-visa-case="customer.listPrimaryVisaCase ?? null"
-            @visa-domain-customer-refresh="handleSaved"
-          />
-        </el-tab-pane>
-
-        <el-tab-pane v-if="showAdminCasesTab" name="admin-cases">
-          <CustomerAdminCasesTab :customer-id="customerId" />
-        </el-tab-pane>
-
-        <el-tab-pane name="tax">
-          <CustomerTaxContractsTab :customer-id="customerId" />
-        </el-tab-pane>
-
-        <el-tab-pane name="finance">
-          <el-empty :description="t('detailViews.customer.financePending')" />
-        </el-tab-pane>
-
-        <el-tab-pane name="files">
-          <CustomerFilesTab :customer-id="customerId" />
-        </el-tab-pane>
-      </el-tabs>
     </el-card>
 
     <CustomerFormDialog
@@ -406,19 +476,4 @@ function handleSaved() {
   </PageDetail>
 </template>
 
-<style scoped>
-.detail-header-info__primary-family-meta {
-  margin-left: 4px;
-  font-size: var(--el-font-size-small);
-  color: var(--el-text-color-secondary);
-  white-space: nowrap;
-}
-
-.customer-detail-tab-panels :deep(.el-tabs__header) {
-  display: none;
-}
-
-.customer-detail-tab-panels :deep(.el-tabs__content) {
-  padding-top: 16px;
-}
-</style>
+<style scoped lang="scss" src="./CustomerDetailView.scoped.scss"></style>

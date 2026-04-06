@@ -1,5 +1,5 @@
 /**
- * 客户详情可追溯性短规则：`el-collapse` 展开长文案与 `router.push` 深链（Vitest）。
+ * 客户详情可追溯性提示：单行摘要、Popover 长说明与深链 `router.push`（Vitest）。
  */
 import { flushPromises, mount } from '@vue/test-utils'
 import ElementPlus from 'element-plus'
@@ -43,6 +43,8 @@ type HintMountOpts = {
   permissions: string[]
   routeQuery?: Record<string, string>
   spyPush?: boolean
+  density?: 'default' | 'compact'
+  variant?: 'default' | 'expandable-panel'
 }
 
 /**
@@ -75,6 +77,10 @@ async function mountTraceabilityHint(
     : null
 
   const wrapper = mount(CustomerDetailTraceabilityHint, {
+    props: {
+      density: opts.density ?? 'default',
+      variant: opts.variant ?? 'default',
+    },
     attachTo: document.body,
     global: {
       plugins: [pinia, router, i18n, ElementPlus],
@@ -144,22 +150,68 @@ describe('CustomerDetailTraceabilityHint — summary & permissions', () => {
 
     wrapper.unmount()
   })
+
+  it('density=compact 时使用页眉短摘要（含签证分工）', async () => {
+    const { wrapper } = await mountTraceabilityHint({
+      permissions: [P.VISA_CASE_LIST],
+      density: 'compact',
+    })
+
+    expect(document.body.textContent ?? '').toContain(
+      String(
+        i18n.global.t(
+          'detailViews.customer.traceabilityHint.summaryLineHeaderCompactWithVisa',
+        ),
+      ),
+    )
+    expect(wrapper.find('.customer-detail-traceability-hint--compact').exists()).toBe(
+      true,
+    )
+
+    wrapper.unmount()
+  })
 })
 
-describe('CustomerDetailTraceabilityHint — collapse expanded body', () => {
-  it('展开后展示长说明正文（含签证分支）', async () => {
+describe('CustomerDetailTraceabilityHint — expandable panel', () => {
+  it('variant=expandable-panel 时直接展示长说明正文且不渲染 Popover 触发按钮', async () => {
+    const { wrapper } = await mountTraceabilityHint({
+      permissions: [P.VISA_CASE_DETAIL],
+      variant: 'expandable-panel',
+    })
+
+    expect(wrapper.find('.customer-detail-traceability-hint--expandable-panel').exists()).toBe(
+      true,
+    )
+    expect(document.body.textContent ?? '').toContain(
+      String(i18n.global.t('detailViews.customer.traceabilityHint.detailExpandedWithVisa')),
+    )
+
+    const triggerLabel = String(
+      i18n.global.t('detailViews.customer.traceabilityHint.rulesPopoverTrigger'),
+    )
+    const popoverBtn = wrapper
+      .findAll('button')
+      .find((b) => (b.text() ?? '').trim() === triggerLabel)
+    expect(popoverBtn).toBeUndefined()
+
+    wrapper.unmount()
+  })
+})
+
+describe('CustomerDetailTraceabilityHint — rules popover', () => {
+  it('点击「详细说明」后在浮层中展示长说明正文（含签证分支）', async () => {
     const { wrapper } = await mountTraceabilityHint({
       permissions: [P.VISA_CASE_DETAIL],
     })
 
-    const expandLabel = String(
-      i18n.global.t('detailViews.customer.traceabilityHint.expandRulesLabel'),
+    const triggerLabel = String(
+      i18n.global.t('detailViews.customer.traceabilityHint.rulesPopoverTrigger'),
     )
-    const header = wrapper
-      .findAll('.el-collapse-item__header')
-      .find((el) => (el.text() ?? '').includes(expandLabel))
-    expect(header).toBeTruthy()
-    await header!.trigger('click')
+    const popoverBtn = wrapper
+      .findAll('button')
+      .find((b) => (b.text() ?? '').includes(triggerLabel))
+    expect(popoverBtn).toBeTruthy()
+    await popoverBtn!.trigger('click')
     await flushPromises()
 
     expect(document.body.textContent ?? '').toContain(
@@ -169,19 +221,19 @@ describe('CustomerDetailTraceabilityHint — collapse expanded body', () => {
     wrapper.unmount()
   })
 
-  it('无签证域权限时展开后展示无签证版长说明', async () => {
+  it('无签证域权限时 Popover 内为无签证版长说明', async () => {
     const { wrapper } = await mountTraceabilityHint({
       permissions: [P.CUSTOMER_DETAIL],
     })
 
-    const expandLabel = String(
-      i18n.global.t('detailViews.customer.traceabilityHint.expandRulesLabel'),
+    const triggerLabel = String(
+      i18n.global.t('detailViews.customer.traceabilityHint.rulesPopoverTrigger'),
     )
-    const header = wrapper
-      .findAll('.el-collapse-item__header')
-      .find((el) => (el.text() ?? '').includes(expandLabel))
-    expect(header).toBeTruthy()
-    await header!.trigger('click')
+    const popoverBtn = wrapper
+      .findAll('button')
+      .find((b) => (b.text() ?? '').includes(triggerLabel))
+    expect(popoverBtn).toBeTruthy()
+    await popoverBtn!.trigger('click')
     await flushPromises()
 
     expect(document.body.textContent ?? '').toContain(

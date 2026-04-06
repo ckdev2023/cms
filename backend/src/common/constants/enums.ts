@@ -201,6 +201,8 @@ export enum VisaCaseFeeStatus {
  * 签证案件申请类目推荐取值（对应 `visa_cases.case_type` 常用编码）。
  *
  * 库字段仍为 varchar：历史自由文本、导入值及未列入本枚举的自定义文本均合法；与 `docs/17` §10.4、`visa_case_application_type` 字典同步维护。
+ * 每增删枚举值时须同步：`seeds/seed-material-templates.data.ts`（默认材料模板）、
+ * `modules/system/dictionary.controller.ts`（`visa_case_application_type` 标签）、前端 `constants/enums.ts`。
  */
 export enum VisaCaseApplicationCategory {
   PR = 'PR',

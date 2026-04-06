@@ -1,14 +1,237 @@
-/* 抽屉 teleports 到 body，宽度与动效需非 scoped 才能稳定命中根节点 */
+/**
+ * 客户新建/编辑抽屉 teleports 到 body：Apple HIG 参考 design/apple/DESIGN.md
+ * — 令牌、抽屉头尾、表单控件（含子列/随附家属内嵌字段）在此集中命中。
+ */
 .customer-form-dialog.el-drawer.rtl,
 .customer-form-dialog.el-drawer.ltr {
   width: min(960px, 100vw) !important;
 }
 
+.customer-form-dialog.el-drawer {
+  --apple-black: #1d1d1f;
+  --apple-blue: #0071e3;
+  --apple-blue-hover: #0077ed;
+  --apple-light-gray: #f5f5f7;
+  --apple-filter-bg: #fafafc;
+  --apple-gray-48: rgba(0, 0, 0, 0.48);
+  --apple-gray-80: rgba(0, 0, 0, 0.8);
+  --apple-border-subtle: rgba(0, 0, 0, 0.08);
+  --apple-font-text: -apple-system, blinkmacsystemfont, 'SF Pro Text', 'Helvetica Neue', helvetica, arial, sans-serif;
+  --apple-font-display: -apple-system, blinkmacsystemfont, 'SF Pro Display', 'Helvetica Neue', helvetica, arial, sans-serif;
+  --apple-card-shadow: rgba(0, 0, 0, 0.22) 3px 5px 30px 0;
+
+  --el-drawer-bg-color: #fff;
+  font-family: var(--apple-font-text);
+  letter-spacing: -0.224px;
+}
+
+.customer-form-dialog.el-drawer .el-drawer__header {
+  margin-bottom: 0;
+  padding: 22px 32px 18px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.customer-form-dialog.el-drawer .el-drawer__title {
+  font-family: var(--apple-font-display);
+  font-size: 21px;
+  font-weight: 600;
+  line-height: 1.19;
+  color: var(--apple-black);
+  letter-spacing: 0.231px;
+}
+
+.customer-form-dialog.el-drawer .el-drawer__close-btn {
+  margin-right: 0;
+  border-radius: 50%;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.06);
+  }
+
+  .el-icon {
+    color: var(--apple-gray-48);
+    font-size: 18px;
+  }
+}
+
 .customer-form-dialog.el-drawer .el-drawer__body {
   min-height: 0;
-  padding: 12px 20px 16px;
+  padding: 24px 32px 28px;
   overflow-y: auto;
   scrollbar-gutter: stable;
+  color: var(--apple-black);
+  background: var(--apple-light-gray);
+}
+
+.customer-form-dialog.el-drawer .el-drawer__footer {
+  padding: 20px 32px 24px;
+  margin: 0;
+  background: #fff;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+/* ---------- 子组件内扩展列标题（Personal / Company / 随附家属） ---------- */
+.customer-form-dialog.el-drawer .customer-form-dialog__extension-title {
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  font-family: var(--apple-font-display);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.29;
+  color: var(--apple-black);
+  letter-spacing: -0.12px;
+  min-height: 0;
+}
+
+.customer-form-dialog.el-drawer .customer-form-dialog__extension-title.is-inactive {
+  color: var(--apple-gray-48);
+  font-weight: 500;
+}
+
+/* ---------- 随附家属表格外壳 ---------- */
+.customer-form-dialog.el-drawer .customer-accompanying-family__table {
+  padding: 16px 18px 14px;
+  border-radius: 12px;
+  background-color: var(--apple-filter-bg);
+  border: 1px solid var(--apple-border-subtle);
+}
+
+.customer-form-dialog.el-drawer .customer-accompanying-family__head {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: -0.12px;
+  color: var(--apple-gray-80);
+}
+
+@media (max-width: 768px) {
+  .customer-form-dialog.el-drawer .customer-accompanying-family__row {
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+}
+
+/* ---------- 表单控件（整抽屉内 el-form 后代） ---------- */
+.customer-form-dialog.el-drawer .customer-form-drawer__form .el-form-item {
+  margin-bottom: 18px;
+}
+
+.customer-form-dialog.el-drawer .customer-form-drawer__form .el-form-item__label {
+  padding-right: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.29;
+  color: var(--apple-black);
+  letter-spacing: -0.224px;
+}
+
+.customer-form-dialog.el-drawer .customer-form-drawer__form .el-form-item__error {
+  padding-top: 4px;
+  font-size: 12px;
+  letter-spacing: -0.12px;
+}
+
+.customer-form-dialog.el-drawer .customer-form-drawer__form .el-input__wrapper {
+  min-height: 44px;
+  padding: 8px 14px;
+  background-color: var(--apple-filter-bg) !important;
+  border: 1px solid var(--apple-border-subtle) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: rgba(0, 0, 0, 0.12) !important;
+  }
+
+  &.is-focus {
+    border-color: var(--apple-blue) !important;
+    box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.22) !important;
+  }
+}
+
+.customer-form-dialog.el-drawer .customer-form-drawer__form .el-textarea__inner {
+  padding: 12px 14px;
+  font-size: 15px;
+  line-height: 1.47;
+  letter-spacing: -0.224px;
+  background-color: var(--apple-filter-bg) !important;
+  border: 1px solid var(--apple-border-subtle) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    border-color: rgba(0, 0, 0, 0.12) !important;
+  }
+
+  &:focus {
+    border-color: var(--apple-blue) !important;
+    box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.22) !important;
+  }
+}
+
+.customer-form-dialog.el-drawer .customer-form-drawer__form .el-input__count {
+  font-size: 12px;
+  color: var(--apple-gray-48);
+  letter-spacing: -0.12px;
+  background: transparent !important;
+}
+
+.customer-form-dialog.el-drawer .customer-form-drawer__form .el-select .el-select__wrapper {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 8px 14px;
+  line-height: 1.29;
+  background-color: var(--apple-filter-bg) !important;
+  border: 1px solid var(--apple-border-subtle) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &.is-hovering:not(.is-focused) {
+    border-color: rgba(0, 0, 0, 0.12) !important;
+    box-shadow: none !important;
+  }
+
+  &.is-focused {
+    border-color: var(--apple-blue) !important;
+    box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.22) !important;
+  }
+}
+
+.customer-form-dialog.el-drawer .customer-form-drawer__form .el-date-editor.el-input__wrapper {
+  min-height: 44px;
+  padding: 4px 14px;
+  background-color: var(--apple-filter-bg) !important;
+  border: 1px solid var(--apple-border-subtle) !important;
+  border-radius: 10px !important;
+  box-shadow: none !important;
+
+  &:hover {
+    border-color: rgba(0, 0, 0, 0.12) !important;
+  }
+
+  &.is-focus {
+    border-color: var(--apple-blue) !important;
+    box-shadow: 0 0 0 2px rgba(0, 113, 227, 0.22) !important;
+  }
+}
+
+.customer-form-dialog.el-drawer .customer-form-drawer__form .el-input-number .el-input__wrapper {
+  min-height: 44px;
+}
+
+/* 表内嵌套（随附家属行） */
+.customer-form-dialog.el-drawer .customer-accompanying-family__table .el-input__wrapper,
+.customer-form-dialog.el-drawer .customer-accompanying-family__table .el-select .el-select__wrapper {
+  min-height: 40px;
 }
 
 @media (prefers-reduced-motion: reduce) {

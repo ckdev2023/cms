@@ -9,6 +9,7 @@ import { getUsers } from '@/api/system'
 import {
   addFamilyMember as addFamilyMemberApi,
   getFamilyMembers,
+  getVisaCaseMaterialSummary,
   removeFamilyMember as removeFamilyMemberApi,
   updateFamilyMember as updateFamilyMemberApi,
 } from '@/api/visa-case'
@@ -32,9 +33,11 @@ import type { CustomerItem } from '@/types/customer'
 import type { SystemUser } from '@/types/system'
 import type {
   UpdateVisaCaseParams,
+  VisaCaseEditSubmitPayload,
   VisaCaseFamilyMemberItem,
   VisaCaseItem,
 } from '@/types/visa-case'
+import { isVisaCaseTypeChanging } from '@/utils/visa-case-type-change-materials'
 import { formatVisaCaseTypeDisplay } from '@/utils/visa-case-type-display'
 
 import type { SelectOption } from './visa-case-wizard/types'
@@ -86,11 +89,14 @@ const props = defineProps<Props>()
 
 const emit = defineEmits<{
   'update:visible': [value: boolean]
-  submit: [payload: UpdateVisaCaseParams]
+  submit: [payload: VisaCaseEditSubmitPayload]
   membersChanged: []
 }>()
 
 const { t } = useI18n({ useScope: 'global' })
+
+/** 拉取材料摘要或确认框展示期间，用于禁用重复点击确定。 */
+const preflightSubmitting = ref(false)
 
 const staffOptions = ref<StaffOption[]>([])
 const customerOptions = ref<CustomerOption[]>([])
@@ -539,9 +545,63 @@ function buildSubmitPayload(): UpdateVisaCaseParams {
 
 /**
  * 提交当前对话框内的签证案件表单数据，并交由父组件完成接口调用。
+ *
+ * 编辑模式下若案件类型将变更且该案已有材料行，先弹出确认说明将按新类型模板重建清单；取消则恢复案件类型下拉为打开对话框时的值。
  */
-function handleSubmit(): void {
-  emit('submit', buildSubmitPayload())
+async function handleSubmit(): Promise<void> {
+  const payload = buildSubmitPayload()
+
+  if (!props.isEditing || !props.initialValue?.id) {
+    emit('submit', payload)
+    return
+  }
+
+  if (!isVisaCaseTypeChanging(props.initialValue.caseType, form.caseType)) {
+    emit('submit', payload)
+    return
+  }
+
+  preflightSubmitting.value = true
+  try {
+    let materialTotal = 0
+    try {
+      const summaryRes = await getVisaCaseMaterialSummary(props.initialValue.id)
+      materialTotal = summaryRes.data?.total ?? 0
+    } catch {
+      ElMessage.warning(
+        t('detailViews.customer.visaCasesTab.caseTypeChangeMaterialsSummaryFailed'),
+      )
+      return
+    }
+
+    if (materialTotal <= 0) {
+      emit('submit', payload)
+      return
+    }
+
+    try {
+      await ElMessageBox.confirm(
+        t('detailViews.customer.visaCasesTab.caseTypeChangeMaterialsConfirmBody'),
+        t('detailViews.customer.visaCasesTab.caseTypeChangeMaterialsConfirmTitle'),
+        {
+          type: 'warning',
+          distinguishCancelAndClose: true,
+          confirmButtonText: t('common.confirm'),
+          cancelButtonText: t('common.cancel'),
+        },
+      )
+    } catch (e) {
+      if (e === 'cancel' || e === 'close') {
+        form.caseType = coalesceVisaCaseString(props.initialValue.caseType)
+        return
+      }
+      throw e
+    }
+
+    emit('submit', { ...payload, reinitializeMaterialsAfterSave: true })
+  } finally {
+    preflightSubmitting.value = false
+  }
 }
 </script>
 
@@ -903,7 +963,11 @@ function handleSubmit(): void {
       <el-button @click="closeDialog">
         {{ t('common.cancel') }}
       </el-button>
-      <el-button type="primary" :loading="props.submitting" @click="handleSubmit">
+      <el-button
+        type="primary"
+        :loading="props.submitting || preflightSubmitting"
+        @click="handleSubmit"
+      >
         {{ t('common.confirm') }}
       </el-button>
     </template>

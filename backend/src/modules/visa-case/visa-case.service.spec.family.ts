@@ -5,6 +5,7 @@ import type { ContextAccessor } from './visa-case.service.spec-helpers';
 import {
   buildFamilyMember,
   buildPrimaryApplicantMember,
+  buildVisaCaseRecord,
   MOCK_VISA_CASE_SCOPE_ROW,
 } from './visa-case.service.spec-helpers';
 
@@ -91,7 +92,9 @@ async function runAddNonPrimaryFamilyMember(
   getContext: ContextAccessor,
 ): Promise<void> {
   const { service, visaCaseRepo, familyMemberRepo } = getContext();
-  visaCaseRepo.findOne.mockResolvedValueOnce(MOCK_VISA_CASE_SCOPE_ROW);
+  visaCaseRepo.findOne
+    .mockResolvedValueOnce(MOCK_VISA_CASE_SCOPE_ROW)
+    .mockResolvedValueOnce(buildVisaCaseRecord({ id: 'vc-1', caseType: null }));
   visaCaseRepo.count.mockResolvedValue(1);
 
   const saved = buildFamilyMember();
@@ -119,7 +122,9 @@ async function runAddFamilyMemberClearsPrimary(
   getContext: ContextAccessor,
 ): Promise<void> {
   const { service, visaCaseRepo, familyMemberRepo } = getContext();
-  visaCaseRepo.findOne.mockResolvedValueOnce(MOCK_VISA_CASE_SCOPE_ROW);
+  visaCaseRepo.findOne
+    .mockResolvedValueOnce(MOCK_VISA_CASE_SCOPE_ROW)
+    .mockResolvedValueOnce(buildVisaCaseRecord({ id: 'vc-1', caseType: null }));
   visaCaseRepo.count.mockResolvedValue(1);
 
   const existingPrimary = buildPrimaryApplicantMember();

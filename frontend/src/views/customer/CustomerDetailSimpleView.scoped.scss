@@ -1,0 +1,322 @@
+/**
+ * CustomerDetailSimpleView — Stitch 视觉基线（scoped）
+ *
+ * 对照来源（验收时请并排 Stitch 截图 + 导出 HTML）：
+ * - Stitch 项目：10718222335218430760
+ * - 屏 resource：`projects/10718222335218430760/screens/3ad2e5073e074040abea61209f189b3b`
+ * - 标题：「优化跟进记录时间线 - 签证客户中心」
+ * - 导出画布：2560×3130（DESKTOP），主内容区在 `<main>` 内、**不含**应用壳侧栏（本页实现沿用现有 layout，只对齐主栏度量）
+ * - 主栏宽度：`PageDetail` 启用 `bleedMain` 抵消 `el-main` 左右 padding；本页内容区 `width:100%`，不再 `max-width` 居中收窄
+ * - 视觉字色与字栈对齐仓库 `design/apple`（`DESIGN.md` / `preview.html`）；SF Pro 以系统栈 + Inter 近似
+ * - 交互控件（按钮/区块图标强调色）对齐 `design/airbnb`（`DESIGN.md` / `preview.html`）：近黑主按钮、Legal Blue 链色、8px 圆角与 hover 浮起阴影
+ *
+ * ---------------------------------------------------------------------------
+ * 走查说明（visual QA cheat sheet）
+ *
+ * | 度量项 | Stitch 导出依据（Tailwind class → 换算 16px 基准） | 本文件变量 |
+ * |--------|---------------------------------------------------|------------|
+ * | 主栏最大宽 | 占满主内容可视宽 | `--cds-simple-content-max-width: none` |
+ * | 主栏水平/顶底内边距 | `p-8` → 2rem | `--cds-simple-page-padding-x` / `-y` |
+ * | Hero 与下方栅格间距 | section `mb-8` → 2rem | `--cds-simple-stack-after-hero` |
+ * | 栅格槽、左栏卡片互距 | `gap-8` / `space-y-8` → 2rem | `--cds-simple-section-gap`（列向）；行向见 `--cds-simple-two-col-row-gap` |
+ * | 卡片圆角 | `rounded-xl`（theme extend `0.5rem`） | `--cds-simple-radius-card` |
+ * | 卡片内边距 | `p-6` → 1.5rem | `--cds-simple-card-padding` |
+ * | Hero 内边距 | `p-8` | `--cds-simple-hero-padding` |
+ * | Hero 主信息区间距 | `gap-6` → 1.5rem | `--cds-simple-hero-gap` |
+ * | 卡片标题行与正文间距 | 标题行容器 `mb-6` → 1.5rem | `--cds-simple-card-header-margin-bottom` |
+ * | 小圆角（行内块、pill） | `rounded-lg`（extend `0.25rem`） | `--cds-simple-radius-control` |
+ * | 头像占位 | `w-20 h-20` + `rounded-2xl`（Tailwind 默认 1rem） | `--cds-simple-hero-avatar-size` / `--cds-simple-radius-hero-avatar` |
+ * | 字阶：客户姓名 | 加大一档（约 1.75rem / 28px） | `--cds-simple-text-hero-name` |
+ * | 字阶：区块标题 h3 | 约 1.375rem / 22px | `--cds-simple-text-section-title` |
+ * | 字阶：正文/字段值 | 对齐 Apple 正文约 17px | `--cds-simple-text-body` |
+ * | 字阶：标签/辅助 | 约 15px | `--cds-simple-text-caption` |
+ * | 字阶：徽标/极小号 | 约 13px | `--cds-simple-text-micro` |
+ * | 卡片边 | `border` + `border-outline-variant/10` | `--cds-simple-card-border` |
+ * | 轻阴影 | `shadow-sm`（Tailwind 默认） | `--cds-simple-shadow-card` |
+ *
+ * 色板与主色：以 `design/apple` 浅色区为准（页底 `#f5f5f7`、主文 `#1d1d1f`、交互 `#0071e3`）；卡片可用轻描边替代 Material outline。
+ * ---------------------------------------------------------------------------
+ */
+
+.customer-detail-simple {
+  /* 避免嵌入 flex 主栏（如 `el-main`）时子项 min-width:auto 撑出横向滚动 */
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+
+  /* --- Layout / rhythm（占满主栏；水平留白仅 `--cds-simple-page-padding-x`）--- */
+  --cds-simple-content-max-width: none;
+  --cds-simple-page-padding-x: clamp(1.25rem, 2.5vw, 2rem);
+  --cds-simple-page-padding-y: clamp(1.25rem, 2vw, 2rem);
+  --cds-simple-section-gap: 2.25rem;
+  /* 双栏主区「行」间距（上/下两排卡片之间）：略小于列间距，减轻基本信息与家庭成员间灰带 */
+  --cds-simple-two-col-row-gap: clamp(1rem, 1.35vw, 1.375rem);
+  --cds-simple-stack-after-hero: 2.25rem;
+
+  /* --- Card / hero shell（`design/apple`：按钮/卡片 8px 圆角）--- */
+  --cds-simple-radius-card: 0.5rem; /* 8px */
+  --cds-simple-radius-control: 0.25rem; /* 4px */
+  --cds-simple-radius-hero-avatar: 1rem;
+  --cds-simple-hero-avatar-size: 5rem; /* 80px，与 Hero `el-avatar` :size 一致（紧凑顶区） */
+  --cds-simple-card-padding: 1.75rem;
+  --cds-simple-hero-padding: 2.25rem;
+  --cds-simple-hero-gap: 1.75rem;
+  --cds-simple-card-header-margin-bottom: 1.75rem;
+
+  /* --- Typography（在 Apple 字栈上整体放大一档，正文对齐约 17px）--- */
+  --cds-simple-font-headline: Inter, -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue',
+    Helvetica, Arial, sans-serif;
+  --cds-simple-font-body: Inter, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', Helvetica,
+    Arial, sans-serif;
+  --cds-simple-text-hero-name: 1.75rem; /* 28px */
+  --cds-simple-weight-hero-name: 600;
+  --cds-simple-text-section-title: 1.375rem; /* 22px */
+  --cds-simple-weight-section-title: 600;
+  --cds-simple-text-body: 1.0625rem; /* 17px */
+  --cds-simple-text-caption: 0.9375rem; /* 15px */
+  --cds-simple-text-micro: 0.8125rem; /* 13px */
+  --cds-simple-line-tight: 1.2;
+  --cds-simple-line-body: 1.5;
+
+  /* --- Surfaces & borders（Apple 浅色区）--- */
+  --cds-simple-color-background: #f5f5f7;
+  --cds-simple-color-surface: #ffffff;
+  --cds-simple-color-surface-low: #fafafc;
+  --cds-simple-color-on-surface: #222222;
+  --cds-simple-color-on-surface-variant: #6a6a6a;
+  /* 进度条、卡片标题旁图标、链式强调：Airbnb Legal Blue（与 EP `--el-color-primary` 解耦） */
+  --cds-simple-color-primary: #428bff;
+  --cds-simple-color-outline-variant: #c1c1c1;
+  --cds-simple-card-border: 1px solid rgba(0, 0, 0, 0.06);
+
+  /**
+   * Apple HIG 文本操作分层（`design/apple/DESIGN.md`）：与 `--el-color-primary` 近黑解耦，避免 Hero/卡片链式按钮同色糊成一团。
+   * - 编辑：近黑主文
+   * - 分享：Link Blue
+   * - 添加随访：Apple Blue（主 CTA）
+   * - 资料路径「管理路径」：弱化中性（介于 Black 48% / 80%）
+   */
+  --cds-simple-apple-label: #1d1d1f;
+  --cds-simple-apple-blue: #0071e3;
+  --cds-simple-apple-blue-hover: #0077ed;
+  --cds-simple-apple-link-blue: #0066cc;
+  --cds-simple-apple-link-blue-hover: #0054b3;
+  --cds-simple-apple-link-tint-hover: rgba(0, 102, 204, 0.08);
+  --cds-simple-apple-cta-tint-hover: rgba(0, 113, 227, 0.1);
+  --cds-simple-apple-muted-action: rgba(0, 0, 0, 0.56);
+  --cds-simple-apple-muted-action-hover: rgba(0, 0, 0, 0.72);
+
+  /* --- Airbnb 控件 token（design/airbnb/preview.html）--- */
+  --cds-simple-ab-near-black: #222222;
+  --cds-simple-ab-legal-blue: #428bff;
+  --cds-simple-ab-surface-control: #f2f2f2;
+  --cds-simple-ab-shadow-hover: rgba(0, 0, 0, 0.08) 0 4px 12px;
+  --cds-simple-ab-radius-button: 8px;
+  --cds-simple-ab-icon-in-button: 1rem;
+  --cds-simple-ab-icon-inline: 1.125rem;
+
+  /* --- Elevation：卡片用 Airbnb 三层轻抬升；主色 glow 随链色收敛 --- */
+  --cds-simple-shadow-card: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px,
+    rgba(0, 0, 0, 0.1) 0 4px 8px;
+  --cds-simple-shadow-primary-glow: 0 8px 20px -6px rgba(66, 139, 255, 0.35);
+
+  /* Element Plus 主色：近黑实心/文本主按钮（链色由 `--cds-simple-color-primary` 与 is-link 规则承担） */
+  --el-color-primary: #222222;
+
+  /* 与 `app-bg-page` 区分时整页统一铺底，避免仅中间一条有 Stitch 灰底、两侧露默认主色 */
+  background: var(--cds-simple-color-background);
+
+  /* --- Optional: inner stacks (family rows, path rows) --- */
+  --cds-simple-stack-inner-sm: 0.875rem;
+  --cds-simple-stack-inner-xs: 0.5rem;
+}
+
+/**
+ * 窄屏：压缩页内边距与区块间距，保持纵向堆叠；具体块内横向溢出由各卡片 `overflow-x: auto` 处理。
+ */
+@media (max-width: 768px) {
+  .customer-detail-simple {
+    --cds-simple-page-padding-x: 1rem;
+    --cds-simple-page-padding-y: 1rem;
+    --cds-simple-section-gap: 1.25rem;
+    --cds-simple-two-col-row-gap: 0.875rem;
+    --cds-simple-stack-after-hero: 1.25rem;
+  }
+}
+
+@media (max-width: 420px) {
+  .customer-detail-simple {
+    --cds-simple-page-padding-x: 0.75rem;
+    --cds-simple-page-padding-y: 0.75rem;
+    --cds-simple-section-gap: 1rem;
+    --cds-simple-two-col-row-gap: 0.75rem;
+    --cds-simple-stack-after-hero: 1rem;
+    --cds-simple-card-padding: 1rem;
+    --cds-simple-hero-padding: 1rem;
+  }
+}
+
+/* --- Shell layout：Hero 全宽 + 下方 5/7 双栏（对齐 Stitch 桌面栅格；窄屏纵向堆叠）--- */
+.customer-detail-simple__main {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  max-width: var(--cds-simple-content-max-width);
+  margin-inline: 0;
+  padding: var(--cds-simple-page-padding-y) var(--cds-simple-page-padding-x);
+  background: transparent;
+  min-height: min(60vh, 720px);
+  font-family: var(--cds-simple-font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+.customer-detail-simple__state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--cds-simple-section-gap);
+}
+
+.customer-detail-simple__state--with-toolbar {
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--cds-simple-stack-inner-sm);
+}
+
+.customer-detail-simple__toolbar-back {
+  align-self: flex-start;
+}
+
+.customer-detail-simple__stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-simple-stack-after-hero);
+}
+
+.customer-detail-simple__two-col {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-simple-two-col-row-gap);
+  min-width: 0;
+}
+
+.customer-detail-simple__cell-basic {
+  box-sizing: border-box;
+  min-width: 0;
+  order: 1;
+}
+
+.customer-detail-simple__cell-left-lower {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--cds-simple-two-col-row-gap);
+  min-width: 0;
+  order: 2;
+}
+
+.customer-detail-simple__cell-paths {
+  box-sizing: border-box;
+  min-width: 0;
+  order: 3;
+}
+
+.customer-detail-simple__cell-logs {
+  box-sizing: border-box;
+  min-width: 0;
+  order: 4;
+}
+
+@media (min-width: 992px) {
+  .customer-detail-simple__two-col {
+    display: grid;
+    /* 首行两卡等高：`cell-basic` / `cell-paths` 单独 `stretch`；次行仍 `start` 避免短卡被对侧撑出底部灰带 */
+    grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
+    grid-template-rows: auto auto;
+    column-gap: var(--cds-simple-section-gap);
+    row-gap: var(--cds-simple-two-col-row-gap);
+    align-items: start;
+  }
+
+  .customer-detail-simple__cell-basic {
+    grid-column: 1;
+    grid-row: 1;
+    order: unset;
+    align-self: stretch;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .customer-detail-simple__cell-paths {
+    grid-column: 2;
+    grid-row: 1;
+    order: unset;
+    align-self: stretch;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  /**
+   * 首行栅格等高：区块卡壳与 body 纵向 flex，子卡（基本信息 / 路径）`flex:1` 吃满剩余高度；
+   * 基本信息卡内页脚 `margin-top:auto` 贴底，避免折叠态下块中空。
+   */
+  .customer-detail-simple__cell-basic :deep(.customer-simple-section-card),
+  .customer-detail-simple__cell-paths :deep(.customer-simple-section-card) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .customer-detail-simple__cell-basic :deep(.customer-simple-section-card__body),
+  .customer-detail-simple__cell-paths :deep(.customer-simple-section-card__body) {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .customer-detail-simple__cell-left-lower {
+    grid-column: 1;
+    grid-row: 2;
+    order: unset;
+  }
+
+  .customer-detail-simple__cell-logs {
+    grid-column: 2;
+    grid-row: 2;
+    order: unset;
+  }
+}
+
+.customer-detail-simple__placeholder-card {
+  box-sizing: border-box;
+  background: var(--cds-simple-color-surface);
+  border: var(--cds-simple-card-border);
+  border-radius: var(--cds-simple-radius-card);
+  box-shadow: var(--cds-simple-shadow-card);
+  padding: var(--cds-simple-card-padding);
+}
+
+.customer-detail-simple__placeholder-title {
+  margin: 0;
+  font-family: var(--cds-simple-font-headline), system-ui, sans-serif;
+  font-size: var(--cds-simple-text-section-title);
+  font-weight: var(--cds-simple-weight-section-title);
+  line-height: var(--cds-simple-line-tight);
+  color: var(--cds-simple-color-on-surface);
+}
+
+.customer-detail-simple__placeholder-body {
+  margin: var(--cds-simple-card-header-margin-bottom) 0 0;
+  font-family: var(--cds-simple-font-body), system-ui, sans-serif;
+  font-size: var(--cds-simple-text-body);
+  font-weight: 400;
+  line-height: var(--cds-simple-line-body);
+  color: var(--cds-simple-color-on-surface-variant);
+}

@@ -1,4 +1,4 @@
-import type { AppMessageSchema } from './ja'
+import type { AppMessageSchema } from "./ja";
 
 const zhCNMessages = {
   app: {
@@ -84,6 +84,7 @@ const zhCNMessages = {
     residenceReminders: "在留到期（客户档案）",
     residenceRemindersMenuSubtitle: "基本资料在留期限 · 与签证提醒分开",
     customerDetail: "客户详情",
+    customerDetailSimple: "客户详情（简化版）",
     visaRemindersMenuSubtitle: "主路径 · 签证案件聚合",
     visaCaseRegistryMenuSubtitle: "主路径 · 跨客户案件",
     visaCaseImportMenuSubtitle: "工具 · 历史数据导入",
@@ -119,6 +120,7 @@ const zhCNMessages = {
     auditLogs: "操作日志",
     loginLogs: "登录日志",
     exportLogs: "导出日志",
+    materialTemplates: "材料模板",
     notFound: "页面不存在",
   },
   layout: {
@@ -139,8 +141,10 @@ const zhCNMessages = {
       "行政书士负责的在留・入管等手续案件列表；数据与签证案件分开管理。需有行政案件查看权限。",
     menuResidenceRemindersTooltip:
       "按客户基本信息里登记的在留到期日筛选列表，便于主动联系、确认是否要更新在留。与「签证提醒」里按具体签证案件汇总的期限是两套数据，不会自动一致，请两边都核对。需要具备客户列表的查看权限。",
-    customerCenterHubModeAria: "客户中心工作模式（今日待办 / 客户与签证案件 / 导入与行政案件）",
-    customerCenterSidebarNavAria: "客户中心分组导航（今日待办、客户与签证案件、导入与行政案件）",
+    customerCenterHubModeAria:
+      "客户中心工作模式（今日待办 / 客户与签证案件 / 导入与行政案件）",
+    customerCenterSidebarNavAria:
+      "客户中心分组导航（今日待办、客户与签证案件、导入与行政案件）",
     customerCenterGroup: {
       todayOps: "今日待办",
       master: "客户与签证案件",
@@ -293,7 +297,7 @@ const zhCNMessages = {
       listPrimaryMaterialChecklistTooltip:
         "checklist：已收 {collected}/{applicable}（适用项）；持久化摘要：{persisted}；checklist 建议：{suggested}",
       listPrimaryMaterialChecklistOutOfSyncTooltip:
-        "checklist 推导的材料摘要与案件表持久化值不一致，请在客户详情「签证域 → 材料清单」中点击「同步状态」。",
+        "checklist 推导的材料摘要与案件表持久化值不一致，请在客户详情「签证管理 → 材料清单」中点击「同步状态」。",
       listPrimaryMaterialSyncHint: "待同步",
       listPrimaryMaterialPersistedUnset: "未设",
       listPrimaryVisaCaseStatusFilter: "主案件状态（摘要）",
@@ -303,7 +307,8 @@ const zhCNMessages = {
       listPrimaryFamilyLinkModeFilter: "主案件·主申模式",
       familyCaseShortTag: "家族",
       searchFilterGroupCustomer: "客户主档",
-      searchFilterGroupCustomerHint: "类型、服务与主档状态；关键词请使用顶部搜索栏。",
+      searchFilterGroupCustomerHint:
+        "类型、服务与主档状态；关键词请使用顶部搜索栏。",
       searchFilterGroupVisaCase: "主签证案件（列表行摘要）",
       searchFilterGroupAlert: "在留与提醒",
       searchFilterMore: "更多条件（类目·家族签·主申）",
@@ -354,9 +359,11 @@ const zhCNMessages = {
       kpiNoBucketFilterPending:
         "「其他在办」为未归入四类提醒的在办案件统计；提醒列表暂不支持按此项单独筛选。请用案件登记册或 KPI 的「全部」浏览列表。",
       /** 未指派 MVP chip：`aria-label` */
-      kpiUnassignedChipAria: "未指派 {count} 件，点击查看列表暂不支持按未指派筛选的说明",
+      kpiUnassignedChipAria:
+        "未指派 {count} 件，点击查看列表暂不支持按未指派筛选的说明",
       /** 「其他在办」chip：`aria-label`（与列表筛选项未对齐） */
-      kpiNoBucketChipAria: "其他在办 {count} 件，点击查看列表暂不支持按该项单独筛选的说明",
+      kpiNoBucketChipAria:
+        "其他在办 {count} 件，点击查看列表暂不支持按该项单独筛选的说明",
       /** 未指派 MVP：点击后 `ElMessage` 正文（与路由/API 未打通一致） */
       kpiUnassignedMvpToast:
         "提醒列表当前仅支持按负责人 UUID 筛选，不支持「仅未指派」。该数字为工作台统计参考；后续若在接口或地址栏 query 中提供未指派条件，将与下方列表联动。",
@@ -402,7 +409,8 @@ const zhCNMessages = {
       actionWriteCaseLog: "写日志",
       emptyWorkbenchScopeHintMine:
         "当前范围内暂无提醒类待办；数字为 0 属正常。若有在办案件，可看上方「未归入四类提醒」或到登记册筛选。",
-      emptyWorkbenchScopeHintTeam: "当前团队范围内暂无提醒预览，数字为 0 属正常。",
+      emptyWorkbenchScopeHintTeam:
+        "当前团队范围内暂无提醒预览，数字为 0 属正常。",
       emptyWorkbenchScopeHintAll: "当前范围内暂无提醒预览，数字为 0 属正常。",
       /** 提醒页、登记册页「相关入口」折叠内一行说明（与工作台页无关） */
       relatedEntryLinksHint:
@@ -450,14 +458,16 @@ const zhCNMessages = {
       clearSelection: "取消全选",
       commitSelected: "提交勾选批次",
       selectAtLeastOne: "请至少勾选一行可提交的数据。",
-      subsetPreviewBlocked: "当前勾选组成的子集仍含错误，无法提交。请调整勾选或修正 CSV 后重新上传。",
+      subsetPreviewBlocked:
+        "当前勾选组成的子集仍含错误，无法提交。请调整勾选或修正 CSV 后重新上传。",
       batchResumeHint:
         "可先提交一部分勾选行；在结果中点击「取消已成功行的勾选」后，保留未处理行再次「提交勾选批次」。子集预览通过后再确认写入。",
       subsetConfirmTitle: "确认本批写入",
       subsetConfirmIntro:
         "以下为仅含当前勾选行的子集二次预览结果。子集内容 SHA 与整文件不同；继续分批提交不会触发「整文件重复导入」冲突。",
       subsetSha256: "本批内容 SHA-256",
-      confirmCommit: "确认将选中的 {count} 行作为一批写入系统？失败行将记录在结果报告中，已成功行不回滚。",
+      confirmCommit:
+        "确认将选中的 {count} 行作为一批写入系统？失败行将记录在结果报告中，已成功行不回滚。",
       confirmWriteBatch: "确认写入本批",
       commitSuccess: "本批次已提交",
       resultTitle: "导入结果",
@@ -472,7 +482,8 @@ const zhCNMessages = {
       resultSummaryAllOk: "本批全部行处理成功，可下载 JSON 留档或与审计对账。",
       resultSummaryPartial:
         "本批部分行失败（非整批回滚）。可下载 JSON 排查；若需继续导入其余勾选行，请先「取消已成功行的勾选」再提交下一子集。",
-      resultFooterResume: "断点续作：点击「取消已成功行的勾选」关闭对话框后，再次提交剩余勾选行即可。",
+      resultFooterResume:
+        "断点续作：点击「取消已成功行的勾选」关闭对话框后，再次提交剩余勾选行即可。",
       downloadJson: "下载结果 JSON",
       uncheckCommitted: "取消已成功行的勾选（继续下一批）",
       selectionAdjusted: "已取消已成功行的勾选",
@@ -487,8 +498,9 @@ const zhCNMessages = {
     adminCaseVisaSupplement: {
       title: "行政案件 → 签证案件补录",
       scopeHint:
-        "需「行政→签证补录」权限。粘贴行政案件 UUID（换行或逗号分隔），先预览再提交。同一批案件集合成功提交后不可重复；已存在 import_reference=admin:{id} 的行将跳过。行政案件与面谈/任务等子表不会迁入签证域。",
-      noPermission: "当前账号无补录权限，请联系管理员授予 visaCase:adminCaseSupplement。",
+        "需「行政→签证补录」权限。粘贴行政案件 UUID（换行或逗号分隔），先预览再提交。同一批案件集合成功提交后不可重复；已存在 import_reference=admin:{id} 的行将跳过。行政案件与面谈/任务等子表不会迁入签证管理。",
+      noPermission:
+        "当前账号无补录权限，请联系管理员授予 visaCase:adminCaseSupplement。",
       noIds: "请至少输入一个合法的行政案件 UUID。",
       cannotCommit: "预览存在错误行或尚未预览，无法提交。",
       idPlaceholder: "每行一个 UUID，或用逗号分隔",
@@ -503,7 +515,8 @@ const zhCNMessages = {
       okCount: "将新建",
       dupSkipped: "将跳过（已存在）",
       errorCount: "错误行",
-      confirmCommit: "确认将当前 {count} 个行政案件 ID 作为一批补录到签证域？失败行记入报告，已成功行不回滚。",
+      confirmCommit:
+        "确认将当前 {count} 个行政案件 ID 作为一批补录到签证管理？失败行记入报告，已成功行不回滚。",
       commitSuccess: "补录批次已提交",
       resultTitle: "补录结果",
       batchId: "补录批次 ID",
@@ -520,10 +533,10 @@ const zhCNMessages = {
     visaCaseRegistry: {
       title: "签证案件登记册",
       scopeHint:
-        "跨客户分页查看全部签证案件，筛选条件与后端全局列表 API 一致。跳转客户页将打开「签证域」标签；跳转案件将在具备编辑权限时打开案件编辑对话框。",
+        "跨客户分页查看全部签证案件，筛选条件与后端全局列表 API 一致。跳转客户页将打开「签证管理」标签；跳转案件将在具备编辑权限时打开案件编辑对话框。",
       /** 页顶常驻一行，完整说明见 `scopeHint` 的 tooltip */
       scopeHintShort:
-        "跨客户分页查看签证案件；进入客户将打开签证域，有权限时可直接打开案件。",
+        "跨客户分页查看签证案件；进入客户将打开签证管理，有权限时可直接打开案件。",
       detailHintLink: "完整说明",
       expandMoreFilters: "更多筛选",
       collapseMoreFilters: "收起更多",
@@ -703,6 +716,58 @@ const zhCNMessages = {
       start: "开始",
       end: "结束",
     },
+    materialTemplates: {
+      title: "材料模板",
+      keywordPlaceholder: "案件类型、模板名称",
+      listCardTitle: "模板列表",
+      reload: "从服务器刷新列表",
+      createTitle: "新建材料模板",
+      editTitle: "编辑材料模板",
+      createDialogTitle: "新建材料模板",
+      editDialogTitle: "编辑材料模板",
+      caseType: "案件类型",
+      caseTypePlaceholder: "选择与案件 case_type 一致或自定义",
+      caseTypeHint:
+        "须与签证案件上保存的类型字符串完全一致；可从枚举选择或输入自定义值（如历史自由文本）。",
+      displayName: "模板名称",
+      displayNamePlaceholder: "如：工作签证通用材料清单",
+      itemsSection: "模板条目",
+      addItemRow: "添加条目",
+      groupName: "分组",
+      itemName: "材料名称",
+      scope: "归属维度",
+      sortOrder: "排序",
+      required: "必需",
+      needOneItem: "请至少保留一条材料条目",
+      rowIncomplete: "每条目需填写分组与材料名称",
+      createSuccess: "模板已创建",
+      updateSuccess: "模板已更新",
+      itemCount: "条目数",
+      statusActive: "启用",
+      statusInactive: "停用",
+      deactivate: "停用",
+      deactivateTitle: "停用材料模板",
+      deactivateConfirm:
+        "确定停用模板「{name}」？停用后新建案件将不再引用；已实例化的案件材料不受影响。",
+      deactivateSuccess: "模板已停用",
+      saveSuccess: "已保存",
+      notFound: "未找到该模板或已被停用",
+      addItem: "添加条目",
+      colGroup: "分组",
+      colItem: "材料名称",
+      colScope: "归属",
+      colSort: "排序",
+      colRequired: "必需",
+      validation: {
+        displayName: "请填写模板名称",
+        caseType: "请选择或输入案件类型",
+        itemsMin: "请至少保留一条模板条目",
+        itemFields: "每条目需填写分组与材料名称",
+      },
+      /** 与 `CustomerMaterialChecklistTab` 同源 `GET .../materials` 全量；编辑页表格可滚动 */
+      itemsReplaceHint:
+        "保存时按表格全量提交子项；未出现在表中的既有条目会被删除（PUT 全量替换）。",
+    },
     exportLogs: {
       title: "导出日志",
       occurredAt: "时间",
@@ -723,10 +788,8 @@ const zhCNMessages = {
       basicInfo: "基本信息",
       notes: "备忘与跟进",
       adminCases: "行政案件",
-      visaDomainTabTooltip:
-        "签证域用于管理签证案件、家属、资料与案件日志；与下方「行政案件」页签的数据相互独立。",
       adminCasesTabTooltip:
-        "行政书士负责的手续案件与签证案件分册管理；签证相关请以「签证域」为准。",
+        "行政书士负责的手续案件与签证案件分册管理；签证相关请以「签证管理」为准。",
       legacyResidenceFieldHint:
         "此处为基本信息里登记的在留期限（便于日常参考），与按签证案件汇总的「签证提醒」相互独立。若您有签证提醒权限，案件进度的跟进请优先使用侧栏「签证业务」中的「签证提醒」。",
       residenceParallelCaseExpiryHint:
@@ -740,25 +803,60 @@ const zhCNMessages = {
       files: "文件",
       traceabilityHint: {
         summaryLineWithVisa:
-          "案件级进度、补件与交接说明请写在「签证域 → 案件日志」并先选对案件；「备忘与跟进」更适合跨案件短提醒或客户层面的备忘。",
+          "案件级进度、补件与交接说明请写在「签证管理 → 案件日志」并先选对案件；「备忘与跟进」更适合跨案件短提醒或客户层面的备忘。",
         summaryLineWithoutVisa:
-          "一般备忘用「备忘与跟进」。若已开通签证域，与某一签证案件绑定的内容请写到「签证域 → 案件日志」，便于按案件追溯。",
+          "一般备忘用「备忘与跟进」。若已开通签证管理，与某一签证案件绑定的内容请写到「签证管理 → 案件日志」，便于按案件追溯。",
         detailExpandedWithVisa:
-          "和具体签证案件相关的内容（办到哪一步、要补什么材料、费用怎么约定、同事之间怎么交接等），请在「签证域」→「案件日志」里先选对案件再写，以后好查，也方便接班人接手。「备忘与跟进」更像客户名下的便签：适合不针对某一个案件的短提醒、客户层面的备忘，或多件案子的简要摘要。",
+          "和具体签证案件相关的内容（办到哪一步、要补什么材料、费用怎么约定、同事之间怎么交接等），请在「签证管理」→「案件日志」里先选对案件再写，以后好查，也方便接班人接手。「备忘与跟进」更像客户名下的便签：适合不针对某一个案件的短提醒、客户层面的备忘，或多件案子的简要摘要。",
         detailExpandedWithoutVisa:
-          "「备忘与跟进」用来记和客户有关的备忘。若账号开通了签证域，凡是和某一个签证案件绑在一起的进度、补件与交接说明，请改到「签证域」→「案件日志」里写，才能按案件一条条查得到。",
-        expandRulesLabel: "展开分工说明",
-        collapseRulesLabel: "收起说明",
+          "「备忘与跟进」用来记和客户有关的备忘。若账号开通了签证管理，凡是和某一个签证案件绑在一起的进度、补件与交接说明，请改到「签证管理」→「案件日志」里写，才能按案件一条条查得到。",
         goCaseLogs: "打开案件日志",
         goNotes: "打开备忘与跟进",
+        rulesPopoverTrigger: "详细说明",
+        summaryLineHeaderCompactWithVisa:
+          "案件级记录→「签证管理 → 案件日志」（先选对案件）；客户备忘→「备忘与跟进」。",
+        summaryLineHeaderCompactWithoutVisa:
+          "一般备忘用「备忘与跟进」；与具体签证案件绑定的内容请在开通签证管理后写到「案件日志」。",
       },
       visaCases: "签证案件",
+      caseLogAsideAriaLabel: "签证案件日志与跟进摘要",
+      caseLogRail: {
+        title: "案件日志（主展示案件）",
+        noPrimaryCase: "暂无列表主展示签证案件，日志预览不可用。",
+        needDetailPermission:
+          "查看案件日志需要「签证案件详情」权限；可在签证管理页签内按可见范围操作。",
+        loadError: "日志加载失败，请稍后重试或进入签证管理查看。",
+        empty: "该案件尚无日志记录。",
+        emptyFiltered: "当前分类下暂无最近日志，可切换分类或进入签证管理查看全部。",
+        filterPillAll: "全部",
+        /** SUBMISSION / SUPPLEMENT */
+        filterPillMaterials: "材料/补件",
+        /** FOLLOW_UP / GENERAL */
+        filterPillCommunication: "跟进/说明",
+        /** STATUS_CHANGE 等系统轨迹 */
+        filterPillSystem: "状态轨迹",
+        filtersAriaLabel: "按日志类型筛选侧栏预览",
+        filterPillsLegend:
+          "分类说明：材料/补件含提交与补件类；跟进/说明含跟进与一般说明；状态轨迹含状态变更等系统记录。可与左侧「签证管理」内「案件日志」分区全文对照。",
+        /** 标题旁信息图标：悬停展示 filterPillsLegend */
+        filterLegendHint: "查看筛选分类说明",
+        viewAll: "查看全部日志",
+      },
+      stickyActions: {
+        regionAriaLabel: "主展示签证案件快捷操作（与页顶主轴按钮相同，便于长页滚动后操作）",
+        /** 底栏次按钮：跳转写案件日志，与稿「新增记录」对齐 */
+        newRecordCta: "新增记录",
+        /** 底栏左侧：案件状态 + 材料进度摘要，供长页扫读 */
+        statusLineAriaLabel: "主展示案件状态与材料进度",
+        /** 底栏左侧一句叙事：状态 + 材料分数/无适用项（不含独立「材料进度」标签行） */
+        caseMaterialsNarrative: "{status} · 材料 {materials}",
+      },
       financePending: "暂无数据，待模块开发",
       contextStrip: {
         title: "主展示签证案件",
         noPrimaryCase:
           "当前无用于列表/摘要的主展示签证案件（可能尚无案件或均已结案）。",
-        goCreateCase: "前往签证域建案",
+        goCreateCase: "前往签证管理建案",
         caseType: "类型",
         status: "状态",
         nextFollowUp: "下次跟进",
@@ -773,16 +871,146 @@ const zhCNMessages = {
         materials: "材料清单",
         writeLog: "写案件日志",
         viewAllVisaCases: "查看全部签证案件",
+        moreActions: "更多操作",
         primaryCustomerFallbackLine:
           "上方摘要为关联主客户名下的主展示签证案件。",
         primaryCustomerFallbackOpen: "打开主客户详情",
       },
+      /** Stitch 顶区/底栏专用文案；行为口径见 docs/36 */
+      stitchLayout: {
+        heroRegionAria: "客户详情主展示签证案件顶区",
+        /** 简化详情路由顶区（docs/36：无铃铛、担当无头像） */
+        simpleHero: {
+          regionAria: "客户简化详情顶区",
+          edit: "编辑",
+          copyPageLink: "复制链接",
+          addFollowUp: "添加随访记录",
+          shareCopied: "当前页面链接已复制",
+          shareFailed: "复制失败，请手动复制浏览器地址栏链接",
+          backToDashboard: "返回工作台",
+          backToCustomerList: "返回客户列表",
+          backToCustomerCenter: "返回客户中心",
+          backToSourcePage: "返回来源页",
+          backToPreviousPage: "返回上一页",
+        },
+        /** 简化详情顶区「添加随访记录」弹框（与案件日志 API 对齐） */
+        simpleFollowUpDialog: {
+          title: "新增跟进记录",
+          method: "跟进形式",
+          follower: "跟进人",
+          recordedAt: "跟进时间",
+          communication: "本次沟通内容",
+          communicationPlaceholder: "请输入沟通详细摘要…",
+          submittedItems: "客户已提交材料",
+          submittedPlaceholder: "如：护照副本、证件照等",
+          missingItems: "仍缺少的材料",
+          missingPlaceholder: "如：完税证明原件",
+          nextAction: "下一步要做什么",
+          nextActionPlaceholder: "例如：翻译资料，下周三再次电话回访",
+          nextFollowUpAt: "下次跟进日期",
+          createReminder: "创建提醒",
+          reminderSoon: "提醒功能暂未开放",
+          save: "保存记录",
+        },
+        /** 简化详情「基本资料」卡片右上角入口 */
+        simpleBasicCard: {
+          viewAll: "查看全部",
+          fieldEmpty: "未填写",
+          /** 简化详情基本信息卡：折叠次要字段 */
+          expandDetails: "展开更多信息",
+          collapseDetails: "收起",
+        },
+        /** 简化详情「家庭成员」卡片：与随附家属同源列表，深链签证域 `family` 分区 */
+        simpleFamilyCard: {
+          title: "家庭成员",
+          memberSummary: "随行家属 · 共 {count} 人",
+          needListPermission: "查看家属列表需要「客户列表」权限。",
+          openInVisaWorkbench: "在签证管理中查看",
+          moreMembers: "还有 {count} 人",
+          rowAria: "{name}，查看子客户详情",
+        },
+        /** 简化详情「材料清单」摘要卡 */
+        simpleMaterialsCard: {
+          title: "申请材料清单",
+          viewAll: "查看全部",
+          openInVisaWorkbench: "在签证管理中查看",
+          noVisaPermission: "暂无权限查看材料清单。",
+          progressLabel: "收集进度",
+          progressPercent: "{n}%",
+          emptyChecklist: "暂无清单实例，可在签证管理中初始化材料清单",
+          /** Stitch 环形进度：读屏文案 */
+          ringAria: "申请材料收集进度 {percent}%",
+          /** Stitch 行末「待补件」pill（未收集） */
+          rowPendingSupplement: "待补件",
+          /**
+           * 可滚动清单区域（`GET .../materials` 全量，与材料清单 Tab 条数一致）；`tabindex=0` 供键盘滚动。
+           */
+          materialsListAria:
+            "申请材料清单条目，与详情页材料 Tab 同源全量；列表较长时在区域内滚动，按 Tab 聚焦后可用方向键浏览。",
+        },
+        /** 简化详情「资料路径」三联行 */
+        simplePathsCard: {
+          title: "文件管理中心",
+          copyPath: "复制路径",
+          viewAll: "管理路径",
+          emptyPath: "未登记",
+          needListPermission:
+            "查看资料路径需要「客户资料路径列表」权限；有权限时可在资料路径台账中维护。",
+        },
+        /** 简化详情「随访 / 案件日志」时间线（UI 与主栏日志字段对齐） */
+        simpleFollowUpTimeline: {
+          sectionTitle: "随访进展记录",
+          sortDesc: "按时间降序",
+          export: "导出记录",
+          exportDisabledTooltip:
+            "当前未提供批量导出接口；请在签证管理「案件日志」中查看或逐条处理。",
+          viewAll: "查看全部日志",
+        },
+        primaryCaseIdLabel: "主展示案件",
+        urgeSupplementCta: "催促补件",
+        urgeSupplementTooltip:
+          "打开当前主展示案件的材料清单，便于核对未收项并线下联系客户；系统不会自动代发消息。需要书面记录时请使用「写案件日志」或在清单中记入日志。",
+        etaFieldsHint:
+          "「下次跟进」与「在留期限」来自案件数据，与稿中 ETA 示意一致；系统无单独 ETA 字段。",
+        /** 与「台账与工具」行并列：本行为客户主路径 Tab（主档、备忘、签证管理等） */
+        detailTabsPrimaryRowLabel: "客户主视图",
+        /** 主行 Tab 横向滚动容器：供屏幕阅读器识别 */
+        detailTabsPrimaryTabsScrollAriaLabel:
+          "客户主视图标签，较窄时可横向滚动查看全部",
+        /**
+         * 有进行中主展示案件且命中默认 Tab 规则时，悬停签证 Tab 的前置说明（后接 `visaWorkbenchTabTooltip`）。
+         */
+        tabNavVisaDefaultLandingHint:
+          "当前有进行中的列表主展示签证案件时，进入本页通常会默认落在此标签。",
+        /** 与堆叠工作台同义；顶栏 Tab 文案与文内「签证管理」口径一致 */
+        visaWorkbenchTab: "签证管理",
+        visaWorkbenchTabTooltip:
+          "页内自上而下为纵向工作台：基本信息摘要、家属成员、材料清单、资料路径、主展示与全部案件、案件日志。宽屏（约≥1200px）下主栏内分区左右两列排布，摘要条与分区导航仍全宽，深链锚点不变；壳层双栏时右侧为当前主案日志预览（与主栏「案件日志」分区互补）。案件级进度请在本页或案件日志记录，与「备忘与跟进」的客户备忘区分。完整主档请在「基本信息」编辑。与「行政案件」数据独立。",
+        /** 悬停「台账与工具」行标签时提示与上段签证堆叠视图的分工 */
+        ledgerRowTooltip:
+          "税务、财务、文件为全页台账视图；行政案件（条件显示）入口在本行分段内，与上段「签证管理」主栏分区及深链锚点无关。",
+        stackSectionNavAria: "签证管理内分区锚点导航",
+        stackBlocks: {
+          basicSnapshot: "基本信息摘要",
+          cases: "主展示与全部案件",
+          family: "家属成员",
+          paths: "资料路径",
+          logs: "案件日志",
+          materials: "材料清单",
+        },
+      },
       sharedInfo: "通用信息",
+      /** 基础信息 Tab 内分区标题（视觉层次：主档 / 联系 / 登记） */
+      basicInfoLayout: {
+        contactHeading: "联系方式",
+        addressHeading: "地址",
+        recordHeading: "登记信息",
+      },
       companyInfoTitle: "法人信息",
       personalInfoTitle: "个人信息",
       staffRelationsTitle: "担当者列表",
       accompanyingDependentsHint:
-        "以下为客户主档下已建档的随附家属子客户（与签证域「家属成员」的案件级数据不同）。可通过右上角「编辑」中的随附家属表维护。",
+        "以下为客户主档下已建档的随附家属子客户（与签证管理「家属成员」的案件级数据不同）。可通过右上角「编辑」中的随附家属表维护。",
       accompanyingDependentsEmpty: "暂无随附家属子客户",
       staffName: "担当者姓名",
       relation: "角色",
@@ -809,7 +1037,7 @@ const zhCNMessages = {
         deletedSuccess: "备注已删除",
         antiDoubleWriteTitle: "与案件日志的分工",
         antiDoubleWriteLine1:
-          "涉及具体签证案件的进度、材料和约定好的跟进，请写在「签证域」→「案件日志」里，便于按案件查找、同事协作；这里的客户备注更适合跨案件备忘或几句短提醒。",
+          "涉及具体签证案件的进度、材料和约定好的跟进，请写在「签证管理」→「案件日志」里，便于按案件查找、同事协作；这里的客户备注更适合跨案件备忘或几句短提醒。",
         antiDoubleWriteLine2:
           "需要给继任者交接的「缺件 / 已交 / 下一步 / 下次跟进」等结构化信息，请以案件日志为准，避免仅在客户备注重复书写。",
         goToCaseLogs: "前往案件日志",
@@ -836,7 +1064,8 @@ const zhCNMessages = {
         externalPrimaryCaseTypePlaceholder: "例：技术·人文知识·国际业务",
         externalPrimaryExpireDate: "外部主申请人·在留期限",
         externalPrimaryRelationToApplicant: "外部主申与本案申请人关系",
-        externalPrimaryRelationToApplicantPlaceholder: "请选择（与主档「家属关系」同一枚举）",
+        externalPrimaryRelationToApplicantPlaceholder:
+          "请选择（与主档「家属关系」同一枚举）",
         externalPrimaryRelationToApplicantHint:
           "与 Stitch 设计稿中的自由文本「关系」不同：此处固定为与客户主档「家属关系」一致的枚举选项，便于与主数据、历史导入口径对齐；更细的表述可写在「备注」。",
         externalTag: "外部",
@@ -869,8 +1098,17 @@ const zhCNMessages = {
         createdAt: "创建时间",
         actions: "操作",
         edit: "编辑",
-        openCaseViewOnlyHint: "当前账号无案件编辑权限，请在下方列表中查看该案件。",
+        openCaseViewOnlyHint:
+          "当前账号无案件编辑权限，请在下方列表中查看该案件。",
         openCaseMismatch: "该案件不属于当前客户上下文，已取消自动打开。",
+        caseTypeChangeMaterialsConfirmTitle: "确认变更案件类型",
+        caseTypeChangeMaterialsConfirmBody:
+          "该案件已有材料清单记录。保存后案件类型将更新，并将按新签证类型的模板重新生成材料清单；现有清单行（含手工添加项）将被清除且不可恢复。确定继续吗？",
+        caseTypeChangeReinitializeReason: "案件类型变更后按新模板重建材料清单",
+        caseTypeChangeMaterialsReinitFailed:
+          "案件类型已保存，但材料清单未能按新模板重建，请在「材料清单」中重新初始化或稍后重试。",
+        caseTypeChangeMaterialsSummaryFailed:
+          "无法拉取材料清单摘要，已阻止保存。请确认具备案件查看权限后重试，或稍后在网络正常时再改案件类型。",
       },
       visaCaseWizard: {
         title: "新建签证案件向导",
@@ -880,7 +1118,8 @@ const zhCNMessages = {
         next: "下一步",
         create: "创建案件",
         partialSuccess: "案件已创建，但有 {failed} 位家属成员添加失败",
-        primaryAutoHint: "INTERNAL 模式下主申请人将在案件创建时自动添加为家属成员",
+        primaryAutoHint:
+          "INTERNAL 模式下主申请人将在案件创建时自动添加为家属成员",
         externalPrimaryHint: "外部主申请人不会作为系统内家属成员注册",
         additionalMembers: "追加家属成员",
         pendingMembersEmpty: "尚未添加家属成员",
@@ -908,7 +1147,8 @@ const zhCNMessages = {
         inlinePhonePlaceholder: "电话（选填，用于查重提示）",
         inlineMemberBadge: "本向导新建",
         cannotAddApplicantAsMember: "不能将本案申请人本人添加为随附家属。",
-        cannotAddInternalPrimaryAsMember: "内部主申人将随案件自动关联，无需在此重复添加。",
+        cannotAddInternalPrimaryAsMember:
+          "内部主申人将随案件自动关联，无需在此重复添加。",
         duplicatePhoneInlineTitle: "电话号码可能已存在",
         duplicatePhoneInlineBody:
           "已存在使用相同电话号码的客户：{names}。确定仍要新建一条客户档案吗？",
@@ -944,21 +1184,37 @@ const zhCNMessages = {
         filePathRequired: "请输入文件路径",
         notUploadHint: "※这不是文件上传功能，而是服务器路径台账管理",
       },
-      visaDomain: "签证域",
+      visaDomain: "签证工作台",
       visaDomainTab: {
-        summaryStripAria: "签证域案件与材料摘要",
+        summaryStripAria: "签证管理案件与材料摘要",
         totalCases: "总案件",
         activeCases: "办理中",
         supplementCases: "待补件",
         nearestExpiry: "最近到期",
         materialStatus: "材料状况",
-        casesBlock: "签证案件",
+        sectionNavAria: "签证管理分区快捷导航",
+        casesBlock: "主展示与全部案件",
         familyBlock: "家属成员",
         pathsBlock: "资料路径",
         logsBlock: "案件日志",
         materialsBlock: "材料清单",
-        primaryCaseChecklistSummary: "主展示案件 checklist：{progress} 已收（适用项）",
+        basicSnapshotTitle: "基本信息摘要",
+        primaryCaseChecklistSummary:
+          "主展示案件 checklist：{progress} 已收（适用项）",
         primaryCaseChecklistOutOfSyncBadge: "与建议不一致",
+        allCasesCollapseTitle: "全部案件（列表与新建）",
+        primaryCaseSummaryLabel: "当前主展示案件",
+        primaryCaseFieldType: "案件类型",
+        primaryCaseFieldAssignee: "负责人",
+        primaryCaseFieldExpire: "在留到期",
+        primaryCaseFieldFollowUp: "下次跟进",
+        primaryCaseFieldMaterial: "材料状况",
+        basicSnapshotScopeHint:
+          "仅显示客户编码、联系方式与在留要点；头像、地址、微信/LINE、公司信息、员工关系等请在「基础信息」查看或编辑。",
+        basicSnapshotOpenFull: "查看完整资料",
+        basicSnapshotGroupContact: "联系",
+        basicSnapshotGroupIdDocs: "证件",
+        basicSnapshotGroupResidence: "在留",
       },
       materialChecklistTab: {
         managerHelpTitle: "材料清单怎么用",
@@ -1072,7 +1328,8 @@ const zhCNMessages = {
         updatedSuccess: "案件日志已更新",
         deletedSuccess: "案件日志已删除",
         prefillHint: "已从材料清单预填已提交/缺失材料，可修改后提交。",
-        prefillDeniedNoCreate: "当前账号无「新增案件日志」权限，无法打开预填表单。",
+        prefillDeniedNoCreate:
+          "当前账号无「新增案件日志」权限，无法打开预填表单。",
         snippetMenu: "常用句式",
         reuseMissing: "复用上条缺件",
         reuseMissingTooltip:
@@ -1346,8 +1603,9 @@ const zhCNMessages = {
       updated: "客户信息已更新",
       created: "客户已创建",
       createdVisaDeepLinkDone:
-        "客户已创建。已打开「签证域」中的「签证案件」板块，请在此新建该客户的签证案件。",
-      createdVisaNudgeLead: "客户已创建。是否现在打开「签证域」并新建签证案件？",
+        "客户已创建。已打开「签证管理」中的「签证案件」板块，请在此新建该客户的签证案件。",
+      createdVisaNudgeLead:
+        "客户已创建。是否现在打开「签证管理」并新建签证案件？",
       createdVisaNudgeAction: "立即创建签证案件",
       month: "月",
       accompanyingFamilyTitle: "随附家属",
@@ -1363,10 +1621,12 @@ const zhCNMessages = {
       accompanyingFamilyBatchDeleteConfirm:
         "将删除 {count} 位随附家属的客户档案，且不可恢复。是否继续？",
       accompanyingFamilyValidationName: "随附家属：存在未填写姓名的行。",
-      accompanyingFamilyValidationRelation: "随附家属：存在未选择家族关系的行。",
+      accompanyingFamilyValidationRelation:
+        "随附家属：存在未选择家族关系的行。",
       accompanyingFamilyValidationOrphan:
         "随附家属：已从列表移除的行请使用删除按钮；勿将已有记录全部留空。",
-      accompanyingFamilyPartialCreateFail: "主客户已创建，但部分随附家属创建失败：{names}",
+      accompanyingFamilyPartialCreateFail:
+        "主客户已创建，但部分随附家属创建失败：{names}",
       accompanyingFamilyPartialSaveFail: "部分随附家属保存失败：{names}",
       accompanyingFamilyUnnamed: "（未命名）",
     },
@@ -1574,6 +1834,6 @@ const zhCNMessages = {
       optionalDescription: "文件说明（可选）",
     },
   },
-} as const satisfies AppMessageSchema
+} as const satisfies AppMessageSchema;
 
 export default zhCNMessages;

@@ -17,6 +17,16 @@ const CUSTOMER_CENTER_HUB_PATHS: ReadonlySet<string> = new Set(
 )
 
 /**
+ * 判断 pathname 是否为客户中心 Hub 顶栏某一 Tab（与 `ccFrom` 白名单一致，含 `/customers` 与各整合子路径）。
+ *
+ * @param pathname - 不含 query/hash 的路径
+ * @returns 属于 Hub Tab 时为 true
+ */
+export function isCustomerCenterHubTabPath(pathname: string): boolean {
+  return CUSTOMER_CENTER_HUB_PATHS.has(pathname)
+}
+
+/**
  * 判断路径是否为客户主档详情 `/customers/:customerId`（UUID）。
  *
  * @param pathname - 已规范化的 pathname
@@ -25,6 +35,17 @@ const CUSTOMER_CENTER_HUB_PATHS: ReadonlySet<string> = new Set(
 function pathnameIsCustomerProfileDetail(pathname: string): boolean {
   const m = pathname.match(/^\/customers\/([^/]+)$/u)
   return m !== null && VISA_CASE_IMPORT_LOCAL_UUID_RE.test(m[1])
+}
+
+/**
+ * 判断路径是否为客户简化详情 `/customers/:customerId/simple`（UUID），供 `ccFrom` 从标准详情回到简化版。
+ *
+ * @param pathname - 已规范化的 pathname
+ * @returns 客户 ID 段为合法 UUID 且末段为 `simple` 时返回 true
+ */
+function pathnameIsCustomerProfileDetailSimple(pathname: string): boolean {
+  const m = pathname.match(/^\/customers\/([^/]+)\/simple$/u)
+  return m !== null && VISA_CASE_IMPORT_LOCAL_UUID_RE.test(m[1] ?? '')
 }
 
 /**
@@ -94,6 +115,7 @@ export function parseSafeCustomerDetailReturnPath(raw: string): string | null {
   }
   if (
     pathnameIsCustomerProfileDetail(pathname) ||
+    pathnameIsCustomerProfileDetailSimple(pathname) ||
     pathnameIsAdminCaseDetail(pathname) ||
     pathnameIsTaxContractDetail(pathname) ||
     pathnameIsFinanceDetail(pathname)

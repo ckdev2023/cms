@@ -245,181 +245,190 @@ async function handleDelete(note: NoteItem) {
   <div class="notes-tab">
     <CustomerNotesAntiDoubleWriteAlert />
 
-    <div class="notes-tab__toolbar">
-      <div class="notes-tab__filter">
-        <el-select
-          :model-value="queryParams.noteType ?? ''"
-          :placeholder="t('detailViews.customer.notesTab.filterPlaceholder')"
-          size="default"
-          style="width: 160px"
-          @change="handleFilterChange"
-        >
-          <el-option
-            v-for="opt in filterNoteTypeOptions"
-            :key="opt.value"
-            :label="opt.label"
-            :value="opt.value"
-          />
-        </el-select>
-        <span class="notes-tab__count">{{ t('detailViews.customer.notesTab.countLabel', { count: total }) }}</span>
-      </div>
-      <el-button v-if="canEditNote" type="primary" @click="openCreateForm">
-        {{ t('detailViews.customer.notesTab.add') }}
-      </el-button>
-    </div>
-
-    <el-card v-if="showForm && canEditNote" shadow="never" class="notes-tab__form-card">
-      <template #header>
-        <span>{{ isEdit ? t('detailViews.customer.notesTab.editTitle') : t('detailViews.customer.notesTab.createTitle') }}</span>
-      </template>
-      <el-form
-        ref="formRef"
-        :model="formModel"
-        :rules="formRules"
-        label-width="100px"
-        label-position="top"
-      >
-        <el-form-item :label="t('detailViews.customer.notesTab.noteType')" prop="noteType">
-          <el-radio-group v-model="formModel.noteType">
-            <el-radio-button
-              v-for="opt in noteTypeOptions"
+    <div
+      class="notes-tab__layout"
+      :class="{ 'notes-tab__layout--with-form': showForm && canEditNote }"
+    >
+      <div class="notes-tab__toolbar">
+        <div class="notes-tab__filter">
+          <el-select
+            :model-value="queryParams.noteType ?? ''"
+            :placeholder="t('detailViews.customer.notesTab.filterPlaceholder')"
+            size="default"
+            style="width: 160px"
+            @change="handleFilterChange"
+          >
+            <el-option
+              v-for="opt in filterNoteTypeOptions"
               :key="opt.value"
+              :label="opt.label"
               :value="opt.value"
-            >
-              {{ opt.label }}
-            </el-radio-button>
-          </el-radio-group>
-        </el-form-item>
-        <el-form-item :label="t('detailViews.customer.notesTab.content')" prop="content">
-          <el-input
-            v-model="formModel.content"
-            type="textarea"
-            :rows="4"
-            :placeholder="t('detailViews.customer.notesTab.contentPlaceholder')"
-            maxlength="5000"
-            show-word-limit
-          />
-        </el-form-item>
-
-        <el-divider content-position="left">
-          {{ t('detailViews.customer.notesTab.structuredSectionTitle') }}
-        </el-divider>
-        <el-form-item :label="L('submittedItems')" prop="submittedItems">
-          <el-input
-            v-model="formModel.submittedItems"
-            type="textarea"
-            :rows="2"
-            :placeholder="L('submittedItemsPlaceholder')"
-            maxlength="2000"
-            show-word-limit
-          />
-        </el-form-item>
-        <el-form-item :label="L('missingItems')" prop="missingItems">
-          <el-input
-            v-model="formModel.missingItems"
-            type="textarea"
-            :rows="2"
-            :placeholder="L('missingItemsPlaceholder')"
-            maxlength="2000"
-            show-word-limit
-          />
-        </el-form-item>
-        <el-form-item :label="L('nextAction')" prop="nextAction">
-          <el-input
-            v-model="formModel.nextAction"
-            :placeholder="L('nextActionPlaceholder')"
-            maxlength="1000"
-            show-word-limit
-          />
-        </el-form-item>
-        <el-form-item :label="L('nextFollowUpAt')" prop="nextFollowUpAt">
-          <el-date-picker
-            v-model="formModel.nextFollowUpAt"
-            type="datetime"
-            value-format="YYYY-MM-DDTHH:mm"
-            style="width: 100%"
-            clearable
-          />
-        </el-form-item>
-
-        <div class="notes-tab__form-actions">
-          <el-button @click="cancelForm">{{ t('common.cancel') }}</el-button>
-          <el-button type="primary" :loading="submitting" @click="handleSubmit">
-            {{ isEdit ? t('common.update') : t('common.create') }}
-          </el-button>
-        </div>
-      </el-form>
-    </el-card>
-
-    <div v-loading="loading" class="notes-tab__timeline">
-      <el-empty v-if="!loading && notes.length === 0" :description="t('detailViews.customer.notesTab.empty')" />
-
-      <el-timeline v-else>
-        <el-timeline-item
-          v-for="note in notes"
-          :key="note.id"
-          :timestamp="formatDateTime(note.createdAt)"
-          placement="top"
-        >
-          <el-card shadow="hover" class="notes-tab__note-card">
-            <div class="notes-tab__note-header">
-              <div class="notes-tab__note-meta">
-                <el-tag
-                  size="small"
-                  :type="noteTypeTagType[note.noteType] ?? undefined"
-                >
-                  {{ NoteTypeLabel[note.noteType as NoteType] }}
-                </el-tag>
-                <span v-if="note.creatorName" class="notes-tab__note-author">
-                  <el-icon><ChatLineSquare /></el-icon>
-                  {{ note.creatorName }}
-                </span>
-              </div>
-              <div v-if="canEditNote || canDeleteNote" class="notes-tab__note-actions">
-                <el-button
-                  v-if="canEditNote"
-                  :icon="Edit"
-                  size="small"
-                  text
-                  type="primary"
-                  @click="openEditForm(note)"
-                >
-                  {{ t('common.edit') }}
-                </el-button>
-                <el-button
-                  v-if="canDeleteNote"
-                  :icon="Delete"
-                  size="small"
-                  text
-                  type="danger"
-                  @click="handleDelete(note)"
-                >
-                  {{ t('common.delete') }}
-                </el-button>
-              </div>
-            </div>
-            <div class="notes-tab__note-content">{{ note.content }}</div>
-            <CustomerNoteStructuredDetails
-              :submitted-items="note.submittedItems"
-              :missing-items="note.missingItems"
-              :next-action="note.nextAction"
-              :next-follow-up-at="note.nextFollowUpAt"
             />
-            <div v-if="note.updatedAt !== note.createdAt" class="notes-tab__note-updated">
-              {{ t('detailViews.customer.notesTab.updatedAt') }}: {{ formatDateTime(note.updatedAt) }}
-            </div>
-          </el-card>
-        </el-timeline-item>
-      </el-timeline>
+          </el-select>
+          <span class="notes-tab__count">{{ t('detailViews.customer.notesTab.countLabel', { count: total }) }}</span>
+        </div>
+        <el-button v-if="canEditNote" type="primary" @click="openCreateForm">
+          {{ t('detailViews.customer.notesTab.add') }}
+        </el-button>
+      </div>
 
-      <div v-if="total > queryParams.pageSize!" class="notes-tab__pagination">
-        <el-pagination
-          :current-page="queryParams.page"
-          :page-size="queryParams.pageSize"
-          :total="total"
-          layout="prev, pager, next"
-          @current-change="handlePageChange"
-        />
+      <el-card
+        v-if="showForm && canEditNote"
+        shadow="never"
+        class="notes-tab__form-card notes-tab__form-pane"
+      >
+        <template #header>
+          <span>{{ isEdit ? t('detailViews.customer.notesTab.editTitle') : t('detailViews.customer.notesTab.createTitle') }}</span>
+        </template>
+        <el-form
+          ref="formRef"
+          :model="formModel"
+          :rules="formRules"
+          label-width="100px"
+          label-position="top"
+        >
+          <el-form-item :label="t('detailViews.customer.notesTab.noteType')" prop="noteType">
+            <el-radio-group v-model="formModel.noteType">
+              <el-radio-button
+                v-for="opt in noteTypeOptions"
+                :key="opt.value"
+                :value="opt.value"
+              >
+                {{ opt.label }}
+              </el-radio-button>
+            </el-radio-group>
+          </el-form-item>
+          <el-form-item :label="t('detailViews.customer.notesTab.content')" prop="content">
+            <el-input
+              v-model="formModel.content"
+              type="textarea"
+              :rows="4"
+              :placeholder="t('detailViews.customer.notesTab.contentPlaceholder')"
+              maxlength="5000"
+              show-word-limit
+            />
+          </el-form-item>
+
+          <el-divider content-position="left">
+            {{ t('detailViews.customer.notesTab.structuredSectionTitle') }}
+          </el-divider>
+          <el-form-item :label="L('submittedItems')" prop="submittedItems">
+            <el-input
+              v-model="formModel.submittedItems"
+              type="textarea"
+              :rows="2"
+              :placeholder="L('submittedItemsPlaceholder')"
+              maxlength="2000"
+              show-word-limit
+            />
+          </el-form-item>
+          <el-form-item :label="L('missingItems')" prop="missingItems">
+            <el-input
+              v-model="formModel.missingItems"
+              type="textarea"
+              :rows="2"
+              :placeholder="L('missingItemsPlaceholder')"
+              maxlength="2000"
+              show-word-limit
+            />
+          </el-form-item>
+          <el-form-item :label="L('nextAction')" prop="nextAction">
+            <el-input
+              v-model="formModel.nextAction"
+              :placeholder="L('nextActionPlaceholder')"
+              maxlength="1000"
+              show-word-limit
+            />
+          </el-form-item>
+          <el-form-item :label="L('nextFollowUpAt')" prop="nextFollowUpAt">
+            <el-date-picker
+              v-model="formModel.nextFollowUpAt"
+              type="datetime"
+              value-format="YYYY-MM-DDTHH:mm"
+              style="width: 100%"
+              clearable
+            />
+          </el-form-item>
+
+          <div class="notes-tab__form-actions">
+            <el-button @click="cancelForm">{{ t('common.cancel') }}</el-button>
+            <el-button type="primary" :loading="submitting" @click="handleSubmit">
+              {{ isEdit ? t('common.update') : t('common.create') }}
+            </el-button>
+          </div>
+        </el-form>
+      </el-card>
+
+      <div v-loading="loading" class="notes-tab__timeline">
+        <el-empty v-if="!loading && notes.length === 0" :description="t('detailViews.customer.notesTab.empty')" />
+
+        <el-timeline v-else>
+          <el-timeline-item
+            v-for="note in notes"
+            :key="note.id"
+            :timestamp="formatDateTime(note.createdAt)"
+            placement="top"
+          >
+            <el-card shadow="hover" class="notes-tab__note-card">
+              <div class="notes-tab__note-header">
+                <div class="notes-tab__note-meta">
+                  <el-tag
+                    size="small"
+                    :type="noteTypeTagType[note.noteType] ?? undefined"
+                  >
+                    {{ NoteTypeLabel[note.noteType as NoteType] }}
+                  </el-tag>
+                  <span v-if="note.creatorName" class="notes-tab__note-author">
+                    <el-icon><ChatLineSquare /></el-icon>
+                    {{ note.creatorName }}
+                  </span>
+                </div>
+                <div v-if="canEditNote || canDeleteNote" class="notes-tab__note-actions">
+                  <el-button
+                    v-if="canEditNote"
+                    :icon="Edit"
+                    size="small"
+                    text
+                    type="primary"
+                    @click="openEditForm(note)"
+                  >
+                    {{ t('common.edit') }}
+                  </el-button>
+                  <el-button
+                    v-if="canDeleteNote"
+                    :icon="Delete"
+                    size="small"
+                    text
+                    type="danger"
+                    @click="handleDelete(note)"
+                  >
+                    {{ t('common.delete') }}
+                  </el-button>
+                </div>
+              </div>
+              <div class="notes-tab__note-content">{{ note.content }}</div>
+              <CustomerNoteStructuredDetails
+                :submitted-items="note.submittedItems"
+                :missing-items="note.missingItems"
+                :next-action="note.nextAction"
+                :next-follow-up-at="note.nextFollowUpAt"
+              />
+              <div v-if="note.updatedAt !== note.createdAt" class="notes-tab__note-updated">
+                {{ t('detailViews.customer.notesTab.updatedAt') }}: {{ formatDateTime(note.updatedAt) }}
+              </div>
+            </el-card>
+          </el-timeline-item>
+        </el-timeline>
+
+        <div v-if="total > queryParams.pageSize!" class="notes-tab__pagination">
+          <el-pagination
+            :current-page="queryParams.page"
+            :page-size="queryParams.pageSize"
+            :total="total"
+            layout="prev, pager, next"
+            @current-change="handlePageChange"
+          />
+        </div>
       </div>
     </div>
   </div>
@@ -427,11 +436,63 @@ async function handleDelete(note: NoteItem) {
 
 <style scoped lang="scss">
 .notes-tab {
+  /**
+   * 窄屏：工具栏 → 表单（若有）→ 时间线与分页（与历史纵向堆叠一致）。
+   * 宽屏（≥1200px，与客户详情壳层断点一致）：左列筛选 + 时间线，右列表单卡片；DOM/数据流不变。
+   */
+  &__layout {
+    display: grid;
+    gap: 16px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      "toolbar"
+      "form"
+      "timeline";
+
+    @media (min-width: 1200px) {
+      &:not(.notes-tab__layout--with-form) {
+        grid-template-areas:
+          "toolbar"
+          "timeline";
+      }
+
+      &--with-form {
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-rows: auto minmax(0, 1fr);
+        grid-template-areas:
+          "toolbar form"
+          "timeline form";
+        align-items: start;
+      }
+
+      &--with-form .notes-tab__timeline {
+        min-height: 0;
+        max-height: calc(100dvh - 14rem);
+        max-height: calc(100vh - 14rem);
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+      }
+
+      &--with-form .notes-tab__form-pane {
+        position: sticky;
+        top: var(--app-spacing-md);
+        align-self: start;
+        min-width: 0;
+        max-height: calc(100dvh - 14rem);
+        max-height: calc(100vh - 14rem);
+        overflow-x: hidden;
+        overflow-y: auto;
+        overscroll-behavior-y: contain;
+      }
+    }
+  }
+
   &__toolbar {
+    grid-area: toolbar;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    margin-bottom: 16px;
   }
 
   &__filter {
@@ -445,8 +506,13 @@ async function handleDelete(note: NoteItem) {
     color: var(--app-text-secondary);
   }
 
-  &__form-card {
-    margin-bottom: 20px;
+  &__form-pane {
+    grid-area: form;
+  }
+
+  &__timeline {
+    grid-area: timeline;
+    min-width: 0;
   }
 
   &__form-actions {

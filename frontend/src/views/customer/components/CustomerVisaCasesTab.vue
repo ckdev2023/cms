@@ -5,7 +5,12 @@ import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
-import { getVisaCase, getVisaCases, updateVisaCase } from '@/api/visa-case'
+import {
+  getVisaCase,
+  getVisaCases,
+  reinitializeVisaCaseMaterials,
+  updateVisaCase,
+} from '@/api/visa-case'
 import ProTable from '@/components/ProTable.vue'
 import {
   MaterialStatusLabel,
@@ -23,7 +28,7 @@ import {
 import { P } from '@/constants/permissions'
 import { useUserStore } from '@/stores/user'
 import type { ProTableColumn } from '@/types/components'
-import type { UpdateVisaCaseParams, VisaCaseItem } from '@/types/visa-case'
+import type { VisaCaseEditSubmitPayload, VisaCaseItem } from '@/types/visa-case'
 import { useLocaleFormatter } from '@/utils/locale-format'
 import { formatVisaCaseTypeDisplay } from '@/utils/visa-case-type-display'
 
@@ -244,14 +249,32 @@ function handleEdit(row: VisaCaseItem): void {
 /**
  * 提交签证案件更新请求，并在成功后关闭对话框和刷新列表。
  *
- * @param payload - 子组件组装完成的案件更新字段
+ * @param payload - 子组件组装完成的案件更新字段（可含材料清单再初期化标记）
  * @throws {Error} 签证案件接口请求失败时由请求层统一提示
  */
-async function handleDialogSubmit(payload: UpdateVisaCaseParams): Promise<void> {
+async function handleDialogSubmit(payload: VisaCaseEditSubmitPayload): Promise<void> {
   if (!canEdit.value || !editingId.value) {return}
+  const { reinitializeMaterialsAfterSave, ...updatePayload } = payload
+  const caseId = editingId.value
   submitting.value = true
   try {
-    await updateVisaCase(editingId.value, payload)
+    await updateVisaCase(caseId, updatePayload)
+    if (reinitializeMaterialsAfterSave === true) {
+      try {
+        await reinitializeVisaCaseMaterials(caseId, {
+          confirm: true,
+          reason: t('detailViews.customer.visaCasesTab.caseTypeChangeReinitializeReason'),
+        })
+      } catch {
+        ElMessage.warning(
+          t('detailViews.customer.visaCasesTab.caseTypeChangeMaterialsReinitFailed'),
+        )
+        dialogVisible.value = false
+        await fetchData()
+        emitVisaDomainCustomerRefresh()
+        return
+      }
+    }
     ElMessage.success(t('detailViews.customer.visaCasesTab.updatedSuccess'))
     dialogVisible.value = false
     await fetchData()
